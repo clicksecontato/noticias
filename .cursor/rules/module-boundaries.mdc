@@ -1,0 +1,13 @@
+---
+description: Enforce module boundaries between apps, packages and infra
+alwaysApply: true
+---
+
+# Module Boundaries
+
+- `apps/*` pode importar de `packages/*`.
+- `packages/*` nunca pode importar de `apps/*`.
+- `infra/*` nao pode importar runtime de `apps/*` ou `packages/*`.
+- Cross-package em `packages/*` so quando houver contrato estavel e sem ciclo.
+- Em caso de duvida, criar contrato novo ao inves de import acoplado.
+- Antes de qualquer novo import, validar ADR `0002-boundaries-and-dependencies`.

@@ -1,0 +1,14 @@
+---
+description: TypeScript contract quality and clean code conventions
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TypeScript Contract Rules
+
+- Evitar `Record<string, unknown>` quando houver contrato claro.
+- Preferir tipos de domínio nomeados (`VideoGameSchema`, etc.).
+- Evitar parâmetros opcionais ambíguos; usar nomes semânticos.
+- Não misturar transformação de dados com acesso a configuração.
+- Extrair funções auxiliares quando bloco repetir.
+- Mensagens de erro devem ser explícitas e estáveis para testes.

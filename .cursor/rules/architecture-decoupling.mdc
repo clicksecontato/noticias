@@ -1,0 +1,14 @@
+---
+description: Keep modules decoupled with providers and strategy registries
+alwaysApply: true
+---
+
+# Decoupling Rules (SOLID)
+
+- Não hardcodar configuração de ambiente em serviços de domínio.
+- Centralizar env em `*config.ts` por pacote.
+- Centralizar regras por tipo em `*strategy.ts`.
+- Centralizar contratos/políticas em `*policy.ts`.
+- Evitar duplicar regras entre `app/` e `src/`.
+- Quando adicionar novo `pageType`, atualizar registry único.
+- Preferir funções puras e contratos explícitos.

@@ -1,0 +1,14 @@
+---
+description: Enforce strict TDD workflow in this project
+alwaysApply: true
+---
+
+# TDD Governance
+
+- Sempre escrever ou atualizar testes antes da implementação.
+- Sempre executar testes e confirmar falha inicial.
+- Implementar o mínimo para passar.
+- Executar suíte completa após a implementação.
+- Refatorar somente com testes verdes.
+- Não aceitar feature sem cobertura de teste adequada.
+- Em caso de conflito entre velocidade e TDD, priorizar TDD.
