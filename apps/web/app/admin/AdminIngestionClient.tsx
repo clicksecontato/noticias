@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/src/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 interface ApiResult {
   processedSourceIds: string[];
@@ -13,9 +15,17 @@ interface ApiResult {
 }
 
 export function AdminIngestionClient() {
+  const router = useRouter();
   const [token, setToken] = useState("");
   const [sourceIds, setSourceIds] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
+
+  async function onLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+    router.refresh();
+  }
 
   useEffect(() => {
     fetch("/api/admin/sources")
@@ -62,7 +72,24 @@ export function AdminIngestionClient() {
 
   return (
     <div style={{ maxWidth: 720, margin: "2rem auto", fontFamily: "sans-serif" }}>
-      <h1>Admin de Ingestão Manual</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: "1rem" }}>
+        <h1 style={{ margin: 0 }}>Admin de Ingestão Manual</h1>
+        <button
+          type="button"
+          onClick={onLogout}
+          style={{
+            padding: "0.35rem 0.75rem",
+            fontSize: 14,
+            background: "transparent",
+            color: "#64748b",
+            border: "1px solid #334155",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          Sair
+        </button>
+      </div>
       <p>Dispare a busca e criação de notícias em Português Brasileiro.</p>
 
       <label htmlFor="token">Token Admin</label>
