@@ -34,4 +34,29 @@ describe("Database Agent - content repository", () => {
     expect(getContentSourceFromConfig({ contentSource: "memory" })).toBe("memory");
     expect(getContentSourceFromConfig({ contentSource: "supabase" })).toBe("supabase");
   });
+
+  it("deve persistir itens ingeridos no adapter em memoria (agregador: resumo + sourceUrl)", async () => {
+    const repository = createContentRepository();
+    const created = await repository.saveIngestedNewsItems([
+      {
+        sourceId: "s1",
+        title: "Nova noticia de teste em portugues",
+        content: "Conteudo de teste para validacao de persistencia.",
+        sourceUrl: "https://fonte.com/noticia-teste"
+      }
+    ]);
+
+    expect(created).toBeGreaterThanOrEqual(1);
+    const news = await repository.getNewsArticles();
+    expect(news.some((item) => item.title.includes("Nova noticia de teste"))).toBe(true);
+    const saved = news.find((item) => item.title.includes("Nova noticia de teste"));
+    expect(saved?.summary).toContain("Conteudo de teste");
+    expect(saved?.sourceUrl).toBe("https://fonte.com/noticia-teste");
+    expect(saved?.contentMd).toBe("");
+    expect(saved?.contentHtml).toBe("");
+    expect(saved?.canonicalUrl).toContain("/news/");
+    expect(saved?.sourceArticleHash.length).toBeGreaterThan(10);
+    expect(saved?.aiModel).toBe("ingestion-rss-v1");
+    expect(saved?.qualityScore).toBeGreaterThan(0);
+  });
 });

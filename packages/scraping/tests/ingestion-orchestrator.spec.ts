@@ -51,4 +51,25 @@ describe("Scraping Agent - manual ingestion orchestrator", () => {
     expect(result.createdArticles).toBe(0);
     expect(result.discardedByLanguage).toBe(1);
   });
+
+  it("deve descartar item invalido com erro 404/not found", async () => {
+    const fetchNewsBySource: FetchNewsBySource = async () => [
+      {
+        sourceId: "s1",
+        title: "404 - Nao encontrado",
+        content: "Page not found",
+        language: "pt-BR"
+      }
+    ];
+
+    const result = await runManualNewsIngestion({
+      availableSources: [SOURCES[0]],
+      selectedSourceIds: ["s1"],
+      fetchNewsBySource
+    });
+
+    expect(result.createdArticles).toBe(0);
+    expect(result.discardedByLanguage).toBe(0);
+    expect(result.discardedByValidation).toBe(1);
+  });
 });

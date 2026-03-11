@@ -14,7 +14,8 @@ describe("Web Application Agent - admin ingest API", () => {
       async () => ({
         processedSourceIds: ["s1"],
         createdArticles: 2,
-        discardedByLanguage: 0
+        discardedByLanguage: 0,
+        discardedByValidation: 0
       })
     );
 
@@ -33,12 +34,14 @@ describe("Web Application Agent - admin ingest API", () => {
       async () => ({
         processedSourceIds: ["s1"],
         createdArticles: 2,
-        discardedByLanguage: 1
+        discardedByLanguage: 1,
+        discardedByValidation: 0
       })
     );
 
     expect(response.status).toBe(200);
     expect(response.body.createdArticles).toBe(2);
     expect(response.body.discardedByLanguage).toBe(1);
+    expect(response.body.discardedByValidation).toBe(0);
   });
 });

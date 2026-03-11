@@ -26,11 +26,25 @@ describe("Database Agent - config provider", () => {
     const config = getDatabaseConfig({
       DB_CONTENT_SOURCE: "supabase",
       SUPABASE_URL: "https://example.supabase.co",
-      SUPABASE_ANON_KEY: "anon-key"
+      SUPABASE_ANON_KEY: "anon-key",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key"
     });
 
     expect(config.contentSource).toBe("supabase");
     expect(config.supabaseUrl).toBe("https://example.supabase.co");
     expect(config.supabaseAnonKey).toBe("anon-key");
+    expect(config.supabaseServiceRoleKey).toBe("service-role-key");
+  });
+
+  it("deve aceitar fallback das variaveis NEXT_PUBLIC do web app", () => {
+    const config = getDatabaseConfig({
+      DB_CONTENT_SOURCE: "supabase",
+      NEXT_PUBLIC_SUPABASE_URL: "https://public-example.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "public-anon-key"
+    });
+
+    expect(config.contentSource).toBe("supabase");
+    expect(config.supabaseUrl).toBe("https://public-example.supabase.co");
+    expect(config.supabaseAnonKey).toBe("public-anon-key");
   });
 });

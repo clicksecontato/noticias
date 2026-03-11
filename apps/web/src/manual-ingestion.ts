@@ -21,6 +21,15 @@ export async function executeManualNewsIngestion(selectedSourceIds: string[]) {
   return runManualNewsIngestion({
     availableSources: sources.map(mapSourceRecord),
     selectedSourceIds,
-    fetchNewsBySource: fetchRssItemsBySource
+    fetchNewsBySource: fetchRssItemsBySource,
+    persistNewsItems: async (items) =>
+      repository.saveIngestedNewsItems(
+        items.map((item) => ({
+          sourceId: item.sourceId,
+          title: item.title,
+          content: item.content,
+          sourceUrl: item.sourceUrl
+        }))
+      )
   });
 }

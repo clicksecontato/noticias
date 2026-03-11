@@ -1,17 +1,92 @@
 import { createContentRepository } from "../../../packages/database/src/content-repository";
 
+export interface HomeCard {
+  slug: string;
+  title: string;
+  summary: string;
+  sourceId: string;
+  sourceName: string;
+  publishedAt: string;
+  /** URL do artigo no site de origem (agregador) */
+  sourceUrl: string;
+}
+
+export interface NewsSourceFilter {
+  id: string;
+  name: string;
+}
+
+/** Artigo para exibição em /news/[slug] (agregador: título + resumo + link para fonte) */
+export interface NewsArticleFull {
+  slug: string;
+  title: string;
+  summary: string;
+  contentHtml: string;
+  sourceId: string;
+  sourceName: string;
+  publishedAt: string;
+  /** URL do artigo no site de origem - "Leia no [fonte]" */
+  sourceUrl: string;
+}
+
+export type NewsSortMode = "published_desc" | "published_asc";
+
 export interface RouteContentProvider {
   getNewsSlugs(): Promise<string[]>;
   getGameSlugs(): Promise<string[]>;
   getBestGenres(): Promise<string[]>;
   getBestGenrePlatformPairs(): Promise<Array<{ genre: string; platform: string }>>;
   getHardwareProfiles(): Promise<string[]>;
+  getNewsArticleBySlug(slug: string): Promise<NewsArticleFull | null>;
   getNewsMetadataBySlug(
     slug: string
   ): Promise<{ titleBase: string; descriptionBase: string }>;
   getGameMetadataBySlug(
     slug: string
   ): Promise<{ titleBase: string; descriptionBase: string }>;
+  getHomeNewsCards(limit?: number): Promise<HomeCard[]>;
+  getHomeGameCards(limit?: number): Promise<HomeCard[]>;
+  getPaginatedNewsCards(
+    page: number,
+    pageSize: number,
+    sourceId?: string,
+    query?: string,
+    sort?: NewsSortMode
+  ): Promise<HomeCard[]>;
+  getNewsCardsTotal(sourceId?: string, query?: string): Promise<number>;
+  getMostReadNewsCards(
+    limit?: number,
+    sourceId?: string,
+    query?: string,
+    sort?: NewsSortMode
+  ): Promise<HomeCard[]>;
+  getNewsSourceFilters(): Promise<NewsSourceFilter[]>;
+}
+
+function buildFilteredNews(
+  news: Awaited<ReturnType<ReturnType<typeof createContentRepository>["getNewsArticles"]>>,
+  sourceId?: string,
+  query?: string,
+  sort: NewsSortMode = "published_desc"
+) {
+  const loweredQuery = (query || "").trim().toLowerCase();
+
+  const filtered = news.filter((item) => {
+    const sourceMatch = sourceId ? item.sourceId === sourceId : true;
+    const textMatch = loweredQuery
+      ? item.title.toLowerCase().includes(loweredQuery) ||
+        item.summary.toLowerCase().includes(loweredQuery)
+      : true;
+    return sourceMatch && textMatch;
+  });
+
+  filtered.sort((left, right) => {
+    const leftTime = new Date(left.publishedAt).getTime();
+    const rightTime = new Date(right.publishedAt).getTime();
+    return sort === "published_asc" ? leftTime - rightTime : rightTime - leftTime;
+  });
+
+  return filtered;
 }
 
 export function createRouteContentProvider(): RouteContentProvider {
@@ -35,9 +110,23 @@ export function createRouteContentProvider(): RouteContentProvider {
     async getHardwareProfiles() {
       return repository.getHardwareProfiles();
     },
-    async getNewsMetadataBySlug(slug: string) {
+    async getNewsArticleBySlug(slug: string) {
       const news = await repository.getNewsArticles();
       const article = news.find((item) => item.slug === slug);
+      if (!article) return null;
+      return {
+        slug: article.slug,
+        title: article.title,
+        summary: article.summary,
+        contentHtml: article.contentHtml,
+        sourceId: article.sourceId,
+        sourceName: article.sourceName,
+        publishedAt: article.publishedAt,
+        sourceUrl: article.sourceUrl
+      };
+    },
+    async getNewsMetadataBySlug(slug: string) {
+      const article = await this.getNewsArticleBySlug(slug);
       if (!article) {
         throw new Error(`News content not found for slug: ${slug}`);
       }
@@ -56,6 +145,82 @@ export function createRouteContentProvider(): RouteContentProvider {
         titleBase: game.name,
         descriptionBase: game.summary
       };
+    },
+    async getHomeNewsCards(limit = 6) {
+      const news = await repository.getNewsArticles();
+      return news.slice(0, limit).map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        summary: item.summary,
+        sourceId: item.sourceId,
+        sourceName: item.sourceName,
+        publishedAt: item.publishedAt,
+        sourceUrl: item.sourceUrl
+      }));
+    },
+    async getHomeGameCards(limit = 6) {
+      const games = await repository.getGames();
+      return games.slice(0, limit).map((item) => ({
+        slug: item.slug,
+        title: item.name,
+        summary: item.summary,
+        sourceId: "games-catalog",
+        sourceName: "Catalogo de jogos",
+        publishedAt: new Date().toISOString(),
+        sourceUrl: ""
+      }));
+    },
+    async getPaginatedNewsCards(
+      page: number,
+      pageSize: number,
+      sourceId?: string,
+      query?: string,
+      sort: NewsSortMode = "published_desc"
+    ) {
+      const safePage = Math.max(1, page);
+      const safePageSize = Math.max(1, pageSize);
+      const start = (safePage - 1) * safePageSize;
+      const news = await repository.getNewsArticles();
+      const filtered = buildFilteredNews(news, sourceId, query, sort);
+
+      return filtered.slice(start, start + safePageSize).map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        summary: item.summary,
+        sourceId: item.sourceId,
+        sourceName: item.sourceName,
+        publishedAt: item.publishedAt,
+        sourceUrl: item.sourceUrl
+      }));
+    },
+    async getNewsCardsTotal(sourceId?: string, query?: string) {
+      const news = await repository.getNewsArticles();
+      return buildFilteredNews(news, sourceId, query).length;
+    },
+    async getMostReadNewsCards(
+      limit = 4,
+      sourceId?: string,
+      query?: string,
+      sort: NewsSortMode = "published_desc"
+    ) {
+      const news = await repository.getNewsArticles();
+      const filtered = buildFilteredNews(news, sourceId, query, sort);
+      return filtered.slice(0, limit).map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        summary: item.summary,
+        sourceId: item.sourceId,
+        sourceName: item.sourceName,
+        publishedAt: item.publishedAt,
+        sourceUrl: item.sourceUrl
+      }));
+    },
+    async getNewsSourceFilters() {
+      const sources = await repository.getActivePortugueseSources();
+      return sources.map((source) => ({
+        id: source.id,
+        name: source.name
+      }));
     }
   };
 }

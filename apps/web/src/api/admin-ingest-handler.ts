@@ -7,6 +7,7 @@ export interface AdminIngestResponseBody {
   processedSourceIds: string[];
   createdArticles: number;
   discardedByLanguage: number;
+  discardedByValidation: number;
 }
 
 export interface AdminIngestResponse {
@@ -29,7 +30,8 @@ export async function handleAdminIngestRequest(
       body: {
         processedSourceIds: [],
         createdArticles: 0,
-        discardedByLanguage: 0
+        discardedByLanguage: 0,
+        discardedByValidation: 0
       }
     };
   }

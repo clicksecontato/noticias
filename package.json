@@ -3,7 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "apps/web"
+  ],
   "scripts": {
+    "dev": "npm run dev --workspace web",
+    "build:web": "npm run build --workspace web",
+    "start:web": "npm run start --workspace web",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "vitest run packages/database/tests",

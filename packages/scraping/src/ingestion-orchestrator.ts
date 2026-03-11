@@ -10,12 +10,14 @@ export interface RawNewsItem {
   title: string;
   content: string;
   language: string;
+  sourceUrl?: string;
 }
 
 export interface IngestionResult {
   processedSourceIds: string[];
   createdArticles: number;
   discardedByLanguage: number;
+  discardedByValidation: number;
 }
 
 export type FetchNewsBySource = (source: SourceInput) => Promise<RawNewsItem[]>;
@@ -24,6 +26,21 @@ export interface ManualIngestionInput {
   availableSources: SourceInput[];
   selectedSourceIds: string[];
   fetchNewsBySource: FetchNewsBySource;
+  persistNewsItems?: (items: RawNewsItem[]) => Promise<number>;
+}
+
+function isInvalidNewsItem(item: RawNewsItem): boolean {
+  const text = `${item.title} ${item.content}`.toLowerCase();
+  if (text.includes("404") || text.includes("not found") || text.includes("nao encontrado")) {
+    return true;
+  }
+  if (item.title.trim().length < 8) {
+    return true;
+  }
+  if (item.content.trim().length < 10) {
+    return true;
+  }
+  return false;
 }
 
 export async function runManualNewsIngestion(
@@ -37,21 +54,34 @@ export async function runManualNewsIngestion(
 
   let createdArticles = 0;
   let discardedByLanguage = 0;
+  let discardedByValidation = 0;
 
   for (const source of selectedSources) {
     const items = await input.fetchNewsBySource(source);
+    const acceptedItems: RawNewsItem[] = [];
     for (const item of items) {
       if (item.language === "pt-BR" || item.language === "pt") {
-        createdArticles += 1;
+        if (isInvalidNewsItem(item)) {
+          discardedByValidation += 1;
+        } else {
+          acceptedItems.push(item);
+        }
       } else {
         discardedByLanguage += 1;
       }
+    }
+
+    if (input.persistNewsItems) {
+      createdArticles += await input.persistNewsItems(acceptedItems);
+    } else {
+      createdArticles += acceptedItems.length;
     }
   }
 
   return {
     processedSourceIds: selectedSources.map((source) => source.id),
     createdArticles,
-    discardedByLanguage
+    discardedByLanguage,
+    discardedByValidation
   };
 }

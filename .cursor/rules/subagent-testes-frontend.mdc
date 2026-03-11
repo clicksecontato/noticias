@@ -1,0 +1,18 @@
+---
+description: Fluxo de subagents para testes frontend e QA funcional
+alwaysApply: true
+---
+
+# Orquestração de Testes Frontend
+
+Para tarefas de frontend, seguir esta ordem:
+
+1. Mapear impacto com `executar-mapeamento-explore`
+2. Implementar/ajustar testes (unit + integração)
+3. Validar comandos técnicos com `executar-validacao-shell`
+4. Executar QA funcional com `executar-qa-browser` quando houver mudança de fluxo
+
+## Regras práticas
+- Priorizar rotas críticas (`/admin`, `/news/[slug]`, `/games/[slug]`).
+- Garantir saída auditável com status por etapa.
+- Reportar lacunas restantes ao final.

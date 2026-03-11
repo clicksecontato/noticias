@@ -5,6 +5,7 @@ export interface DatabaseConfig {
   contentSource: "memory" | "supabase";
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  supabaseServiceRoleKey?: string;
 }
 
 const DEFAULT_SCHEMA_NAME = "public";
@@ -20,13 +21,20 @@ export function getDatabaseConfig(
     ? parsedTimeout
     : DEFAULT_STATEMENT_TIMEOUT_MS;
 
+  const supabaseUrl =
+    env.SUPABASE_URL?.trim() || env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseAnonKey =
+    env.SUPABASE_ANON_KEY?.trim() || env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
   return {
     schemaName: env.DB_SCHEMA_NAME?.trim() || DEFAULT_SCHEMA_NAME,
     migrationTable: env.DB_MIGRATION_TABLE?.trim() || DEFAULT_MIGRATION_TABLE,
     statementTimeoutMs,
     contentSource:
       env.DB_CONTENT_SOURCE === "supabase" ? "supabase" : DEFAULT_CONTENT_SOURCE,
-    supabaseUrl: env.SUPABASE_URL?.trim(),
-    supabaseAnonKey: env.SUPABASE_ANON_KEY?.trim()
+    supabaseUrl,
+    supabaseAnonKey,
+    supabaseServiceRoleKey
   };
 }
