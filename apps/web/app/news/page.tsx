@@ -32,8 +32,11 @@ export default async function NewsListingPage({
 
   return (
     <section>
-      <h2>Noticias de Games</h2>
-      <p>Listagem com paginação, busca por termo e filtro por fonte ativa.</p>
+      <p className="page-back">
+        <Link href="/">← Início</Link>
+      </p>
+      <h2>Notícias de Games</h2>
+      <p>Listagem com paginação, busca por termo e filtro por fonte.</p>
 
       <div className="card">
         <form action="/news" method="get" style={{ marginBottom: 12 }}>
@@ -114,6 +117,12 @@ export default async function NewsListingPage({
         </div>
       </div>
 
+      {cards.length === 0 ? (
+        <div className="card empty-state">
+          <p>Nenhuma notícia encontrada com os filtros atuais.</p>
+          <Link href="/news" className="chip active">Limpar filtros</Link>
+        </div>
+      ) : null}
       {cards.map((card) => (
         <article className="card newsCard" key={card.slug}>
           {card.imageUrl ? (
@@ -152,10 +161,10 @@ export default async function NewsListingPage({
               basePath: "/news"
             })}
           >
-            Pagina anterior
+            Página anterior
           </Link>
         ) : (
-          <span className="chip muted">Pagina anterior</span>
+          <span className="chip muted">Página anterior</span>
         )}
         <span className="chip muted">
           {currentPage} de {totalPages}
@@ -171,10 +180,10 @@ export default async function NewsListingPage({
               basePath: "/news"
             })}
           >
-            Proxima pagina
+            Próxima página
           </Link>
         ) : (
-          <span className="chip muted">Proxima pagina</span>
+          <span className="chip muted">Próxima página</span>
         )}
       </div>
     </section>

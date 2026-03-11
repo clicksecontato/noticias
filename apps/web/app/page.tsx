@@ -14,21 +14,18 @@ export default async function HomePage({
   const pageSize = 4;
 
   const provider = createRouteContentProvider();
-  const [newsCards, totalNewsCards, gameCards, bestPairs, mostReadNews, sourceFilters] =
-    await Promise.all([
-      provider.getPaginatedNewsCards(
-        currentPage,
-        pageSize,
-        sourceId || undefined,
-        query || undefined,
-        sortMode
-      ),
-      provider.getNewsCardsTotal(sourceId || undefined, query || undefined),
-      provider.getHomeGameCards(6),
-      provider.getBestGenrePlatformPairs(),
-      provider.getMostReadNewsCards(5, sourceId || undefined, query || undefined, sortMode),
-      provider.getNewsSourceFilters()
-    ]);
+  const [newsCards, totalNewsCards, mostReadNews, sourceFilters] = await Promise.all([
+    provider.getPaginatedNewsCards(
+      currentPage,
+      pageSize,
+      sourceId || undefined,
+      query || undefined,
+      sortMode
+    ),
+    provider.getNewsCardsTotal(sourceId || undefined, query || undefined),
+    provider.getMostReadNewsCards(5, sourceId || undefined, query || undefined, sortMode),
+    provider.getNewsSourceFilters()
+  ]);
   const totalPages = Math.max(1, Math.ceil(totalNewsCards / pageSize));
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
@@ -37,26 +34,20 @@ export default async function HomePage({
     <section>
       <div className="hero card">
         <div>
-          <p className="eyebrow">Portal automatizado em pt-BR</p>
-          <h2 className="heroTitle">Noticias Games</h2>
+          <p className="eyebrow">Portal em português brasileiro</p>
+          <h2 className="heroTitle">Notícias Games</h2>
           <p className="heroText">
-            Cobertura diaria de jogos, descoberta por genero e operacao manual via painel admin
-            seguro.
+            Cobertura de jogos: notícias recentes das principais fontes, com busca e filtro por fonte.
           </p>
         </div>
-        <div className="heroActions">
-          <Link href="/admin" className="heroButton">
-            Abrir Admin
-          </Link>
-          <Link href="/news/novo-trailer-de-gta-6" className="heroButton secondary">
-            Ver ultima noticia
-          </Link>
-        </div>
+        <Link href="/news" className="heroButton">
+          Ver todas as notícias
+        </Link>
       </div>
 
       <div className="portalGrid">
         <section>
-          <h2>Noticias recentes (pagina {currentPage})</h2>
+          <h2>Notícias recentes (página {currentPage})</h2>
           <div className="card">
             <form action="/" method="get" style={{ marginBottom: 12 }}>
               <input type="hidden" name="source" value={sourceId} />
@@ -167,10 +158,10 @@ export default async function HomePage({
                   basePath: "/"
                 })}
               >
-                Pagina anterior
+                Página anterior
               </Link>
             ) : (
-              <span className="chip muted">Pagina anterior</span>
+              <span className="chip muted">Página anterior</span>
             )}
             <span className="chip muted">
               {currentPage} de {totalPages}
@@ -186,10 +177,10 @@ export default async function HomePage({
                   basePath: "/"
                 })}
               >
-                Proxima pagina
+                Próxima página
               </Link>
             ) : (
-              <span className="chip muted">Proxima pagina</span>
+              <span className="chip muted">Próxima página</span>
             )}
           </div>
         </section>
@@ -205,39 +196,8 @@ export default async function HomePage({
               ))}
             </ol>
           </div>
-
-          <h2>Descubra por categoria</h2>
-          <div className="card">
-            <p style={{ marginTop: 0 }}>Combinações populares de gênero e plataforma:</p>
-            <div className="chipList">
-              {bestPairs.slice(0, 8).map((pair) => (
-                <Link
-                  key={`${pair.genre}-${pair.platform}`}
-                  className="chip"
-                  href={`/best/${pair.genre}/${pair.platform}`}
-                >
-                  {pair.genre} / {pair.platform}
-                </Link>
-              ))}
-            </div>
-          </div>
         </aside>
       </div>
-
-      <section>
-        <h2>Jogos em destaque</h2>
-        <div className="gameGrid">
-          {gameCards.map((card) => (
-            <article className="card" key={card.slug}>
-              <h3>
-                <Link href={`/games/${card.slug}`}>{card.title}</Link>
-              </h3>
-              <p>{card.summary}</p>
-              <Link href={`/games-like/${card.slug}`}>Ver jogos parecidos</Link>
-            </article>
-          ))}
-        </div>
-      </section>
     </section>
   );
 }

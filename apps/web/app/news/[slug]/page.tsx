@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   generateRouteMetadata,
@@ -61,6 +62,9 @@ export default async function NewsPage({
 
   return (
     <article className="news-article">
+      <p className="page-back">
+        <Link href="/news">← Voltar às notícias</Link>
+      </p>
       <header className="news-article__header">
         <p className="eyebrow">{article.sourceName}</p>
         <h1 className="news-article__title">{article.title}</h1>
