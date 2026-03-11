@@ -68,4 +68,20 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
 
     expect(items[0].content).toBe("Texto da descricao para exibir no agregador.");
   });
+
+  it("parseia feed no estilo IGN Brasil (channel com link + item com link e description com entidades)", async () => {
+    const ignStyleXml = `<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>IGN Brasil</title><link>https://br.ign.com</link><language>pt-br</language>
+<item><title>Galaxy S25 Ultra com preço de Black Friday</title><link>https://br.ign.com/descontos/151455/news/galaxy-s25-ultra</link><description>&lt;img src="https://sm.ign.com/thumb.png" /&gt;
+Oferta da Semana do Consumidor reduz o preço</description></item></channel></rss>`;
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(ignStyleXml, { status: 200 }));
+
+    const items = await fetchRssItemsBySource(SOURCE);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toContain("Galaxy S25");
+    expect(items[0].sourceUrl).toBe("https://br.ign.com/descontos/151455/news/galaxy-s25-ultra");
+    expect(items[0].content).toContain("Oferta da Semana do Consumidor");
+  });
 });

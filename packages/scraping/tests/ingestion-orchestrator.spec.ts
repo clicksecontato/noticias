@@ -30,6 +30,9 @@ describe("Scraping Agent - manual ingestion orchestrator", () => {
     expect(result.processedSourceIds).toEqual(["s1"]);
     expect(result.createdArticles).toBe(1);
     expect(result.discardedByLanguage).toBe(0);
+    expect(result.createdBySource).toEqual({ s1: 1 });
+    expect(result.skippedBySource).toEqual({ s1: 0 });
+    expect(result.skippedArticles).toEqual([]);
   });
 
   it("deve descartar itens fora de pt-BR", async () => {

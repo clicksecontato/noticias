@@ -13,7 +13,8 @@ interface ParsedRssEntry {
 const DEFAULT_FETCH_OPTIONS: RequestInit = {
   headers: {
     "User-Agent":
-      "Mozilla/5.0 (compatible; NoticiasGamingBot/1.0; +https://github.com/noticias-gaming)"
+      "Mozilla/5.0 (compatible; NoticiasGamingBot/1.0; +https://github.com/noticias-gaming)",
+    Accept: "application/rss+xml, application/xml, text/xml, */*"
   }
 };
 
@@ -21,8 +22,19 @@ function cleanXmlValue(value: string): string {
   return value.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'");
+}
+
 function htmlToText(html: string): string {
-  return html
+  const decoded = decodeHtmlEntities(html);
+  return decoded
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
@@ -35,10 +47,12 @@ function extractTagValue(block: string, tagName: string): string {
   return match ? cleanXmlValue(match[1]) : "";
 }
 
-/** Extrai apenas o link no formato RSS <link>url</link>, evitando pegar <link> dentro de CDATA. */
+/** Extrai o link do item (RSS <link>url</link>). Suporta URL em uma linha ou com quebras. */
 function extractItemLink(block: string): string {
   const rssStyle = block.match(/<link\s*>[\s\n]*(https?:\/\/[^\s<]+)[\s\n]*<\/link>/i);
   if (rssStyle) return rssStyle[1].trim();
+  const anyLink = block.match(/<link\s*>([\s\S]*?)<\/link>/i);
+  if (anyLink) return anyLink[1].replace(/\s+/g, " ").trim();
   return extractTagValue(block, "link").trim();
 }
 
@@ -75,6 +89,11 @@ export const fetchRssItemsBySource: FetchNewsBySource = async (
   source: SourceInput
 ): Promise<RawNewsItem[]> => {
   const response = await fetch(source.rssUrl, DEFAULT_FETCH_OPTIONS);
+  if (!response.ok) {
+    throw new Error(
+      `RSS fetch failed for ${source.id}: ${response.status} ${response.statusText} (${source.rssUrl})`
+    );
+  }
   const xml = await response.text();
   const entries = parseRssEntries(xml);
   const items: RawNewsItem[] = [];

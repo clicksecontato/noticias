@@ -15,7 +15,10 @@ describe("Web Application Agent - admin ingest API", () => {
         processedSourceIds: ["s1"],
         createdArticles: 2,
         discardedByLanguage: 0,
-        discardedByValidation: 0
+        discardedByValidation: 0,
+        createdBySource: {},
+        skippedBySource: {},
+        skippedArticles: []
       })
     );
 
@@ -35,7 +38,10 @@ describe("Web Application Agent - admin ingest API", () => {
         processedSourceIds: ["s1"],
         createdArticles: 2,
         discardedByLanguage: 1,
-        discardedByValidation: 0
+        discardedByValidation: 0,
+        createdBySource: { s1: 2 },
+        skippedBySource: { s1: 0 },
+        skippedArticles: []
       })
     );
 
@@ -43,5 +49,6 @@ describe("Web Application Agent - admin ingest API", () => {
     expect(response.body.createdArticles).toBe(2);
     expect(response.body.discardedByLanguage).toBe(1);
     expect(response.body.discardedByValidation).toBe(0);
+    expect(response.body.createdBySource).toEqual({ s1: 2 });
   });
 });

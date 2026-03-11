@@ -8,6 +8,9 @@ export interface AdminIngestResponseBody {
   createdArticles: number;
   discardedByLanguage: number;
   discardedByValidation: number;
+  createdBySource: Record<string, number>;
+  skippedBySource: Record<string, number>;
+  skippedArticles: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
 }
 
 export interface AdminIngestResponse {
@@ -31,7 +34,10 @@ export async function handleAdminIngestRequest(
         processedSourceIds: [],
         createdArticles: 0,
         discardedByLanguage: 0,
-        discardedByValidation: 0
+        discardedByValidation: 0,
+        createdBySource: {},
+        skippedBySource: {},
+        skippedArticles: []
       }
     };
   }

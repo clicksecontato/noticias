@@ -13,11 +13,26 @@ export interface RawNewsItem {
   sourceUrl?: string;
 }
 
+export interface SkippedArticle {
+  sourceId: string;
+  title: string;
+  sourceUrl?: string;
+}
+
+export interface PersistNewsResult {
+  created: number;
+  skipped: number;
+  skippedItems: SkippedArticle[];
+}
+
 export interface IngestionResult {
   processedSourceIds: string[];
   createdArticles: number;
   discardedByLanguage: number;
   discardedByValidation: number;
+  createdBySource: Record<string, number>;
+  skippedBySource: Record<string, number>;
+  skippedArticles: SkippedArticle[];
 }
 
 export type FetchNewsBySource = (source: SourceInput) => Promise<RawNewsItem[]>;
@@ -26,7 +41,7 @@ export interface ManualIngestionInput {
   availableSources: SourceInput[];
   selectedSourceIds: string[];
   fetchNewsBySource: FetchNewsBySource;
-  persistNewsItems?: (items: RawNewsItem[]) => Promise<number>;
+  persistNewsItems?: (items: RawNewsItem[]) => Promise<PersistNewsResult>;
 }
 
 function isInvalidNewsItem(item: RawNewsItem): boolean {
@@ -55,6 +70,9 @@ export async function runManualNewsIngestion(
   let createdArticles = 0;
   let discardedByLanguage = 0;
   let discardedByValidation = 0;
+  const createdBySource: Record<string, number> = {};
+  const skippedBySource: Record<string, number> = {};
+  const skippedArticles: SkippedArticle[] = [];
 
   for (const source of selectedSources) {
     const items = await input.fetchNewsBySource(source);
@@ -72,9 +90,15 @@ export async function runManualNewsIngestion(
     }
 
     if (input.persistNewsItems) {
-      createdArticles += await input.persistNewsItems(acceptedItems);
+      const result = await input.persistNewsItems(acceptedItems);
+      createdArticles += result.created;
+      createdBySource[source.id] = result.created;
+      skippedBySource[source.id] = result.skipped;
+      skippedArticles.push(...result.skippedItems);
     } else {
       createdArticles += acceptedItems.length;
+      createdBySource[source.id] = acceptedItems.length;
+      skippedBySource[source.id] = 0;
     }
   }
 
@@ -82,6 +106,9 @@ export async function runManualNewsIngestion(
     processedSourceIds: selectedSources.map((source) => source.id),
     createdArticles,
     discardedByLanguage,
-    discardedByValidation
+    discardedByValidation,
+    createdBySource,
+    skippedBySource,
+    skippedArticles
   };
 }

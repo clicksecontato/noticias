@@ -1,17 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ApiResult {
   processedSourceIds: string[];
   createdArticles: number;
   discardedByLanguage: number;
+  discardedByValidation?: number;
+  createdBySource?: Record<string, number>;
+  skippedBySource?: Record<string, number>;
+  skippedArticles?: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
 }
 
 export function AdminIngestionClient() {
   const [token, setToken] = useState("");
-  const [sourceIds, setSourceIds] = useState("s1,s2");
+  const [sourceIds, setSourceIds] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/sources")
+      .then((res) => res.json())
+      .then((data: { sourceIds?: string[] }) => {
+        if (Array.isArray(data.sourceIds) && data.sourceIds.length > 0) {
+          setSourceIds(data.sourceIds.join(", "));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,11 +86,63 @@ export function AdminIngestionClient() {
         {isLoading ? "Processando..." : "Buscar e criar notícias"}
       </button>
 
-      {error ? <p style={{ color: "red" }}>{error}</p> : null}
+      {error ? <p style={{ color: "#f87171" }}>{error}</p> : null}
       {result ? (
-        <pre style={{ background: "#f3f3f3", padding: "1rem", marginTop: "1rem" }}>
-          {JSON.stringify(result, null, 2)}
-        </pre>
+        <div
+          style={{
+            marginTop: "1rem",
+            padding: "1rem",
+            background: "#1e293b",
+            color: "#e2e8f0",
+            borderRadius: "8px",
+            border: "1px solid #334155"
+          }}
+        >
+          <p style={{ margin: "0 0 0.5rem" }}>
+            <strong>Total criados:</strong> {result.createdArticles} · Descartados (idioma):{" "}
+            {result.discardedByLanguage} · Descartados (validação):{" "}
+            {result.discardedByValidation ?? 0}
+          </p>
+          {result.createdBySource && Object.keys(result.createdBySource).length > 0 ? (
+            <p style={{ margin: "0 0 0.25rem" }}>
+              <strong>Criados por fonte:</strong>{" "}
+              {Object.entries(result.createdBySource)
+                .map(([id, n]) => `${id}: ${n}`)
+                .join(" · ")}
+            </p>
+          ) : null}
+          {result.skippedArticles && result.skippedArticles.length > 0 ? (
+            <div style={{ marginTop: "0.75rem" }}>
+              <strong>Já existentes (não duplicados):</strong>
+              <ul style={{ margin: "0.25rem 0 0 1.25rem", padding: 0, fontSize: 14 }}>
+                {result.skippedArticles.map((a, i) => (
+                  <li key={`${a.sourceId}-${i}-${a.title.slice(0, 30)}`}>
+                    {a.title}
+                    {a.sourceUrl ? (
+                      <span style={{ opacity: 0.85, fontSize: 12 }}>
+                        {" "}
+                        · <a href={a.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#7dd3fc" }}>link</a>
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <pre
+            style={{
+              marginTop: "0.75rem",
+              padding: "0.75rem",
+              background: "#0f172a",
+              color: "#94a3b8",
+              borderRadius: "6px",
+              fontSize: 11,
+              overflow: "auto"
+            }}
+          >
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </div>
       ) : null}
     </div>
   );

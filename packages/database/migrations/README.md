@@ -7,6 +7,7 @@ Ordem de execução:
 3. `003_seed_minimal_content.sql`
 4. `004_enable_rls_policies.sql` (opcional, recomendado)
 5. `005_fix_combo_infinito_feed.sql` — Combo Infinito: URL do feed é `https://www.comboinfinito.com.br/principal/feed/`
+6. `006_fix_ign_br_feed.sql` — IGN Brasil: URL do feed é `https://br.ign.com/feed.xml` (não `/feed`)
 
 ## Execução pelo Supabase SQL Editor
 

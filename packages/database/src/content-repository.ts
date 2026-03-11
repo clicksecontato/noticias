@@ -38,6 +38,12 @@ export interface SourceRecord {
   isActive: boolean;
 }
 
+export interface SaveIngestedResult {
+  created: number;
+  skipped: number;
+  skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
+}
+
 export interface ContentRepository {
   getNewsArticles(): Promise<NewsArticleRecord[]>;
   getGames(): Promise<GameRecord[]>;
@@ -47,7 +53,7 @@ export interface ContentRepository {
   getActivePortugueseSources(): Promise<SourceRecord[]>;
   saveIngestedNewsItems(
     items: Array<{ sourceId: string; title: string; content: string; sourceUrl?: string }>
-  ): Promise<number>;
+  ): Promise<SaveIngestedResult>;
 }
 
 const NEWS_ARTICLES: NewsArticleRecord[] = [
@@ -206,21 +212,26 @@ function createMemoryContentRepository(): ContentRepository {
       );
     },
     async saveIngestedNewsItems(items) {
-      let createdCount = 0;
+      let created = 0;
+      const skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
       for (const item of items) {
         const source = SOURCES.find((entry) => entry.id === item.sourceId);
-        if (!source) {
-          continue;
-        }
+        if (!source) continue;
 
         const slug = slugify(item.title);
+        if (!slug) continue;
 
-        if (!slug) {
-          continue;
-        }
-
-        const exists = NEWS_ARTICLES.some((entry) => entry.slug === slug);
-        if (exists) {
+        const alreadyExists = NEWS_ARTICLES.some(
+          (entry) =>
+            entry.sourceId === item.sourceId &&
+            (entry.sourceUrl || "") === (item.sourceUrl || "")
+        );
+        if (alreadyExists) {
+          skippedItems.push({
+            sourceId: item.sourceId,
+            title: item.title,
+            sourceUrl: item.sourceUrl
+          });
           continue;
         }
 
@@ -239,9 +250,9 @@ function createMemoryContentRepository(): ContentRepository {
           publishedAt: new Date().toISOString(),
           sourceUrl: item.sourceUrl || ""
         });
-        createdCount += 1;
+        created += 1;
       }
-      return createdCount;
+      return { created, skipped: skippedItems.length, skippedItems };
     }
   };
 }
@@ -415,13 +426,31 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       return fetchActivePortugueseSources();
     },
     async saveIngestedNewsItems(items) {
-      let createdCount = 0;
+      let created = 0;
+      const skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
 
       for (const item of items) {
         const slug = slugify(item.title);
+        if (!slug) continue;
 
-        if (!slug) {
-          continue;
+        const sourceUrlToStore = item.sourceUrl || null;
+        if (sourceUrlToStore) {
+          const { data: existing } = await readClient
+            .from("article_sources")
+            .select("article_id")
+            .eq("source_id", item.sourceId)
+            .eq("source_url", sourceUrlToStore)
+            .limit(1)
+            .maybeSingle();
+
+          if (existing) {
+            skippedItems.push({
+              sourceId: item.sourceId,
+              title: item.title,
+              sourceUrl: item.sourceUrl
+            });
+            continue;
+          }
         }
 
         const now = new Date().toISOString();
@@ -461,7 +490,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           {
             article_id: persistedArticle.id,
             source_id: item.sourceId,
-            source_url: item.sourceUrl || canonicalUrl,
+            source_url: sourceUrlToStore || canonicalUrl,
             fetched_at: now
           },
           { onConflict: "article_id,source_id" }
@@ -471,10 +500,10 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           throw new Error(`Failed to upsert article source link: ${sourceLinkError.message}`);
         }
 
-        createdCount += 1;
+        created += 1;
       }
 
-      return createdCount;
+      return { created, skipped: skippedItems.length, skippedItems };
     }
   };
 }

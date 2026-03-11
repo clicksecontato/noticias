@@ -37,7 +37,7 @@ describe("Database Agent - content repository", () => {
 
   it("deve persistir itens ingeridos no adapter em memoria (agregador: resumo + sourceUrl)", async () => {
     const repository = createContentRepository();
-    const created = await repository.saveIngestedNewsItems([
+    const result = await repository.saveIngestedNewsItems([
       {
         sourceId: "s1",
         title: "Nova noticia de teste em portugues",
@@ -46,7 +46,8 @@ describe("Database Agent - content repository", () => {
       }
     ]);
 
-    expect(created).toBeGreaterThanOrEqual(1);
+    expect(result.created).toBeGreaterThanOrEqual(1);
+    expect(result.skipped).toBe(0);
     const news = await repository.getNewsArticles();
     expect(news.some((item) => item.title.includes("Nova noticia de teste"))).toBe(true);
     const saved = news.find((item) => item.title.includes("Nova noticia de teste"));
@@ -58,5 +59,25 @@ describe("Database Agent - content repository", () => {
     expect(saved?.sourceArticleHash.length).toBeGreaterThan(10);
     expect(saved?.aiModel).toBe("ingestion-rss-v1");
     expect(saved?.qualityScore).toBeGreaterThan(0);
+  });
+
+  it("deve ignorar item ja existente (mesmo sourceId + sourceUrl) e retornar em skippedItems", async () => {
+    const repository = createContentRepository();
+    const item = {
+      sourceId: "s1",
+      title: "Noticia duplicada por URL",
+      content: "Conteudo.",
+      sourceUrl: "https://fonte.com/ja-existe"
+    };
+    const first = await repository.saveIngestedNewsItems([item]);
+    expect(first.created).toBe(1);
+    expect(first.skipped).toBe(0);
+
+    const second = await repository.saveIngestedNewsItems([item]);
+    expect(second.created).toBe(0);
+    expect(second.skipped).toBe(1);
+    expect(second.skippedItems).toHaveLength(1);
+    expect(second.skippedItems[0].title).toBe("Noticia duplicada por URL");
+    expect(second.skippedItems[0].sourceUrl).toBe("https://fonte.com/ja-existe");
   });
 });
