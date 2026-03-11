@@ -68,6 +68,17 @@ export default async function NewsPage({
           {formatPublishedAt(article.publishedAt)}
         </p>
       </header>
+      {article.imageUrl ? (
+        <div className="news-article__imageWrap">
+          <img
+            src={article.imageUrl}
+            alt=""
+            className="news-article__image"
+            width={720}
+            height={405}
+          />
+        </div>
+      ) : null}
       {article.summary && (
         <p className="news-article__summary">{article.summary}</p>
       )}

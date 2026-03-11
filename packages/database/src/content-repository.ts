@@ -17,6 +17,8 @@ export interface NewsArticleRecord {
   publishedAt: string;
   /** URL do artigo no site de origem (agregador: "Leia no X") */
   sourceUrl: string;
+  /** Optional thumbnail/cover image URL (e.g. from RSS). */
+  imageUrl?: string;
 }
 
 export interface GameRecord {
@@ -52,7 +54,13 @@ export interface ContentRepository {
   getHardwareProfiles(): Promise<string[]>;
   getActivePortugueseSources(): Promise<SourceRecord[]>;
   saveIngestedNewsItems(
-    items: Array<{ sourceId: string; title: string; content: string; sourceUrl?: string }>
+    items: Array<{
+      sourceId: string;
+      title: string;
+      content: string;
+      sourceUrl?: string;
+      imageUrl?: string;
+    }>
   ): Promise<SaveIngestedResult>;
 }
 
@@ -248,7 +256,8 @@ function createMemoryContentRepository(): ContentRepository {
           sourceId: source.id,
           sourceName: source.name,
           publishedAt: new Date().toISOString(),
-          sourceUrl: item.sourceUrl || ""
+          sourceUrl: item.sourceUrl || "",
+          ...(item.imageUrl && { imageUrl: item.imageUrl })
         });
         created += 1;
       }
@@ -294,7 +303,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       const { data: articleRows, error: articleReadError } = await readClient
         .from("articles")
         .select(
-          "id,slug,title,excerpt,content_md,content_html,canonical_url,source_article_hash,ai_model,quality_score,published_at"
+          "id,slug,title,excerpt,content_md,content_html,canonical_url,source_article_hash,ai_model,quality_score,published_at,image_url"
         )
         .order("published_at", { ascending: false })
         .limit(200);
@@ -351,7 +360,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           sourceId: mappedSourceId,
           sourceName: mappedSource?.name || "Fonte desconhecida",
           publishedAt: row.published_at || new Date().toISOString(),
-          sourceUrl: sourceUrlByArticleId.get(row.id) || ""
+          sourceUrl: sourceUrlByArticleId.get(row.id) || "",
+          ...(row.image_url && { imageUrl: row.image_url })
         };
       });
     },
@@ -473,7 +483,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
               ai_model: aiModel,
               quality_score: qualityScore,
               status: "published",
-              published_at: now
+              published_at: now,
+              image_url: item.imageUrl ?? null
             },
             { onConflict: "slug" }
           )

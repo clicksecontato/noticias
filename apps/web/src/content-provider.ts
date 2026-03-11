@@ -9,6 +9,8 @@ export interface HomeCard {
   publishedAt: string;
   /** URL do artigo no site de origem (agregador) */
   sourceUrl: string;
+  /** Optional thumbnail image URL (e.g. from RSS). */
+  imageUrl?: string;
 }
 
 export interface NewsSourceFilter {
@@ -27,6 +29,8 @@ export interface NewsArticleFull {
   publishedAt: string;
   /** URL do artigo no site de origem - "Leia no [fonte]" */
   sourceUrl: string;
+  /** Optional cover/thumbnail image URL. */
+  imageUrl?: string;
 }
 
 export type NewsSortMode = "published_desc" | "published_asc";
@@ -122,7 +126,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceId: article.sourceId,
         sourceName: article.sourceName,
         publishedAt: article.publishedAt,
-        sourceUrl: article.sourceUrl
+        sourceUrl: article.sourceUrl,
+        ...(article.imageUrl && { imageUrl: article.imageUrl })
       };
     },
     async getNewsMetadataBySlug(slug: string) {
@@ -155,7 +160,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceId: item.sourceId,
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
-        sourceUrl: item.sourceUrl
+        sourceUrl: item.sourceUrl,
+        ...(item.imageUrl && { imageUrl: item.imageUrl })
       }));
     },
     async getHomeGameCards(limit = 6) {
@@ -190,7 +196,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceId: item.sourceId,
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
-        sourceUrl: item.sourceUrl
+        sourceUrl: item.sourceUrl,
+        ...(item.imageUrl && { imageUrl: item.imageUrl })
       }));
     },
     async getNewsCardsTotal(sourceId?: string, query?: string) {
@@ -212,7 +219,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceId: item.sourceId,
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
-        sourceUrl: item.sourceUrl
+        sourceUrl: item.sourceUrl,
+        ...(item.imageUrl && { imageUrl: item.imageUrl })
       }));
     },
     async getNewsSourceFilters() {

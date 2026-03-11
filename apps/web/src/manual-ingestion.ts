@@ -28,7 +28,8 @@ export async function executeManualNewsIngestion(selectedSourceIds: string[]) {
           sourceId: item.sourceId,
           title: item.title,
           content: item.content,
-          sourceUrl: item.sourceUrl
+          sourceUrl: item.sourceUrl,
+          ...(item.imageUrl && { imageUrl: item.imageUrl })
         }))
       )
   });

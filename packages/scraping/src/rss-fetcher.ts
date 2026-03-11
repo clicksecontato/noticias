@@ -8,6 +8,8 @@ interface ParsedRssEntry {
   title: string;
   description: string;
   link: string;
+  /** Optional image URL from enclosure, media:content or first img in description. */
+  imageUrl?: string;
 }
 
 const DEFAULT_FETCH_OPTIONS: RequestInit = {
@@ -56,6 +58,24 @@ function extractItemLink(block: string): string {
   return extractTagValue(block, "link").trim();
 }
 
+/** Extrai URL de imagem: enclosure (type image/*), media:content ou primeira img na descrição. */
+function extractImageUrl(block: string, descriptionHtml: string): string | undefined {
+  const enclosureMatch = block.match(
+    /<enclosure\s[^>]*\burl=["'](https?:\/\/[^"']+)["'][^>]*\btype=["']image\/[^"']+["']/i
+  );
+  if (enclosureMatch) return enclosureMatch[1].trim();
+
+  const mediaContentMatch = block.match(
+    /<media:content\s[^>]*\burl=["'](https?:\/\/[^"']+)["']/i
+  );
+  if (mediaContentMatch) return mediaContentMatch[1].trim();
+
+  const imgMatch = descriptionHtml.match(/<img\s[^>]*\bsrc=["'](https?:\/\/[^"']+)["']/i);
+  if (imgMatch) return imgMatch[1].trim();
+
+  return undefined;
+}
+
 function parseRssEntries(xml: string): ParsedRssEntry[] {
   const itemRegex = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
   const entries: ParsedRssEntry[] = [];
@@ -64,14 +84,17 @@ function parseRssEntries(xml: string): ParsedRssEntry[] {
   while (itemMatch) {
     const block = itemMatch[1];
     const title = extractTagValue(block, "title");
-    const description = extractTagValue(block, "description");
+    const descriptionRaw = extractTagValue(block, "description");
+    const description = htmlToText(descriptionRaw);
     const link = extractItemLink(block);
+    const imageUrl = extractImageUrl(block, descriptionRaw);
 
     if (title) {
       entries.push({
         title,
-        description: htmlToText(description),
-        link
+        description,
+        link,
+        ...(imageUrl && { imageUrl })
       });
     }
 
@@ -107,7 +130,8 @@ export const fetchRssItemsBySource: FetchNewsBySource = async (
       title: entry.title,
       content,
       language: source.language,
-      sourceUrl: entry.link
+      sourceUrl: entry.link,
+      ...(entry.imageUrl && { imageUrl: entry.imageUrl })
     });
   }
 

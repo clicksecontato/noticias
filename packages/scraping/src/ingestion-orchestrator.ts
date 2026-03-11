@@ -11,6 +11,8 @@ export interface RawNewsItem {
   content: string;
   language: string;
   sourceUrl?: string;
+  /** Optional image URL (e.g. from RSS enclosure or media:content). */
+  imageUrl?: string;
 }
 
 export interface SkippedArticle {

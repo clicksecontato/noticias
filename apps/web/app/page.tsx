@@ -136,7 +136,18 @@ export default async function HomePage({
 
           {newsCards.map((card) => (
             <article className="card newsCard" key={card.slug}>
-              <div className="newsThumb" aria-hidden="true" />
+              {card.imageUrl ? (
+                <Link href={`/news/${card.slug}`} className="newsCard-imageWrap">
+                  <img
+                    src={card.imageUrl}
+                    alt=""
+                    className="newsCard-image"
+                    width={400}
+                    height={220}
+                    loading="lazy"
+                  />
+                </Link>
+              ) : null}
               <h3>
                 <Link href={`/news/${card.slug}`}>{card.title}</Link>
               </h3>
