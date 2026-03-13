@@ -31,7 +31,13 @@ export async function updateSession(request: NextRequest) {
   const isAdminLogin = request.nextUrl.pathname === "/admin/login";
   const isAdminApi = request.nextUrl.pathname.startsWith("/api/admin");
 
-  if (isAdminApi && !user) {
+  const adminToken =
+    request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ||
+    request.headers.get("X-Admin-Token");
+  const validAdminToken =
+    process.env.ADMIN_INGEST_TOKEN && adminToken === process.env.ADMIN_INGEST_TOKEN;
+
+  if (isAdminApi && !user && !validAdminToken) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 

@@ -4,6 +4,12 @@ import { buildNewsQueryPath, parseNewsListParams } from "../../src/news-list-que
 
 type MaybePromise<T> = T | Promise<T>;
 
+export const metadata = {
+  title: "Notícias",
+  description:
+    "Listagem de notícias de games em português brasileiro. Paginação, busca por termo e filtro por fonte."
+};
+
 export default async function NewsListingPage({
   searchParams
 }: {
@@ -53,7 +59,7 @@ export default async function NewsListingPage({
               placeholder="Ex.: GTA, Elden Ring..."
               style={{ flex: 1 }}
             />
-            <button type="submit">Buscar</button>
+            <button type="submit" aria-label="Buscar notícias">Buscar</button>
           </div>
         </form>
 
@@ -149,7 +155,7 @@ export default async function NewsListingPage({
         </article>
       ))}
 
-      <div className="pagination">
+      <nav className="pagination" aria-label="Paginação">
         {prevPage ? (
           <Link
             className="chip"
@@ -160,14 +166,15 @@ export default async function NewsListingPage({
               sortMode,
               basePath: "/news"
             })}
+            aria-label="Página anterior"
           >
             Página anterior
           </Link>
         ) : (
-          <span className="chip muted">Página anterior</span>
+          <span className="chip muted" aria-hidden="true">Página anterior</span>
         )}
-        <span className="chip muted">
-          {currentPage} de {totalPages}
+        <span className="chip muted" aria-live="polite">
+          Página {currentPage} de {totalPages}
         </span>
         {nextPage ? (
           <Link
@@ -179,13 +186,14 @@ export default async function NewsListingPage({
               sortMode,
               basePath: "/news"
             })}
+            aria-label="Próxima página"
           >
             Próxima página
           </Link>
         ) : (
-          <span className="chip muted">Próxima página</span>
+          <span className="chip muted" aria-hidden="true">Próxima página</span>
         )}
-      </div>
+      </nav>
     </section>
   );
 }

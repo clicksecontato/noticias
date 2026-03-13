@@ -1,0 +1,148 @@
+{
+  "info": {
+    "name": "Notícias Games - Todas as rotas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection com **todas as rotas** usadas no projeto: API admin (fontes e ingestão) e páginas do app.\n\n---\n\n### API Admin (requer autenticação)\nUse o token no header:\n- `Authorization: Bearer {{admin_token}}` ou `X-Admin-Token: {{admin_token}}`\n\nVariáveis: `base_url` (ex: http://localhost:3000), `admin_token` (= ADMIN_INGEST_TOKEN do .env).\n\n---\n\n### Páginas\nGET que retornam HTML. Úteis para smoke test ou ver resposta/status."
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000" },
+    { "key": "admin_token", "value": "seu_token_forte_aqui" }
+  ],
+  "item": [
+    {
+      "name": "API Admin",
+      "description": "Rotas em /api/admin/*. Exigem token (header) ou sessão Supabase.",
+      "item": [
+        {
+          "name": "GET Fontes (listar)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}", "type": "text" }
+            ],
+            "url": "{{base_url}}/api/admin/sources",
+            "description": "Retorna sourceIds e sources (id, name, rssUrl, language, isActive)."
+          }
+        },
+        {
+          "name": "POST Fonte (criar/atualizar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"minha-fonte\",\n  \"name\": \"Minha Fonte\",\n  \"rss_url\": \"https://exemplo.com/feed.xml\",\n  \"language\": \"pt-BR\",\n  \"base_url\": \"https://exemplo.com\",\n  \"is_active\": true,\n  \"trust_score\": 50\n}"
+            },
+            "url": "{{base_url}}/api/admin/sources",
+            "description": "Upsert em sources. Obrigatórios: id, name, rss_url, language. Opcionais: base_url, is_active, trust_score. language: pt-BR | pt | en-US."
+          }
+        },
+        {
+          "name": "POST Ingestão (disparar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{admin_token}}\",\n  \"sourceIds\": [\"combo-infinito\", \"ign-br\"]\n}"
+            },
+            "url": "{{base_url}}/api/admin/ingest-news",
+            "description": "Dispara ingestão RSS para os sourceIds. Body: token (obrigatório) e sourceIds (array de IDs)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Páginas (GET HTML)",
+      "description": "Rotas do app que retornam HTML. Sem auth (exceto /admin que redireciona para login).",
+      "item": [
+        {
+          "name": "GET Home",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Página inicial: notícias recentes, filtros e mais lidas."
+          }
+        },
+        {
+          "name": "GET Home (com query)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/?page=1&source=&q=elden&sort=published_desc",
+              "host": ["{{base_url}}"],
+              "path": [""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "source", "value": "" },
+                { "key": "q", "value": "elden" },
+                { "key": "sort", "value": "published_desc" }
+              ]
+            },
+            "description": "Home com busca e filtros: page, source (id da fonte), q (termo), sort (published_desc | published_asc)."
+          }
+        },
+        {
+          "name": "GET Notícias (listagem)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/news",
+            "description": "Listagem de notícias com paginação."
+          }
+        },
+        {
+          "name": "GET Notícias (com query)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/news?page=2&source=ign-br&q=GTA&sort=published_asc",
+              "host": ["{{base_url}}"],
+              "path": ["news"],
+              "query": [
+                { "key": "page", "value": "2" },
+                { "key": "source", "value": "ign-br" },
+                { "key": "q", "value": "GTA" },
+                { "key": "sort", "value": "published_asc" }
+              ]
+            },
+            "description": "Listagem com: page, source (id), q, sort."
+          }
+        },
+        {
+          "name": "GET Notícia (artigo por slug)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/news/novo-trailer-de-gta-6",
+            "description": "Página de um artigo. Troque o slug pelo desejado."
+          }
+        },
+        {
+          "name": "GET Admin",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin",
+            "description": "Painel admin. Sem sessão Supabase retorna 302 para /admin/login."
+          }
+        },
+        {
+          "name": "GET Admin Login",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/login",
+            "description": "Página de login do admin."
+          }
+        }
+      ]
+    }
+  ]
+}

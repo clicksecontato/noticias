@@ -4,6 +4,11 @@ import { buildNewsQueryPath, parseNewsListParams } from "../src/news-list-query"
 
 type MaybePromise<T> = T | Promise<T>;
 
+export const metadata = {
+  description:
+    "Portal de notícias de games. Cobertura das principais fontes, com busca e filtro por fonte."
+};
+
 export default async function HomePage({
   searchParams
 }: {
@@ -29,6 +34,18 @@ export default async function HomePage({
   const totalPages = Math.max(1, Math.ceil(totalNewsCards / pageSize));
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+
+  function formatPublishedAt(iso: string): string {
+    try {
+      return new Date(iso).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+    } catch {
+      return iso;
+    }
+  }
 
   return (
     <section>
@@ -63,7 +80,7 @@ export default async function HomePage({
                   placeholder="Ex.: GTA, Elden Ring..."
                   style={{ flex: 1 }}
                 />
-                <button type="submit">Buscar</button>
+                <button type="submit" aria-label="Buscar notícias">Buscar</button>
               </div>
             </form>
 
@@ -144,9 +161,13 @@ export default async function HomePage({
               </h3>
               <p>{card.summary}</p>
               <small style={{ opacity: 0.75 }}>Fonte: {card.sourceName}</small>
+              <br />
+              <small style={{ opacity: 0.65 }}>
+                Publicado em: {formatPublishedAt(card.publishedAt)}
+              </small>
             </article>
           ))}
-          <div className="pagination">
+          <nav className="pagination" aria-label="Paginação">
             {prevPage ? (
               <Link
                 className="chip"
@@ -157,14 +178,15 @@ export default async function HomePage({
                   sortMode,
                   basePath: "/"
                 })}
+                aria-label="Página anterior"
               >
                 Página anterior
               </Link>
             ) : (
-              <span className="chip muted">Página anterior</span>
+              <span className="chip muted" aria-hidden="true">Página anterior</span>
             )}
-            <span className="chip muted">
-              {currentPage} de {totalPages}
+            <span className="chip muted" aria-live="polite">
+              Página {currentPage} de {totalPages}
             </span>
             {nextPage ? (
               <Link
@@ -176,13 +198,14 @@ export default async function HomePage({
                   sortMode,
                   basePath: "/"
                 })}
+                aria-label="Próxima página"
               >
                 Próxima página
               </Link>
             ) : (
-              <span className="chip muted">Próxima página</span>
+              <span className="chip muted" aria-hidden="true">Próxima página</span>
             )}
-          </div>
+          </nav>
         </section>
 
         <aside>

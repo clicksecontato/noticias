@@ -1,10 +1,14 @@
 import "./globals.css";
 import { Navigation } from "./components/Navigation";
+import { Footer } from "./components/Footer";
 import type { ReactNode } from "react";
 
 export const metadata = {
-  title: "Noticias Games",
-  description: "Portal de noticias de games em Portugues Brasileiro."
+  title: {
+    default: "Notícias Games",
+    template: "%s | Notícias Games"
+  },
+  description: "Portal de notícias de games. Cobertura das principais fontes."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -13,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Navigation />
         <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );
