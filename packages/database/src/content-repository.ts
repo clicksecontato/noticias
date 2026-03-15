@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { getDatabaseConfig, type DatabaseConfig } from "./config";
+import { extractEntityIdsFromText } from "./enrichment";
 import type {
   ContentSourceRecord,
   YoutubeVideoItem,
@@ -25,6 +26,11 @@ export interface NewsArticleRecord {
   sourceUrl: string;
   /** Optional thumbnail/cover image URL (e.g. from RSS). */
   imageUrl?: string;
+  /** Nomes de jogos/tags/gêneros/plataformas vinculados (enriquecimento). */
+  gameNames?: string[];
+  tagNames?: string[];
+  genreNames?: string[];
+  platformNames?: string[];
 }
 
 export interface GameRecord {
@@ -50,6 +56,28 @@ export interface SaveIngestedResult {
   created: number;
   skipped: number;
   skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
+}
+
+/** Catálogo para enriquecimento: match de texto com name/slug. */
+export interface EnrichmentCatalogItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface EnrichmentCatalog {
+  games: EnrichmentCatalogItem[];
+  tags: EnrichmentCatalogItem[];
+  genres: EnrichmentCatalogItem[];
+  platforms: EnrichmentCatalogItem[];
+}
+
+/** IDs encontrados pelo enriquecimento para vincular a artigo ou vídeo. */
+export interface EntityIds {
+  gameIds: string[];
+  tagIds: string[];
+  genreIds: string[];
+  platformIds: string[];
 }
 
 export interface ContentRepository {
@@ -82,6 +110,16 @@ export interface ContentRepository {
     sourceId?: string;
   }): Promise<YoutubeVideoDisplay[]>;
   getYoutubeVideosTotal(sourceId?: string): Promise<number>;
+  /** Catálogo (id, name, slug) para enriquecimento de artigos/vídeos. */
+  getCatalogsForEnrichment(): Promise<EnrichmentCatalog>;
+  /** Vincula um artigo a games, tags, genres, platforms (enriquecimento). */
+  linkArticleToEntities(articleId: string, ids: EntityIds): Promise<void>;
+  /** Vincula um vídeo YouTube a games, tags, genres, platforms (enriquecimento). */
+  linkYoutubeVideoToEntities(youtubeVideoId: string, ids: EntityIds): Promise<void>;
+  /** Lista artigos existentes para backfill de enriquecimento (id, título, excerpt). */
+  getArticlesForEnrichmentBackfill(): Promise<{ id: string; title: string; excerpt: string }[]>;
+  /** Lista vídeos YouTube existentes para backfill de enriquecimento (id, título, description). */
+  getYoutubeVideosForEnrichmentBackfill(): Promise<{ id: string; title: string; description: string }[]>;
 }
 
 const NEWS_ARTICLES: NewsArticleRecord[] = [
@@ -307,6 +345,17 @@ function createMemoryContentRepository(): ContentRepository {
         created += 1;
       }
       return { created, skipped: skippedItems.length, skippedItems };
+    },
+    async getCatalogsForEnrichment(): Promise<EnrichmentCatalog> {
+      return { games: [], tags: [], genres: [], platforms: [] };
+    },
+    async linkArticleToEntities() {},
+    async linkYoutubeVideoToEntities() {},
+    async getArticlesForEnrichmentBackfill() {
+      return [];
+    },
+    async getYoutubeVideosForEnrichmentBackfill() {
+      return [];
     }
   };
 }
@@ -386,11 +435,39 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       }
 
       const articleIds = articles.map((row) => row.id);
-      const { data: linkData } = await readClient
-        .from("article_sources")
-        .select("article_id,source_id,source_url")
-        .in("article_id", articleIds)
-        .limit(400);
+      const [linkResult, ag, at, agen, ap] = await Promise.all([
+        readClient.from("article_sources").select("article_id,source_id,source_url").in("article_id", articleIds).limit(400),
+        readClient.from("article_games").select("article_id, games(name)").in("article_id", articleIds),
+        readClient.from("article_tags").select("article_id, tags(name)").in("article_id", articleIds),
+        readClient.from("article_genres").select("article_id, genres(name)").in("article_id", articleIds),
+        readClient.from("article_platforms").select("article_id, platforms(name)").in("article_id", articleIds)
+      ]);
+
+      const linkData = linkResult.data;
+      const entityByArticleId = new Map<
+        string,
+        { gameNames: string[]; tagNames: string[]; genreNames: string[]; platformNames: string[] }
+      >();
+      const addName = (
+        rows: Array<{ article_id: string; games?: { name: string }; tags?: { name: string }; genres?: { name: string }; platforms?: { name: string } }>,
+        key: "gameNames" | "tagNames" | "genreNames" | "platformNames",
+        subKey: "games" | "tags" | "genres" | "platforms"
+      ) => {
+        for (const r of rows || []) {
+          const name = r[subKey]?.name;
+          if (!name) continue;
+          let e = entityByArticleId.get(r.article_id);
+          if (!e) {
+            e = { gameNames: [], tagNames: [], genreNames: [], platformNames: [] };
+            entityByArticleId.set(r.article_id, e);
+          }
+          e[key].push(name);
+        }
+      };
+      addName((ag.data || []) as Array<{ article_id: string; games?: { name: string } }>, "gameNames", "games");
+      addName((at.data || []) as Array<{ article_id: string; tags?: { name: string } }>, "tagNames", "tags");
+      addName((agen.data || []) as Array<{ article_id: string; genres?: { name: string } }>, "genreNames", "genres");
+      addName((ap.data || []) as Array<{ article_id: string; platforms?: { name: string } }>, "platformNames", "platforms");
 
       const activeSources = await fetchActivePortugueseSources();
       const sourceById = new Map(activeSources.map((source) => [source.id, source]));
@@ -403,6 +480,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         }
       }
 
+      const getEntities = (id: string) => entityByArticleId.get(id) ?? { gameNames: [], tagNames: [], genreNames: [], platformNames: [] };
+
       const fallbackSource = activeSources[0];
 
       return articles.map((row) => {
@@ -411,6 +490,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         const excerptOrTitle = row.excerpt || row.title;
         const bodyForFallback = row.content_md || excerptOrTitle;
 
+        const entities = getEntities(row.id);
         return {
           slug: row.slug,
           title: row.title,
@@ -429,7 +509,11 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           sourceName: mappedSource?.name || "Fonte desconhecida",
           publishedAt: row.published_at || new Date().toISOString(),
           sourceUrl: sourceUrlByArticleId.get(row.id) || "",
-          ...(row.image_url && { imageUrl: row.image_url })
+          ...(row.image_url && { imageUrl: row.image_url }),
+          ...(entities.gameNames.length > 0 && { gameNames: entities.gameNames }),
+          ...(entities.tagNames.length > 0 && { tagNames: entities.tagNames }),
+          ...(entities.genreNames.length > 0 && { genreNames: entities.genreNames }),
+          ...(entities.platformNames.length > 0 && { platformNames: entities.platformNames })
         };
       });
     },
@@ -512,6 +596,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
     ): Promise<SaveYoutubeVideosResult> {
       let created = 0;
       const skippedItems: Array<{ sourceId: string; title: string; url?: string }> = [];
+      const catalog = await this.getCatalogsForEnrichment();
 
       for (const item of items) {
         const { data: existing } = await readClient
@@ -527,18 +612,27 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           continue;
         }
 
-        const { error } = await writeClient.from("youtube_videos").insert({
-          source_id: sourceId,
-          video_id: item.videoId,
-          title: item.title,
-          description: item.description ?? "",
-          published_at: item.publishedAt,
-          thumbnail_url: item.thumbnailUrl ?? null,
-          url: item.url
-        });
+        const { data: inserted, error } = await writeClient
+          .from("youtube_videos")
+          .insert({
+            source_id: sourceId,
+            video_id: item.videoId,
+            title: item.title,
+            description: item.description ?? "",
+            published_at: item.publishedAt,
+            thumbnail_url: item.thumbnailUrl ?? null,
+            url: item.url
+          })
+          .select("id")
+          .single();
 
         if (error) {
           throw new Error(`Failed to insert youtube video: ${error.message}`);
+        }
+        if (inserted?.id) {
+          const description = item.description ?? "";
+          const ids = extractEntityIdsFromText(item.title, description.slice(0, 2000), catalog);
+          await this.linkYoutubeVideoToEntities(inserted.id, ids);
         }
         created += 1;
       }
@@ -574,28 +668,66 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         thumbnail_url: string | null;
         url: string;
       }>;
+      const videoIds = rows.map((r) => r.id);
       const sourceIds = [...new Set(rows.map((r) => r.source_id))];
+      const [sourcesResult, yvg, yvt, yvgen, yvp] = await Promise.all([
+        sourceIds.length > 0
+          ? readClient.from("sources").select("id, name").in("id", sourceIds)
+          : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
+        readClient.from("youtube_video_games").select("youtube_video_id, games(name)").in("youtube_video_id", videoIds),
+        readClient.from("youtube_video_tags").select("youtube_video_id, tags(name)").in("youtube_video_id", videoIds),
+        readClient.from("youtube_video_genres").select("youtube_video_id, genres(name)").in("youtube_video_id", videoIds),
+        readClient.from("youtube_video_platforms").select("youtube_video_id, platforms(name)").in("youtube_video_id", videoIds)
+      ]);
+
       const sourceNames = new Map<string, string>();
-      if (sourceIds.length > 0) {
-        const { data: sourcesData } = await readClient
-          .from("sources")
-          .select("id, name")
-          .in("id", sourceIds);
-        for (const s of sourcesData || []) {
-          sourceNames.set(s.id, s.name);
-        }
+      for (const s of sourcesResult.data || []) {
+        sourceNames.set(s.id, s.name);
       }
-      return rows.map((row) => ({
-        id: row.id,
-        sourceId: row.source_id,
-        sourceName: sourceNames.get(row.source_id) ?? "YouTube",
-        videoId: row.video_id,
-        title: row.title,
-        description: row.description ?? "",
-        publishedAt: row.published_at,
-        thumbnailUrl: row.thumbnail_url,
-        url: row.url
-      }));
+
+      const videoEntityMap = new Map<
+        string,
+        { gameNames: string[]; tagNames: string[]; genreNames: string[]; platformNames: string[] }
+      >();
+      const pushVideoEntity = (
+        dataRows: Array<{ youtube_video_id: string; games?: { name: string }; tags?: { name: string }; genres?: { name: string }; platforms?: { name: string } }>,
+        sub: "games" | "tags" | "genres" | "platforms",
+        key: "gameNames" | "tagNames" | "genreNames" | "platformNames"
+      ) => {
+        for (const r of dataRows || []) {
+          const name = r[sub]?.name;
+          if (!name) continue;
+          let e = videoEntityMap.get(r.youtube_video_id);
+          if (!e) {
+            e = { gameNames: [], tagNames: [], genreNames: [], platformNames: [] };
+            videoEntityMap.set(r.youtube_video_id, e);
+          }
+          e[key].push(name);
+        }
+      };
+      pushVideoEntity((yvg.data || []) as Array<{ youtube_video_id: string; games?: { name: string } }>, "games", "gameNames");
+      pushVideoEntity((yvt.data || []) as Array<{ youtube_video_id: string; tags?: { name: string } }>, "tags", "tagNames");
+      pushVideoEntity((yvgen.data || []) as Array<{ youtube_video_id: string; genres?: { name: string } }>, "genres", "genreNames");
+      pushVideoEntity((yvp.data || []) as Array<{ youtube_video_id: string; platforms?: { name: string } }>, "platforms", "platformNames");
+
+      return rows.map((row) => {
+        const entities = videoEntityMap.get(row.id) ?? { gameNames: [], tagNames: [], genreNames: [], platformNames: [] };
+        return {
+          id: row.id,
+          sourceId: row.source_id,
+          sourceName: sourceNames.get(row.source_id) ?? "YouTube",
+          videoId: row.video_id,
+          title: row.title,
+          description: row.description ?? "",
+          publishedAt: row.published_at,
+          thumbnailUrl: row.thumbnail_url,
+          url: row.url,
+          ...(entities.gameNames.length > 0 && { gameNames: entities.gameNames }),
+          ...(entities.tagNames.length > 0 && { tagNames: entities.tagNames }),
+          ...(entities.genreNames.length > 0 && { genreNames: entities.genreNames }),
+          ...(entities.platformNames.length > 0 && { platformNames: entities.platformNames })
+        };
+      });
     },
     async getYoutubeVideosTotal(sourceId?: string): Promise<number> {
       let query = readClient.from("youtube_videos").select("id", { count: "exact", head: true });
@@ -608,9 +740,80 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       }
       return count ?? 0;
     },
+    async getCatalogsForEnrichment(): Promise<EnrichmentCatalog> {
+      const [gamesRes, tagsRes, genresRes, platformsRes] = await Promise.all([
+        readClient.from("games").select("id, name, slug").limit(2000),
+        readClient.from("tags").select("id, name, slug").limit(2000),
+        readClient.from("genres").select("id, name, slug").limit(500),
+        readClient.from("platforms").select("id, name, slug").limit(500)
+      ]);
+      if (gamesRes.error) throw new Error(`Failed to fetch games: ${gamesRes.error.message}`);
+      if (tagsRes.error) throw new Error(`Failed to fetch tags: ${tagsRes.error.message}`);
+      if (genresRes.error) throw new Error(`Failed to fetch genres: ${genresRes.error.message}`);
+      if (platformsRes.error) throw new Error(`Failed to fetch platforms: ${platformsRes.error.message}`);
+      return {
+        games: (gamesRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" })),
+        tags: (tagsRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" })),
+        genres: (genresRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" })),
+        platforms: (platformsRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" }))
+      };
+    },
+    async linkArticleToEntities(articleId: string, ids: EntityIds): Promise<void> {
+      for (const gameId of ids.gameIds) {
+        await writeClient.from("article_games").upsert({ article_id: articleId, game_id: gameId }, { onConflict: "article_id,game_id" });
+      }
+      for (const tagId of ids.tagIds) {
+        await writeClient.from("article_tags").upsert({ article_id: articleId, tag_id: tagId }, { onConflict: "article_id,tag_id" });
+      }
+      for (const genreId of ids.genreIds) {
+        await writeClient.from("article_genres").upsert({ article_id: articleId, genre_id: genreId }, { onConflict: "article_id,genre_id" });
+      }
+      for (const platformId of ids.platformIds) {
+        await writeClient.from("article_platforms").upsert({ article_id: articleId, platform_id: platformId }, { onConflict: "article_id,platform_id" });
+      }
+    },
+    async linkYoutubeVideoToEntities(youtubeVideoId: string, ids: EntityIds): Promise<void> {
+      for (const gameId of ids.gameIds) {
+        await writeClient.from("youtube_video_games").upsert({ youtube_video_id: youtubeVideoId, game_id: gameId }, { onConflict: "youtube_video_id,game_id" });
+      }
+      for (const tagId of ids.tagIds) {
+        await writeClient.from("youtube_video_tags").upsert({ youtube_video_id: youtubeVideoId, tag_id: tagId }, { onConflict: "youtube_video_id,tag_id" });
+      }
+      for (const genreId of ids.genreIds) {
+        await writeClient.from("youtube_video_genres").upsert({ youtube_video_id: youtubeVideoId, genre_id: genreId }, { onConflict: "youtube_video_id,genre_id" });
+      }
+      for (const platformId of ids.platformIds) {
+        await writeClient.from("youtube_video_platforms").upsert({ youtube_video_id: youtubeVideoId, platform_id: platformId }, { onConflict: "youtube_video_id,platform_id" });
+      }
+    },
+    async getArticlesForEnrichmentBackfill(): Promise<{ id: string; title: string; excerpt: string }[]> {
+      const { data, error } = await readClient
+        .from("articles")
+        .select("id, title, excerpt")
+        .limit(5000);
+      if (error) throw new Error(`Failed to fetch articles for backfill: ${error.message}`);
+      return (data || []).map((r) => ({
+        id: r.id,
+        title: r.title ?? "",
+        excerpt: r.excerpt ?? ""
+      }));
+    },
+    async getYoutubeVideosForEnrichmentBackfill(): Promise<{ id: string; title: string; description: string }[]> {
+      const { data, error } = await readClient
+        .from("youtube_videos")
+        .select("id, title, description")
+        .limit(5000);
+      if (error) throw new Error(`Failed to fetch youtube videos for backfill: ${error.message}`);
+      return (data || []).map((r) => ({
+        id: r.id,
+        title: r.title ?? "",
+        description: r.description ?? ""
+      }));
+    },
     async saveIngestedNewsItems(items) {
       let created = 0;
       const skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
+      const catalog = await this.getCatalogsForEnrichment();
 
       for (const item of items) {
         const slug = slugify(item.title);
@@ -684,6 +887,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           throw new Error(`Failed to upsert article source link: ${sourceLinkError.message}`);
         }
 
+        const ids = extractEntityIdsFromText(item.title, item.content.slice(0, 500), catalog);
+        await this.linkArticleToEntities(persistedArticle.id, ids);
         created += 1;
       }
 

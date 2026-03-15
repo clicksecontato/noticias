@@ -31,6 +31,14 @@ export interface ListReportsOutput {
   total: number;
 }
 
+/** Filtros opcionais para relatórios (jogo, tag, gênero, plataforma). */
+export interface ReportFilters {
+  gameId?: string;
+  tagId?: string;
+  genreId?: string;
+  platformId?: string;
+}
+
 export interface ReportRepository {
   createReport(input: CreateReportInput): Promise<string>;
   updateReportStatus(
@@ -41,8 +49,16 @@ export interface ReportRepository {
   saveReportResult(reportId: string, payload: Record<string, unknown>): Promise<void>;
   getReportById(id: string): Promise<ReportWithResult | null>;
   listReports(input: ListReportsInput): Promise<ListReportsOutput>;
-  getArticlesForReports(periodStart: string, periodEnd: string): Promise<ArticleRowForReport[]>;
-  getVideosForReports(periodStart: string, periodEnd: string): Promise<VideoRowForReport[]>;
+  getArticlesForReports(
+    periodStart: string,
+    periodEnd: string,
+    filters?: ReportFilters
+  ): Promise<ArticleRowForReport[]>;
+  getVideosForReports(
+    periodStart: string,
+    periodEnd: string,
+    filters?: ReportFilters
+  ): Promise<VideoRowForReport[]>;
   getSourceIdToName(): Promise<Map<string, string>>;
 }
 
@@ -140,16 +156,50 @@ function createSupabaseReportRepository(): ReportRepository {
       return { items, total: count ?? 0 };
     },
 
-    async getArticlesForReports(periodStart, periodEnd) {
+    async getArticlesForReports(periodStart, periodEnd, filters) {
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id, published_at")
         .gte("published_at", periodStart)
         .lte("published_at", periodEnd);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
-      if (!articles?.length) return [];
+      let list = articles ?? [];
 
-      const ids = articles.map((a) => a.id);
+      if (filters?.gameId) {
+        const { data: gameLinks } = await client
+          .from("article_games")
+          .select("article_id")
+          .eq("game_id", filters.gameId);
+        const ids = new Set((gameLinks || []).map((l) => l.article_id));
+        list = list.filter((a) => ids.has(a.id));
+      }
+      if (filters?.tagId) {
+        const { data: tagLinks } = await client
+          .from("article_tags")
+          .select("article_id")
+          .eq("tag_id", filters.tagId);
+        const ids = new Set((tagLinks || []).map((l) => l.article_id));
+        list = list.filter((a) => ids.has(a.id));
+      }
+      if (filters?.genreId) {
+        const { data: genreLinks } = await client
+          .from("article_genres")
+          .select("article_id")
+          .eq("genre_id", filters.genreId);
+        const ids = new Set((genreLinks || []).map((l) => l.article_id));
+        list = list.filter((a) => ids.has(a.id));
+      }
+      if (filters?.platformId) {
+        const { data: platformLinks } = await client
+          .from("article_platforms")
+          .select("article_id")
+          .eq("platform_id", filters.platformId);
+        const ids = new Set((platformLinks || []).map((l) => l.article_id));
+        list = list.filter((a) => ids.has(a.id));
+      }
+
+      if (list.length === 0) return [];
+      const ids = list.map((a) => a.id);
       const { data: links } = await client
         .from("article_sources")
         .select("article_id, source_id")
@@ -160,7 +210,7 @@ function createSupabaseReportRepository(): ReportRepository {
           firstSourceByArticle.set(link.article_id, link.source_id);
         }
       }
-      const articleById = new Map(articles.map((a) => [a.id, a]));
+      const articleById = new Map(list.map((a) => [a.id, a]));
       const out: ArticleRowForReport[] = [];
       for (const [articleId, sourceId] of firstSourceByArticle) {
         const a = articleById.get(articleId);
@@ -169,14 +219,49 @@ function createSupabaseReportRepository(): ReportRepository {
       return out;
     },
 
-    async getVideosForReports(periodStart, periodEnd) {
-      const { data, error } = await client
+    async getVideosForReports(periodStart, periodEnd, filters) {
+      const { data: videos, error } = await client
         .from("youtube_videos")
-        .select("published_at, source_id")
+        .select("id, published_at, source_id")
         .gte("published_at", periodStart)
         .lte("published_at", periodEnd);
       if (error) throw new Error(`Failed to fetch videos: ${error.message}`);
-      return (data || []).map((row) => ({
+      let list = videos ?? [];
+
+      if (filters?.gameId) {
+        const { data: gameLinks } = await client
+          .from("youtube_video_games")
+          .select("youtube_video_id")
+          .eq("game_id", filters.gameId);
+        const ids = new Set((gameLinks || []).map((l) => l.youtube_video_id));
+        list = list.filter((v) => ids.has(v.id));
+      }
+      if (filters?.tagId) {
+        const { data: tagLinks } = await client
+          .from("youtube_video_tags")
+          .select("youtube_video_id")
+          .eq("tag_id", filters.tagId);
+        const ids = new Set((tagLinks || []).map((l) => l.youtube_video_id));
+        list = list.filter((v) => ids.has(v.id));
+      }
+      if (filters?.genreId) {
+        const { data: genreLinks } = await client
+          .from("youtube_video_genres")
+          .select("youtube_video_id")
+          .eq("genre_id", filters.genreId);
+        const ids = new Set((genreLinks || []).map((l) => l.youtube_video_id));
+        list = list.filter((v) => ids.has(v.id));
+      }
+      if (filters?.platformId) {
+        const { data: platformLinks } = await client
+          .from("youtube_video_platforms")
+          .select("youtube_video_id")
+          .eq("platform_id", filters.platformId);
+        const ids = new Set((platformLinks || []).map((l) => l.youtube_video_id));
+        list = list.filter((v) => ids.has(v.id));
+      }
+
+      return list.map((row) => ({
         published_at: row.published_at,
         source_id: row.source_id
       }));
@@ -207,10 +292,10 @@ function createMemoryReportRepository(): ReportRepository {
     async listReports() {
       return { items: [], total: 0 };
     },
-    async getArticlesForReports() {
+    async getArticlesForReports(_periodStart, _periodEnd, _filters?) {
       return [];
     },
-    async getVideosForReports() {
+    async getVideosForReports(_periodStart, _periodEnd, _filters?) {
       return [];
     },
     async getSourceIdToName() {

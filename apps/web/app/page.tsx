@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../src/content-provider";
 import { buildNewsQueryPath, parseNewsListParams } from "../src/news-list-query";
+import { EntityChips } from "./components/EntityChips";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -165,6 +166,12 @@ export default async function HomePage({
               <small style={{ opacity: 0.65 }}>
                 Publicado em: {formatPublishedAt(card.publishedAt)}
               </small>
+              <EntityChips
+                gameNames={card.gameNames}
+                tagNames={card.tagNames}
+                genreNames={card.genreNames}
+                platformNames={card.platformNames}
+              />
             </article>
           ))}
           <nav className="pagination" aria-label="Paginação">

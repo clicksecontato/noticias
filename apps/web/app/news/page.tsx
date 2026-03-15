@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../../src/content-provider";
 import { buildNewsQueryPath, parseNewsListParams } from "../../src/news-list-query";
+import { EntityChips } from "../components/EntityChips";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -152,6 +153,12 @@ export default async function NewsListingPage({
           <small style={{ opacity: 0.65 }}>
             Publicado em: {new Date(card.publishedAt).toLocaleString("pt-BR")}
           </small>
+          <EntityChips
+            gameNames={card.gameNames}
+            tagNames={card.tagNames}
+            genreNames={card.genreNames}
+            platformNames={card.platformNames}
+          />
         </article>
       ))}
 

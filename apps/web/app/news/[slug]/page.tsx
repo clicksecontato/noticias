@@ -5,6 +5,7 @@ import {
   getRevalidateSeconds
 } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
+import { EntityChips } from "../../components/EntityChips";
 
 export const routeTemplate = "/news/[slug]";
 export const revalidate = getRevalidateSeconds("news");
@@ -71,6 +72,12 @@ export default async function NewsPage({
         <p className="news-article__meta">
           {formatPublishedAt(article.publishedAt)}
         </p>
+        <EntityChips
+          gameNames={article.gameNames}
+          tagNames={article.tagNames}
+          genreNames={article.genreNames}
+          platformNames={article.platformNames}
+        />
       </header>
       {article.imageUrl ? (
         <div className="news-article__imageWrap">

@@ -11,6 +11,11 @@ export interface HomeCard {
   sourceUrl: string;
   /** Optional thumbnail image URL (e.g. from RSS). */
   imageUrl?: string;
+  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
+  gameNames?: string[];
+  tagNames?: string[];
+  genreNames?: string[];
+  platformNames?: string[];
 }
 
 export interface NewsSourceFilter {
@@ -29,6 +34,11 @@ export interface YoutubeVideoCard {
   publishedAt: string;
   thumbnailUrl: string | null;
   url: string;
+  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
+  gameNames?: string[];
+  tagNames?: string[];
+  genreNames?: string[];
+  platformNames?: string[];
 }
 
 /** Artigo para exibição em /news/[slug] (agregador: título + resumo + link para fonte) */
@@ -44,6 +54,11 @@ export interface NewsArticleFull {
   sourceUrl: string;
   /** Optional cover/thumbnail image URL. */
   imageUrl?: string;
+  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
+  gameNames?: string[];
+  tagNames?: string[];
+  genreNames?: string[];
+  platformNames?: string[];
 }
 
 export type NewsSortMode = "published_desc" | "published_asc";
@@ -147,7 +162,11 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceName: article.sourceName,
         publishedAt: article.publishedAt,
         sourceUrl: article.sourceUrl,
-        ...(article.imageUrl && { imageUrl: article.imageUrl })
+        ...(article.imageUrl && { imageUrl: article.imageUrl }),
+        ...(article.gameNames?.length && { gameNames: article.gameNames }),
+        ...(article.tagNames?.length && { tagNames: article.tagNames }),
+        ...(article.genreNames?.length && { genreNames: article.genreNames }),
+        ...(article.platformNames?.length && { platformNames: article.platformNames })
       };
     },
     async getNewsMetadataBySlug(slug: string) {
@@ -181,7 +200,11 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
-        ...(item.imageUrl && { imageUrl: item.imageUrl })
+        ...(item.imageUrl && { imageUrl: item.imageUrl }),
+        ...(item.gameNames?.length && { gameNames: item.gameNames }),
+        ...(item.tagNames?.length && { tagNames: item.tagNames }),
+        ...(item.genreNames?.length && { genreNames: item.genreNames }),
+        ...(item.platformNames?.length && { platformNames: item.platformNames })
       }));
     },
     async getHomeGameCards(limit = 6) {
@@ -217,7 +240,11 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
-        ...(item.imageUrl && { imageUrl: item.imageUrl })
+        ...(item.imageUrl && { imageUrl: item.imageUrl }),
+        ...(item.gameNames?.length && { gameNames: item.gameNames }),
+        ...(item.tagNames?.length && { tagNames: item.tagNames }),
+        ...(item.genreNames?.length && { genreNames: item.genreNames }),
+        ...(item.platformNames?.length && { platformNames: item.platformNames })
       }));
     },
     async getNewsCardsTotal(sourceId?: string, query?: string) {
@@ -240,7 +267,11 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceName: item.sourceName,
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
-        ...(item.imageUrl && { imageUrl: item.imageUrl })
+        ...(item.imageUrl && { imageUrl: item.imageUrl }),
+        ...(item.gameNames?.length && { gameNames: item.gameNames }),
+        ...(item.tagNames?.length && { tagNames: item.tagNames }),
+        ...(item.genreNames?.length && { genreNames: item.genreNames }),
+        ...(item.platformNames?.length && { platformNames: item.platformNames })
       }));
     },
     async getNewsSourceFilters() {
@@ -268,7 +299,11 @@ export function createRouteContentProvider(): RouteContentProvider {
         description: v.description,
         publishedAt: v.publishedAt,
         thumbnailUrl: v.thumbnailUrl,
-        url: v.url
+        url: v.url,
+        ...(v.gameNames?.length && { gameNames: v.gameNames }),
+        ...(v.tagNames?.length && { tagNames: v.tagNames }),
+        ...(v.genreNames?.length && { genreNames: v.genreNames }),
+        ...(v.platformNames?.length && { platformNames: v.platformNames })
       }));
     },
     async getYoutubeVideosTotal(sourceId?: string) {

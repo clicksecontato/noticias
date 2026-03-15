@@ -7,6 +7,7 @@ type GenerateBody = {
   periodStart: string;
   periodEnd: string;
   options?: { group_by?: "day" | "week" | "month"; limit_sources?: number };
+  filters?: { gameId?: string; tagId?: string; genreId?: string; platformId?: string };
 };
 
 export async function POST(request: Request): Promise<Response> {
@@ -20,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const { reportType, periodStart, periodEnd, options = {} } = body;
+  const { reportType, periodStart, periodEnd, options = {}, filters } = body;
   if (!reportType || !periodStart || !periodEnd) {
     return Response.json(
       { error: "Obrigatório: reportType, periodStart, periodEnd" },
@@ -50,13 +51,21 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const repo = createReportRepository();
+  const reportFilters = filters
+    ? {
+        ...(filters.gameId && { gameId: filters.gameId }),
+        ...(filters.tagId && { tagId: filters.tagId }),
+        ...(filters.genreId && { genreId: filters.genreId }),
+        ...(filters.platformId && { platformId: filters.platformId })
+      }
+    : undefined;
   let reportId: string;
   try {
     reportId = await repo.createReport({
       report_type: reportType,
       period_start: periodStart,
       period_end: periodEnd,
-      parameters: options
+      parameters: { ...options, filters: reportFilters }
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -68,8 +77,8 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const [articles, videos, sourceNames] = await Promise.all([
-      repo.getArticlesForReports(periodStart, periodEnd),
-      repo.getVideosForReports(periodStart, periodEnd),
+      repo.getArticlesForReports(periodStart, periodEnd, reportFilters),
+      repo.getVideosForReports(periodStart, periodEnd, reportFilters),
       repo.getSourceIdToName()
     ]);
 

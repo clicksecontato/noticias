@@ -42,4 +42,9 @@ export interface YoutubeVideoDisplay {
   publishedAt: string;
   thumbnailUrl: string | null;
   url: string;
+  /** Nomes de jogos/tags/gêneros/plataformas vinculados (enriquecimento). */
+  gameNames?: string[];
+  tagNames?: string[];
+  genreNames?: string[];
+  platformNames?: string[];
 }

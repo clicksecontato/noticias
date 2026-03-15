@@ -13,6 +13,19 @@ interface ReportListItem {
   created_at: string;
 }
 
+interface CatalogItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Catalogs {
+  games: CatalogItem[];
+  tags: CatalogItem[];
+  genres: CatalogItem[];
+  platforms: CatalogItem[];
+}
+
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes"
@@ -33,10 +46,22 @@ export function ReportsClient() {
     periodStart: "",
     periodEnd: "",
     groupBy: "day",
-    limitSources: 20
+    limitSources: 20,
+    filterGameId: "",
+    filterTagId: "",
+    filterGenreId: "",
+    filterPlatformId: ""
   });
 
+  const [catalogs, setCatalogs] = useState<Catalogs | null>(null);
   const pageSize = 10;
+
+  useEffect(() => {
+    fetch("/api/catalogs")
+      .then((res) => res.json())
+      .then((data: Catalogs) => setCatalogs(data))
+      .catch(() => setCatalogs({ games: [], tags: [], genres: [], platforms: [] }));
+  }, []);
 
   function loadReports() {
     setLoading(true);
@@ -72,6 +97,14 @@ export function ReportsClient() {
       body.options = { group_by: form.groupBy };
     } else {
       body.options = { limit_sources: form.limitSources };
+    }
+    if (form.filterGameId || form.filterTagId || form.filterGenreId || form.filterPlatformId) {
+      body.filters = {
+        ...(form.filterGameId && { gameId: form.filterGameId }),
+        ...(form.filterTagId && { tagId: form.filterTagId }),
+        ...(form.filterGenreId && { genreId: form.filterGenreId }),
+        ...(form.filterPlatformId && { platformId: form.filterPlatformId })
+      };
     }
     try {
       const res = await fetch("/api/reports/generate", {
@@ -165,6 +198,58 @@ export function ReportsClient() {
                 />
               </label>
             )}
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Jogo
+              <select
+                value={form.filterGameId}
+                onChange={(e) => setForm((f) => ({ ...f, filterGameId: e.target.value }))}
+                style={{ padding: 8 }}
+              >
+                <option value="">Todos</option>
+                {catalogs?.games.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Tag
+              <select
+                value={form.filterTagId}
+                onChange={(e) => setForm((f) => ({ ...f, filterTagId: e.target.value }))}
+                style={{ padding: 8 }}
+              >
+                <option value="">Todas</option>
+                {catalogs?.tags.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Gênero
+              <select
+                value={form.filterGenreId}
+                onChange={(e) => setForm((f) => ({ ...f, filterGenreId: e.target.value }))}
+                style={{ padding: 8 }}
+              >
+                <option value="">Todos</option>
+                {catalogs?.genres.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Plataforma
+              <select
+                value={form.filterPlatformId}
+                onChange={(e) => setForm((f) => ({ ...f, filterPlatformId: e.target.value }))}
+                style={{ padding: 8 }}
+              >
+                <option value="">Todas</option>
+                {catalogs?.platforms.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </label>
           </div>
           <button type="submit" disabled={generateLoading}>
             {generateLoading ? "Gerando…" : "Gerar relatório"}

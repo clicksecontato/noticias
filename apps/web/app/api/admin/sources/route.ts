@@ -64,6 +64,7 @@ function slugifyHandle(handle: string): string {
 
 /**
  * Resolve URL ou @handle para Channel ID (UC...) via YouTube Data API.
+ * Usa channels.list com forHandle (canal exato do handle); fallback para search se necessário.
  */
 async function resolveYoutubeChannelId(apiKey: string, urlOrHandle: string): Promise<string> {
   const handle = extractYoutubeHandle(urlOrHandle);
@@ -73,23 +74,39 @@ async function resolveYoutubeChannelId(apiKey: string, urlOrHandle: string): Pro
     }
     throw new Error("URL ou handle do canal inválido. Use algo como: https://www.youtube.com/@NomeCanal/videos ou @NomeCanal");
   }
-  // search.list com type=channel resolve handles @; forUsername não funciona com @handle
+
+  // 1) channels.list com forHandle = canal exato que possui @handle (recomendado desde 2024)
+  const channelsUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+  channelsUrl.searchParams.set("part", "id");
+  channelsUrl.searchParams.set("forHandle", handle);
+  channelsUrl.searchParams.set("key", apiKey);
+  const channelsRes = await fetch(channelsUrl.toString());
+  const channelsData = (await channelsRes.json()) as {
+    items?: Array<{ id?: string }>;
+    error?: { message?: string; code?: number };
+  };
+  if (channelsRes.ok && channelsData.items?.length) {
+    const id = channelsData.items[0].id;
+    if (id) return id;
+  }
+
+  // 2) Fallback: search.list (pode retornar outro canal com nome parecido)
   const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
   searchUrl.searchParams.set("part", "id");
   searchUrl.searchParams.set("type", "channel");
   searchUrl.searchParams.set("q", `@${handle}`);
   searchUrl.searchParams.set("key", apiKey);
   searchUrl.searchParams.set("maxResults", "1");
-  const res = await fetch(searchUrl.toString());
-  const data = (await res.json()) as {
+  const searchRes = await fetch(searchUrl.toString());
+  const searchData = (await searchRes.json()) as {
     items?: Array<{ id?: { kind?: string; channelId?: string } }>;
     error?: { message?: string };
   };
-  if (!res.ok) {
-    const msg = data.error?.message || `HTTP ${res.status}`;
+  if (!searchRes.ok) {
+    const msg = searchData.error?.message || channelsData.error?.message || `HTTP ${searchRes.status}`;
     throw new Error(`YouTube API: ${msg}`);
   }
-  const channelId = data.items?.[0]?.id?.channelId;
+  const channelId = searchData.items?.[0]?.id?.channelId;
   if (!channelId) {
     throw new Error(`Canal não encontrado para: @${handle}. Verifique a URL ou o handle.`);
   }

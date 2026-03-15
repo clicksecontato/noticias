@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../../src/content-provider";
+import { EntityChips } from "../components/EntityChips";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -161,6 +162,12 @@ export default async function VideosPage({
                 year: "numeric"
               })}
             </small>
+            <EntityChips
+              gameNames={video.gameNames}
+              tagNames={video.tagNames}
+              genreNames={video.genreNames}
+              platformNames={video.platformNames}
+            />
           </article>
         ))}
       </div>
