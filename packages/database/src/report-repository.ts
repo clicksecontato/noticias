@@ -1,0 +1,227 @@
+import { createClient } from "@supabase/supabase-js";
+import { getDatabaseConfig } from "./config";
+import type {
+  ReportRecord,
+  ReportWithResult,
+  ReportListItem,
+  ReportType,
+  ReportStatus,
+  ArticleRowForReport,
+  VideoRowForReport
+} from "./report-types";
+
+export interface CreateReportInput {
+  report_type: ReportType;
+  period_start: string;
+  period_end: string;
+  parameters?: Record<string, unknown>;
+}
+
+export interface ListReportsInput {
+  type?: ReportType;
+  status?: ReportStatus;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListReportsOutput {
+  items: ReportListItem[];
+  total: number;
+}
+
+export interface ReportRepository {
+  createReport(input: CreateReportInput): Promise<string>;
+  updateReportStatus(
+    id: string,
+    status: ReportStatus,
+    options?: { error_message?: string; generated_at?: string }
+  ): Promise<void>;
+  saveReportResult(reportId: string, payload: Record<string, unknown>): Promise<void>;
+  getReportById(id: string): Promise<ReportWithResult | null>;
+  listReports(input: ListReportsInput): Promise<ListReportsOutput>;
+  getArticlesForReports(periodStart: string, periodEnd: string): Promise<ArticleRowForReport[]>;
+  getVideosForReports(periodStart: string, periodEnd: string): Promise<VideoRowForReport[]>;
+  getSourceIdToName(): Promise<Map<string, string>>;
+}
+
+function createSupabaseReportRepository(): ReportRepository {
+  const config = getDatabaseConfig();
+  const url = config.supabaseUrl;
+  const key = config.supabaseServiceRoleKey ?? config.supabaseAnonKey;
+  if (!url || !key) {
+    throw new Error("Supabase URL and key required for report repository");
+  }
+  const client = createClient(url, key);
+
+  return {
+    async createReport(input) {
+      const { data, error } = await client
+        .from("reports")
+        .insert({
+          report_type: input.report_type,
+          period_start: input.period_start,
+          period_end: input.period_end,
+          parameters: input.parameters ?? {},
+          status: "pending"
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(`Failed to create report: ${error.message}`);
+      return data.id;
+    },
+
+    async updateReportStatus(id, status, options) {
+      const body: Record<string, unknown> = { status };
+      if (options?.error_message !== undefined) body.error_message = options.error_message;
+      if (options?.generated_at !== undefined) body.generated_at = options.generated_at;
+      const { error } = await client.from("reports").update(body).eq("id", id);
+      if (error) throw new Error(`Failed to update report: ${error.message}`);
+    },
+
+    async saveReportResult(reportId, payload) {
+      const { error } = await client.from("report_results").upsert(
+        { report_id: reportId, payload },
+        { onConflict: "report_id" }
+      );
+      if (error) throw new Error(`Failed to save report result: ${error.message}`);
+    },
+
+    async getReportById(id) {
+      const { data: report, error: reportError } = await client
+        .from("reports")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (reportError || !report) return null;
+      const { data: result } = await client
+        .from("report_results")
+        .select("payload")
+        .eq("report_id", id)
+        .maybeSingle();
+      return {
+        id: report.id,
+        report_type: report.report_type,
+        period_start: report.period_start,
+        period_end: report.period_end,
+        parameters: report.parameters ?? {},
+        status: report.status,
+        error_message: report.error_message,
+        generated_at: report.generated_at,
+        created_at: report.created_at,
+        result: result ? { payload: result.payload } : null
+      };
+    },
+
+    async listReports(input) {
+      const page = Math.max(1, input.page ?? 1);
+      const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
+      const from = (page - 1) * pageSize;
+
+      let query = client.from("reports").select("id,report_type,period_start,period_end,status,generated_at,created_at", { count: "exact" });
+      if (input.type) query = query.eq("report_type", input.type);
+      if (input.status) query = query.eq("status", input.status);
+      if (input.from) query = query.gte("period_start", input.from);
+      if (input.to) query = query.lte("period_end", input.to);
+      query = query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+
+      const { data, error, count } = await query;
+      if (error) throw new Error(`Failed to list reports: ${error.message}`);
+      const items = (data || []).map((row) => ({
+        id: row.id,
+        report_type: row.report_type,
+        period_start: row.period_start,
+        period_end: row.period_end,
+        status: row.status,
+        generated_at: row.generated_at,
+        created_at: row.created_at
+      }));
+      return { items, total: count ?? 0 };
+    },
+
+    async getArticlesForReports(periodStart, periodEnd) {
+      const { data: articles, error: articlesError } = await client
+        .from("articles")
+        .select("id, published_at")
+        .gte("published_at", periodStart)
+        .lte("published_at", periodEnd);
+      if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
+      if (!articles?.length) return [];
+
+      const ids = articles.map((a) => a.id);
+      const { data: links } = await client
+        .from("article_sources")
+        .select("article_id, source_id")
+        .in("article_id", ids);
+      const firstSourceByArticle = new Map<string, string>();
+      for (const link of links || []) {
+        if (!firstSourceByArticle.has(link.article_id)) {
+          firstSourceByArticle.set(link.article_id, link.source_id);
+        }
+      }
+      const articleById = new Map(articles.map((a) => [a.id, a]));
+      const out: ArticleRowForReport[] = [];
+      for (const [articleId, sourceId] of firstSourceByArticle) {
+        const a = articleById.get(articleId);
+        if (a?.published_at) out.push({ published_at: a.published_at, source_id: sourceId });
+      }
+      return out;
+    },
+
+    async getVideosForReports(periodStart, periodEnd) {
+      const { data, error } = await client
+        .from("youtube_videos")
+        .select("published_at, source_id")
+        .gte("published_at", periodStart)
+        .lte("published_at", periodEnd);
+      if (error) throw new Error(`Failed to fetch videos: ${error.message}`);
+      return (data || []).map((row) => ({
+        published_at: row.published_at,
+        source_id: row.source_id
+      }));
+    },
+
+    async getSourceIdToName() {
+      const { data, error } = await client.from("sources").select("id, name");
+      if (error) throw new Error(`Failed to fetch sources: ${error.message}`);
+      const map = new Map<string, string>();
+      for (const row of data || []) {
+        map.set(row.id, row.name);
+      }
+      return map;
+    }
+  };
+}
+
+function createMemoryReportRepository(): ReportRepository {
+  return {
+    async createReport() {
+      return "memory-report-1";
+    },
+    async updateReportStatus() {},
+    async saveReportResult() {},
+    async getReportById() {
+      return null;
+    },
+    async listReports() {
+      return { items: [], total: 0 };
+    },
+    async getArticlesForReports() {
+      return [];
+    },
+    async getVideosForReports() {
+      return [];
+    },
+    async getSourceIdToName() {
+      return new Map();
+    }
+  };
+}
+
+export function createReportRepository(): ReportRepository {
+  const config = getDatabaseConfig();
+  return config.contentSource === "supabase"
+    ? createSupabaseReportRepository()
+    : createMemoryReportRepository();
+}
