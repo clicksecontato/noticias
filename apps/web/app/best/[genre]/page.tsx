@@ -1,13 +1,7 @@
-import {
-  generateRouteMetadata,
-  getRevalidateSeconds
-} from "../../../src/publishing";
+import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 
-export const routeTemplate = "/best/[genre]";
-export const revalidate = getRevalidateSeconds("best");
-
-type MaybePromise<T> = T | Promise<T>;
+export const revalidate = 43200;
 
 export async function generateStaticParams(): Promise<Array<{ genre: string }>> {
   const contentProvider = createRouteContentProvider();
@@ -16,11 +10,11 @@ export async function generateStaticParams(): Promise<Array<{ genre: string }>> 
 }
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: MaybePromise<{ genre: string }>;
+  params: Promise<{ genre: string }>;
 }) {
-  const { genre } = await Promise.resolve(params);
+  const { genre } = await params;
   const genreName = genre.replace(/-/g, " ");
 
   return generateRouteMetadata({
@@ -32,11 +26,11 @@ export async function generateMetadata({
 }
 
 export default async function BestGenrePage({
-  params
+  params,
 }: {
-  params: MaybePromise<{ genre: string }>;
+  params: Promise<{ genre: string }>;
 }) {
-  const { genre } = await Promise.resolve(params);
+  const { genre } = await params;
   const genreName = genre.replace(/-/g, " ");
 
   return (

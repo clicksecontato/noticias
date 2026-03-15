@@ -2,9 +2,13 @@
 
 import { createClient } from "@/src/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/admin";
@@ -37,70 +41,55 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "4rem auto", fontFamily: "sans-serif" }}>
-      <h1 style={{ marginBottom: 8 }}>Acesso Admin</h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-        Faça login com sua conta cadastrada para acessar o painel.
-      </p>
-      <form onSubmit={onSubmit}>
-        <label htmlFor="email" style={{ display: "block", marginBottom: 4 }}>
-          E-mail
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-          style={{
-            display: "block",
-            width: "100%",
-            marginBottom: "1rem",
-            padding: "0.5rem 0.75rem",
-            border: "1px solid #334155",
-            borderRadius: 6,
-          }}
-        />
-        <label htmlFor="password" style={{ display: "block", marginBottom: 4 }}>
-          Senha
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-          style={{
-            display: "block",
-            width: "100%",
-            marginBottom: "1rem",
-            padding: "0.5rem 0.75rem",
-            border: "1px solid #334155",
-            borderRadius: 6,
-          }}
-        />
-        {error ? (
-          <p style={{ color: "#f87171", marginBottom: "1rem", fontSize: 14 }}>
-            {error}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            background: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Entrando…" : "Entrar"}
-        </button>
-      </form>
+    <div className="mx-auto max-w-[400px] py-16">
+      <Card>
+        <CardHeader>
+          <CardTitle>Acesso Admin</CardTitle>
+          <CardDescription>
+            Faça login com sua conta cadastrada para acessar o painel.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            {error ? (
+              <p className="text-sm text-destructive">{error}</p>
+            ) : null}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Entrando…" : "Entrar"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-[400px] py-16 text-center text-muted-foreground">Carregando…</div>}>
+      <AdminLoginForm />
+    </Suspense>
   );
 }

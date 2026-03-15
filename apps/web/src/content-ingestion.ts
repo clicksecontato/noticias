@@ -6,7 +6,7 @@ import type { ContentSource } from "../../../packages/scraping/src/content-sourc
 import type { AdminIngestResponseBody } from "./api/admin-ingest-handler";
 
 function mapToContentSource(
-  record: Awaited<ReturnType<ReturnType<typeof createContentRepository>["getContentSourcesForIngestion"]>[number]>
+  record: Awaited<ReturnType<ReturnType<typeof createContentRepository>["getContentSourcesForIngestion"]>>[number]
 ): ContentSource {
   return {
     id: record.id,

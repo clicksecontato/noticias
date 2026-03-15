@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  generateRouteMetadata,
-  getRevalidateSeconds
-} from "../../../src/publishing";
+import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 import { EntityChips } from "../../components/EntityChips";
+import { PageBackLink } from "../../components/PageBackLink";
 
-export const routeTemplate = "/news/[slug]";
-export const revalidate = getRevalidateSeconds("news");
-
-type MaybePromise<T> = T | Promise<T>;
+export const revalidate = 900;
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const contentProvider = createRouteContentProvider();
@@ -19,11 +14,11 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: MaybePromise<{ slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const contentProvider = createRouteContentProvider();
   const article = await contentProvider.getNewsArticleBySlug(slug);
   if (!article) {
@@ -33,7 +28,7 @@ export async function generateMetadata({
     pageType: "news",
     titleBase: article.title,
     descriptionBase: article.summary,
-    canonicalPath: `/news/${slug}`
+    canonicalPath: `/news/${slug}`,
   });
 }
 
@@ -42,7 +37,7 @@ function formatPublishedAt(iso: string): string {
     return new Date(iso).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",
-      year: "numeric"
+      year: "numeric",
     });
   } catch {
     return iso;
@@ -50,11 +45,11 @@ function formatPublishedAt(iso: string): string {
 }
 
 export default async function NewsPage({
-  params
+  params,
 }: {
-  params: MaybePromise<{ slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const contentProvider = createRouteContentProvider();
   const article = await contentProvider.getNewsArticleBySlug(slug);
   if (!article) {
@@ -62,14 +57,15 @@ export default async function NewsPage({
   }
 
   return (
-    <article className="news-article">
-      <p className="page-back">
-        <Link href="/news">← Voltar às notícias</Link>
-      </p>
-      <header className="news-article__header">
-        <p className="eyebrow">{article.sourceName}</p>
-        <h1 className="news-article__title">{article.title}</h1>
-        <p className="news-article__meta">
+    <article className="space-y-6">
+      <PageBackLink href="/news">← Voltar às notícias</PageBackLink>
+
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-primary">{article.sourceName}</p>
+        <h1 className="text-3xl font-bold leading-tight tracking-tight">
+          {article.title}
+        </h1>
+        <p className="text-sm text-muted-foreground">
           {formatPublishedAt(article.publishedAt)}
         </p>
         <EntityChips
@@ -79,32 +75,36 @@ export default async function NewsPage({
           platformNames={article.platformNames}
         />
       </header>
+
       {article.imageUrl ? (
-        <div className="news-article__imageWrap">
+        <div className="overflow-hidden rounded-lg border border-border">
           <img
             src={article.imageUrl}
             alt=""
-            className="news-article__image"
+            className="h-auto w-full object-cover"
             width={720}
             height={405}
           />
         </div>
       ) : null}
-      {article.summary && (
-        <p className="news-article__summary">{article.summary}</p>
-      )}
+
+      {article.summary ? (
+        <p className="text-lg text-muted-foreground">{article.summary}</p>
+      ) : null}
+
       {article.sourceUrl ? (
-        <p className="news-article__cta">
+        <p>
           <a
             href={article.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="news-article__read-more"
+            className="font-medium text-primary hover:underline"
           >
             Leia no {article.sourceName} →
           </a>
         </p>
       ) : null}
+
       {article.contentHtml ? (
         <div
           className="article-body"

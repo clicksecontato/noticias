@@ -2,6 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PageBackLink } from "../components/PageBackLink";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface ReportListItem {
   id: string;
@@ -28,7 +35,13 @@ interface Catalogs {
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
-  top_sources: "Ranking de fontes"
+  top_sources: "Ranking de fontes",
+};
+
+const statusVariant = (status: string): "default" | "secondary" | "destructive" => {
+  if (status === "completed") return "default";
+  if (status === "failed") return "destructive";
+  return "secondary";
 };
 
 export function ReportsClient() {
@@ -50,7 +63,7 @@ export function ReportsClient() {
     filterGameId: "",
     filterTagId: "",
     filterGenreId: "",
-    filterPlatformId: ""
+    filterPlatformId: "",
   });
 
   const [catalogs, setCatalogs] = useState<Catalogs | null>(null);
@@ -91,26 +104,31 @@ export function ReportsClient() {
     const body: Record<string, unknown> = {
       reportType: form.reportType,
       periodStart: form.periodStart,
-      periodEnd: form.periodEnd
+      periodEnd: form.periodEnd,
     };
     if (form.reportType === "volume") {
       body.options = { group_by: form.groupBy };
     } else {
       body.options = { limit_sources: form.limitSources };
     }
-    if (form.filterGameId || form.filterTagId || form.filterGenreId || form.filterPlatformId) {
+    if (
+      form.filterGameId ||
+      form.filterTagId ||
+      form.filterGenreId ||
+      form.filterPlatformId
+    ) {
       body.filters = {
         ...(form.filterGameId && { gameId: form.filterGameId }),
         ...(form.filterTagId && { tagId: form.filterTagId }),
         ...(form.filterGenreId && { genreId: form.filterGenreId }),
-        ...(form.filterPlatformId && { platformId: form.filterPlatformId })
+        ...(form.filterPlatformId && { platformId: form.filterPlatformId }),
       };
     }
     try {
       const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -130,214 +148,280 @@ export function ReportsClient() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <section>
-      <p className="page-back">
-        <Link href="/">← Início</Link>
+    <section className="space-y-6">
+      <PageBackLink href="/">← Início</PageBackLink>
+      <h2 className="text-2xl font-semibold">Relatórios</h2>
+      <p className="text-muted-foreground">
+        Dados sobre publicações (artigos e vídeos) dos principais canais de games no Brasil.
       </p>
-      <h2>Relatórios</h2>
-      <p>Dados sobre publicações (artigos e vídeos) dos principais canais de games no Brasil.</p>
 
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ marginTop: 0 }}>Gerar novo relatório</h3>
-        <form onSubmit={onSubmitGenerate}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Tipo
-              <select
-                value={form.reportType}
-                onChange={(e) => setForm((f) => ({ ...f, reportType: e.target.value }))}
-                style={{ padding: 8 }}
-              >
-                <option value="volume">Volume por período</option>
-                <option value="top_sources">Ranking de fontes</option>
-              </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Início do período
-              <input
-                type="date"
-                value={form.periodStart}
-                onChange={(e) => setForm((f) => ({ ...f, periodStart: e.target.value }))}
-                required
-                style={{ padding: 8 }}
-              />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Fim do período
-              <input
-                type="date"
-                value={form.periodEnd}
-                onChange={(e) => setForm((f) => ({ ...f, periodEnd: e.target.value }))}
-                required
-                style={{ padding: 8 }}
-              />
-            </label>
-            {form.reportType === "volume" ? (
-              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                Agrupar por
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Gerar novo relatório</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmitGenerate} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Tipo</Label>
                 <select
-                  value={form.groupBy}
-                  onChange={(e) => setForm((f) => ({ ...f, groupBy: e.target.value }))}
-                  style={{ padding: 8 }}
+                  value={form.reportType}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, reportType: e.target.value }))
+                  }
+                  className={cn(
+                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                    "dark:bg-input/30"
+                  )}
                 >
-                  <option value="day">Dia</option>
-                  <option value="week">Semana</option>
-                  <option value="month">Mês</option>
+                  <option value="volume">Volume por período</option>
+                  <option value="top_sources">Ranking de fontes</option>
                 </select>
-              </label>
-            ) : (
-              <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                Limite de fontes
-                <input
-                  type="number"
-                  min={5}
-                  max={100}
-                  value={form.limitSources}
-                  onChange={(e) => setForm((f) => ({ ...f, limitSources: Number(e.target.value) || 20 }))}
-                  style={{ padding: 8 }}
+              </div>
+              <div className="space-y-2">
+                <Label>Início do período</Label>
+                <Input
+                  type="date"
+                  value={form.periodStart}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, periodStart: e.target.value }))
+                  }
+                  required
                 />
-              </label>
-            )}
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Jogo
-              <select
-                value={form.filterGameId}
-                onChange={(e) => setForm((f) => ({ ...f, filterGameId: e.target.value }))}
-                style={{ padding: 8 }}
-              >
-                <option value="">Todos</option>
-                {catalogs?.games.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Tag
-              <select
-                value={form.filterTagId}
-                onChange={(e) => setForm((f) => ({ ...f, filterTagId: e.target.value }))}
-                style={{ padding: 8 }}
-              >
-                <option value="">Todas</option>
-                {catalogs?.tags.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Gênero
-              <select
-                value={form.filterGenreId}
-                onChange={(e) => setForm((f) => ({ ...f, filterGenreId: e.target.value }))}
-                style={{ padding: 8 }}
-              >
-                <option value="">Todos</option>
-                {catalogs?.genres.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              Plataforma
-              <select
-                value={form.filterPlatformId}
-                onChange={(e) => setForm((f) => ({ ...f, filterPlatformId: e.target.value }))}
-                style={{ padding: 8 }}
-              >
-                <option value="">Todas</option>
-                {catalogs?.platforms.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <button type="submit" disabled={generateLoading}>
-            {generateLoading ? "Gerando…" : "Gerar relatório"}
-          </button>
-          {generateError ? <p style={{ color: "#f87171", marginTop: 8 }}>{generateError}</p> : null}
-          {generateSuccess ? <p style={{ color: "#4ade80", marginTop: 8 }}>{generateSuccess}</p> : null}
-        </form>
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Relatórios gerados</h3>
-        <p style={{ marginBottom: 8 }}>
-          Filtrar por tipo:{" "}
-          <select
-            value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            style={{ padding: 6 }}
-          >
-            <option value="">Todos</option>
-            <option value="volume">Volume</option>
-            <option value="top_sources">Ranking de fontes</option>
-          </select>
-        </p>
-        {loading ? (
-          <p>Carregando…</p>
-        ) : items.length === 0 ? (
-          <p>Nenhum relatório ainda. Gere um acima.</p>
-        ) : (
-          <>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {items.map((r) => (
-                <li
-                  key={r.id}
-                  style={{
-                    padding: "12px 0",
-                    borderBottom: "1px solid #334155"
-                  }}
-                >
-                  <Link href={`/reports/${r.id}`} style={{ fontWeight: 600 }}>
-                    {REPORT_TYPE_LABELS[r.report_type] ?? r.report_type}
-                  </Link>
-                  <span style={{ color: "#94a3b8", marginLeft: 8 }}>
-                    {new Date(r.period_start).toLocaleDateString("pt-BR")} – {new Date(r.period_end).toLocaleDateString("pt-BR")}
-                  </span>
-                  <span
-                    style={{
-                      marginLeft: 8,
-                      padding: "2px 8px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      background: r.status === "completed" ? "#166534" : r.status === "failed" ? "#991b1b" : "#854d0e",
-                      color: "#fff"
-                    }}
+              </div>
+              <div className="space-y-2">
+                <Label>Fim do período</Label>
+                <Input
+                  type="date"
+                  value={form.periodEnd}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, periodEnd: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              {form.reportType === "volume" ? (
+                <div className="space-y-2">
+                  <Label>Agrupar por</Label>
+                  <select
+                    value={form.groupBy}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, groupBy: e.target.value }))
+                    }
+                    className={cn(
+                      "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                      "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                      "dark:bg-input/30"
+                    )}
                   >
-                    {r.status}
-                  </span>
-                  {r.generated_at ? (
-                    <span style={{ marginLeft: 8, fontSize: 13, color: "#64748b" }}>
-                      Gerado em {new Date(r.generated_at).toLocaleString("pt-BR")}
+                    <option value="day">Dia</option>
+                    <option value="week">Semana</option>
+                    <option value="month">Mês</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Limite de fontes</Label>
+                  <Input
+                    type="number"
+                    min={5}
+                    max={100}
+                    value={form.limitSources}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        limitSources: Number(e.target.value) || 20,
+                      }))
+                    }
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Jogo</Label>
+                <select
+                  value={form.filterGameId}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, filterGameId: e.target.value }))
+                  }
+                  className={cn(
+                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                    "dark:bg-input/30"
+                  )}
+                >
+                  <option value="">Todos</option>
+                  {catalogs?.games.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tag</Label>
+                <select
+                  value={form.filterTagId}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, filterTagId: e.target.value }))
+                  }
+                  className={cn(
+                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                    "dark:bg-input/30"
+                  )}
+                >
+                  <option value="">Todas</option>
+                  {catalogs?.tags.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <select
+                  value={form.filterGenreId}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, filterGenreId: e.target.value }))
+                  }
+                  className={cn(
+                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                    "dark:bg-input/30"
+                  )}
+                >
+                  <option value="">Todos</option>
+                  {catalogs?.genres.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Plataforma</Label>
+                <select
+                  value={form.filterPlatformId}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, filterPlatformId: e.target.value }))
+                  }
+                  className={cn(
+                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                    "dark:bg-input/30"
+                  )}
+                >
+                  <option value="">Todas</option>
+                  {catalogs?.platforms.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <Button type="submit" disabled={generateLoading}>
+              {generateLoading ? "Gerando…" : "Gerar relatório"}
+            </Button>
+            {generateError ? (
+              <p className="text-sm text-destructive">{generateError}</p>
+            ) : null}
+            {generateSuccess ? (
+              <p className="text-sm text-primary">{generateSuccess}</p>
+            ) : null}
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Relatórios gerados</CardTitle>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Label className="sr-only">Filtrar por tipo</Label>
+            <select
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              className={cn(
+                "h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
+                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
+                "dark:bg-input/30"
+              )}
+            >
+              <option value="">Todos</option>
+              <option value="volume">Volume</option>
+              <option value="top_sources">Ranking de fontes</option>
+            </select>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {loading ? (
+            <p className="text-muted-foreground">Carregando…</p>
+          ) : items.length === 0 ? (
+            <p className="text-muted-foreground">
+              Nenhum relatório ainda. Gere um acima.
+            </p>
+          ) : (
+            <>
+              <ul className="list-none space-y-0 p-0">
+                {items.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex flex-wrap items-center gap-2 border-b border-border py-3 last:border-0"
+                  >
+                    <Link
+                      href={`/reports/${r.id}`}
+                      className="font-semibold text-foreground hover:underline"
+                    >
+                      {REPORT_TYPE_LABELS[r.report_type] ?? r.report_type}
+                    </Link>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(r.period_start).toLocaleDateString("pt-BR")} –{" "}
+                      {new Date(r.period_end).toLocaleDateString("pt-BR")}
                     </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-            <nav className="pagination" aria-label="Paginação" style={{ marginTop: 16 }}>
-              <button
-                type="button"
-                className="chip"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Anterior
-              </button>
-              <span className="chip muted">
-                Página {page} de {totalPages} ({total} total)
-              </span>
-              <button
-                type="button"
-                className="chip"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Próxima
-              </button>
-            </nav>
-          </>
-        )}
-      </div>
+                    <Badge variant={statusVariant(r.status)} className="font-normal">
+                      {r.status}
+                    </Badge>
+                    {r.generated_at ? (
+                      <span className="text-xs text-muted-foreground">
+                        Gerado em{" "}
+                        {new Date(r.generated_at).toLocaleString("pt-BR")}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Paginação">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <span className="px-2 text-sm text-muted-foreground" aria-live="polite">
+                  Página {page} de {totalPages} ({total} total)
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Próxima
+                </Button>
+              </nav>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }

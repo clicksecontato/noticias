@@ -464,10 +464,10 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           e[key].push(name);
         }
       };
-      addName((ag.data || []) as Array<{ article_id: string; games?: { name: string } }>, "gameNames", "games");
-      addName((at.data || []) as Array<{ article_id: string; tags?: { name: string } }>, "tagNames", "tags");
-      addName((agen.data || []) as Array<{ article_id: string; genres?: { name: string } }>, "genreNames", "genres");
-      addName((ap.data || []) as Array<{ article_id: string; platforms?: { name: string } }>, "platformNames", "platforms");
+      addName((ag.data || []) as unknown as Array<{ article_id: string; games?: { name: string } }>, "gameNames", "games");
+      addName((at.data || []) as unknown as Array<{ article_id: string; tags?: { name: string } }>, "tagNames", "tags");
+      addName((agen.data || []) as unknown as Array<{ article_id: string; genres?: { name: string } }>, "genreNames", "genres");
+      addName((ap.data || []) as unknown as Array<{ article_id: string; platforms?: { name: string } }>, "platformNames", "platforms");
 
       const activeSources = await fetchActivePortugueseSources();
       const sourceById = new Map(activeSources.map((source) => [source.id, source]));
@@ -705,10 +705,10 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           e[key].push(name);
         }
       };
-      pushVideoEntity((yvg.data || []) as Array<{ youtube_video_id: string; games?: { name: string } }>, "games", "gameNames");
-      pushVideoEntity((yvt.data || []) as Array<{ youtube_video_id: string; tags?: { name: string } }>, "tags", "tagNames");
-      pushVideoEntity((yvgen.data || []) as Array<{ youtube_video_id: string; genres?: { name: string } }>, "genres", "genreNames");
-      pushVideoEntity((yvp.data || []) as Array<{ youtube_video_id: string; platforms?: { name: string } }>, "platforms", "platformNames");
+      pushVideoEntity((yvg.data || []) as unknown as Array<{ youtube_video_id: string; games?: { name: string } }>, "games", "gameNames");
+      pushVideoEntity((yvt.data || []) as unknown as Array<{ youtube_video_id: string; tags?: { name: string } }>, "tags", "tagNames");
+      pushVideoEntity((yvgen.data || []) as unknown as Array<{ youtube_video_id: string; genres?: { name: string } }>, "genres", "genreNames");
+      pushVideoEntity((yvp.data || []) as unknown as Array<{ youtube_video_id: string; platforms?: { name: string } }>, "platforms", "platformNames");
 
       return rows.map((row) => {
         const entities = videoEntityMap.get(row.id) ?? { gameNames: [], tagNames: [], genreNames: [], platformNames: [] };

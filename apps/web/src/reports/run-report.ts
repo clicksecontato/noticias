@@ -27,11 +27,11 @@ export function generateReportPayload(
     case "volume":
       return generateVolumeReport(articles, videos, {
         group_by: options.group_by ?? "day"
-      }) as Record<string, unknown>;
+      }) as unknown as Record<string, unknown>;
     case "top_sources":
       return generateTopSourcesReport(articles, videos, sourceNames, {
         limit: options.limit_sources ?? 50
-      }) as Record<string, unknown>;
+      }) as unknown as Record<string, unknown>;
     default:
       throw new Error(`Report type not implemented: ${reportType}`);
   }

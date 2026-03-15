@@ -1,13 +1,7 @@
-import {
-  generateRouteMetadata,
-  getRevalidateSeconds
-} from "../../../src/publishing";
+import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 
-export const routeTemplate = "/hardware/[ram]";
-export const revalidate = getRevalidateSeconds("hardware");
-
-type MaybePromise<T> = T | Promise<T>;
+export const revalidate = 43200;
 
 export async function generateStaticParams(): Promise<Array<{ ram: string }>> {
   const contentProvider = createRouteContentProvider();
@@ -16,11 +10,11 @@ export async function generateStaticParams(): Promise<Array<{ ram: string }>> {
 }
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: MaybePromise<{ ram: string }>;
+  params: Promise<{ ram: string }>;
 }) {
-  const { ram } = await Promise.resolve(params);
+  const { ram } = await params;
 
   return generateRouteMetadata({
     pageType: "hardware",
@@ -31,11 +25,11 @@ export async function generateMetadata({
 }
 
 export default async function HardwarePage({
-  params
+  params,
 }: {
-  params: MaybePromise<{ ram: string }>;
+  params: Promise<{ ram: string }>;
 }) {
-  const { ram } = await Promise.resolve(params);
+  const { ram } = await params;
 
   return (
     <section>

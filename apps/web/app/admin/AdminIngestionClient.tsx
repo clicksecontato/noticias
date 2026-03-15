@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/src/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SourceItem {
   id: string;
@@ -39,7 +44,7 @@ export function AdminIngestionClient() {
     provider: "rss" as "rss" | "youtube",
     rss_url: "",
     channel_id: "",
-    language: "pt-BR"
+    language: "pt-BR",
   });
   const [addSourceError, setAddSourceError] = useState<string | null>(null);
   const [addSourceSuccess, setAddSourceSuccess] = useState(false);
@@ -79,15 +84,17 @@ export function AdminIngestionClient() {
       id: newSource.id.trim(),
       name: newSource.name.trim(),
       language: newSource.language,
-      provider: newSource.provider
+      provider: newSource.provider,
     };
     if (newSource.provider === "youtube") {
       if (!newSource.channel_id.trim()) {
-        setAddSourceError("Informe a URL do canal (o ID da fonte é gerado automaticamente).");
+        setAddSourceError(
+          "Informe a URL do canal (o ID da fonte é gerado automaticamente)."
+        );
         return;
       }
       body.channel_id = newSource.channel_id.trim();
-      if (!newSource.id.trim()) body.id = ""; // backend gera a partir do handle
+      if (!newSource.id.trim()) body.id = "";
     } else {
       if (!newSource.rss_url.trim()) {
         setAddSourceError("URL do feed RSS é obrigatória.");
@@ -99,7 +106,7 @@ export function AdminIngestionClient() {
       const res = await fetch("/api/admin/sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -107,7 +114,14 @@ export function AdminIngestionClient() {
         return;
       }
       setAddSourceSuccess(true);
-      setNewSource({ id: "", name: "", provider: "rss", rss_url: "", channel_id: "", language: "pt-BR" });
+      setNewSource({
+        id: "",
+        name: "",
+        provider: "rss",
+        rss_url: "",
+        channel_id: "",
+        language: "pt-BR",
+      });
       loadSources();
     } catch {
       setAddSourceError("Erro ao chamar API.");
@@ -128,7 +142,7 @@ export function AdminIngestionClient() {
       const response = await fetch("/api/admin/ingest-news", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, sourceIds: ids })
+        body: JSON.stringify({ token, sourceIds: ids }),
       });
 
       const data = (await response.json()) as ApiResult;
@@ -145,230 +159,268 @@ export function AdminIngestionClient() {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: "2rem auto", fontFamily: "sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: "1rem" }}>
-        <h1 style={{ margin: 0 }}>Admin de Ingestão Manual</h1>
-        <button
-          type="button"
-          onClick={onLogout}
-          style={{
-            padding: "0.35rem 0.75rem",
-            fontSize: 14,
-            background: "transparent",
-            color: "#64748b",
-            border: "1px solid #334155",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
+    <div className="mx-auto max-w-[720px] space-y-6 py-8">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">Admin de Ingestão Manual</h1>
+        <Button type="button" variant="outline" size="sm" onClick={onLogout}>
           Sair
-        </button>
+        </Button>
       </div>
-      <p>Dispare a busca e criação de notícias em Português Brasileiro.</p>
+      <p className="text-muted-foreground">
+        Dispare a busca e criação de notícias em Português Brasileiro.
+      </p>
 
-      <label htmlFor="token">Token Admin</label>
-      <input
-        id="token"
-        type="password"
-        value={token}
-        onChange={(event) => setToken(event.target.value)}
-        style={{ display: "block", width: "100%", marginBottom: "1rem" }}
-      />
+      <Card>
+        <CardContent className="pt-4 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="token">Token Admin</Label>
+            <Input
+              id="token"
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              className="w-full"
+            />
+          </div>
 
-      {sources.length > 0 ? (
-        <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "#0f172a", borderRadius: 8, border: "1px solid #334155" }}>
-          <strong style={{ color: "#e2e8f0" }}>Fontes disponíveis</strong>
-          <ul style={{ margin: "0.5rem 0 0 1.25rem", padding: 0, fontSize: 14, color: "#94a3b8" }}>
-            {sources.map((s) => (
-              <li key={s.id} style={{ marginBottom: "0.25rem" }}>
-                <span style={{ fontWeight: 600 }}>{s.name}</span>{" "}
-                <span style={{ color: "#64748b" }}>({s.id})</span>{" "}
-                —{" "}
-                <span
-                  style={{
-                    padding: "0.1rem 0.4rem",
-                    borderRadius: 4,
-                    fontSize: 12,
-                    background: s.provider === "youtube" ? "#7c3aed" : "#0ea5e9",
-                    color: "#fff"
-                  }}
-                >
-                  {s.provider === "youtube" ? "YouTube" : "RSS"}
-                </span>
-                {s.provider === "youtube" && s.channelId ? (
-                  <span style={{ marginLeft: 6, fontSize: 12 }}>Canal: {s.channelId}</span>
-                ) : null}
-                {s.provider === "rss" && s.rssUrl ? (
-                  <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.9 }}>{s.rssUrl}</span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+          {sources.length > 0 ? (
+            <Card className="border-border bg-muted/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Fontes disponíveis</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="list-inside space-y-1 text-sm text-muted-foreground">
+                  {sources.map((s) => (
+                    <li key={s.id} className="flex flex-wrap items-center gap-1">
+                      <span className="font-semibold text-foreground">{s.name}</span>
+                      <span className="text-muted-foreground/80">({s.id})</span>
+                      <Badge
+                        variant={s.provider === "youtube" ? "default" : "secondary"}
+                        className="text-xs font-normal"
+                      >
+                        {s.provider === "youtube" ? "YouTube" : "RSS"}
+                      </Badge>
+                      {s.provider === "youtube" && s.channelId ? (
+                        <span className="text-xs">Canal: {s.channelId}</span>
+                      ) : null}
+                      {s.provider === "rss" && s.rssUrl ? (
+                        <span className="truncate text-xs opacity-90">{s.rssUrl}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ) : null}
 
-      <label htmlFor="sourceIds">IDs das fontes (separados por vírgula)</label>
-      <input
-        id="sourceIds"
-        value={sourceIds}
-        onChange={(event) => setSourceIds(event.target.value)}
-        style={{ display: "block", width: "100%", marginBottom: "1rem" }}
-        placeholder="Ex: s1, s2, yt-canal-games"
-      />
+          <div className="space-y-2">
+            <Label htmlFor="sourceIds">IDs das fontes (separados por vírgula)</Label>
+            <Input
+              id="sourceIds"
+              value={sourceIds}
+              onChange={(e) => setSourceIds(e.target.value)}
+              placeholder="Ex: s1, s2, yt-canal-games"
+            />
+          </div>
 
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          type="button"
-          onClick={() => setShowAddSource((v) => !v)}
-          style={{
-            padding: "0.35rem 0.75rem",
-            fontSize: 14,
-            background: "transparent",
-            color: "#94a3b8",
-            border: "1px solid #475569",
-            borderRadius: 6,
-            cursor: "pointer"
-          }}
-        >
-          {showAddSource ? "Ocultar formulário" : "Adicionar nova fonte"}
-        </button>
-        {showAddSource ? (
-          <form onSubmit={onAddSource} style={{ marginTop: 12, padding: 12, background: "#1e293b", borderRadius: 8, border: "1px solid #334155" }}>
-            <label style={{ display: "block", marginBottom: 4, color: "#e2e8f0" }}>Tipo</label>
-            <select
-              value={newSource.provider}
-              onChange={(e) => setNewSource((s) => ({ ...s, provider: e.target.value as "rss" | "youtube" }))}
-              style={{ display: "block", width: "100%", marginBottom: 8, padding: 6 }}
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddSource((v) => !v)}
             >
-              <option value="rss">RSS</option>
-              <option value="youtube">YouTube</option>
-            </select>
-            <label style={{ display: "block", marginBottom: 4, color: "#e2e8f0" }}>
-              ID (único){newSource.provider === "youtube" ? " — opcional, gerado da URL" : ""}
-            </label>
-            <input
-              value={newSource.id}
-              onChange={(e) => setNewSource((s) => ({ ...s, id: e.target.value }))}
-              placeholder={newSource.provider === "youtube" ? "Deixe em branco para gerar automaticamente" : "Ex: meu-canal-yt"}
-              style={{ display: "block", width: "100%", marginBottom: 8, padding: 6 }}
-            />
-            <label style={{ display: "block", marginBottom: 4, color: "#e2e8f0" }}>Nome</label>
-            <input
-              value={newSource.name}
-              onChange={(e) => setNewSource((s) => ({ ...s, name: e.target.value }))}
-              placeholder="Ex: Canal Games"
-              style={{ display: "block", width: "100%", marginBottom: 8, padding: 6 }}
-            />
-            {newSource.provider === "rss" ? (
-              <>
-                <label style={{ display: "block", marginBottom: 4, color: "#e2e8f0" }}>URL do feed RSS</label>
-                <input
-                  value={newSource.rss_url}
-                  onChange={(e) => setNewSource((s) => ({ ...s, rss_url: e.target.value }))}
-                  placeholder="https://exemplo.com/feed.xml"
-                  style={{ display: "block", width: "100%", marginBottom: 8, padding: 6 }}
-                />
-              </>
-            ) : (
-              <>
-                <label style={{ display: "block", marginBottom: 4, color: "#e2e8f0" }}>URL do canal ou Channel ID (YouTube)</label>
-                <input
-                  value={newSource.channel_id}
-                  onChange={(e) => setNewSource((s) => ({ ...s, channel_id: e.target.value }))}
-                  placeholder="https://www.youtube.com/@Canal/videos ou UC..."
-                  style={{ display: "block", width: "100%", marginBottom: 8, padding: 6 }}
-                />
-              </>
-            )}
-            <button type="submit" style={{ padding: "0.35rem 0.75rem", marginRight: 8 }}>Criar fonte</button>
-            {addSourceError ? <span style={{ color: "#f87171", marginLeft: 8 }}>{addSourceError}</span> : null}
-            {addSourceSuccess ? <span style={{ color: "#4ade80", marginLeft: 8 }}>Fonte criada.</span> : null}
-          </form>
-        ) : null}
-      </div>
+              {showAddSource ? "Ocultar formulário" : "Adicionar nova fonte"}
+            </Button>
+            {showAddSource ? (
+              <Card className="border-border bg-card">
+                <CardContent className="pt-4">
+                  <form onSubmit={onAddSource} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Tipo</Label>
+                      <select
+                        value={newSource.provider}
+                        onChange={(e) =>
+                          setNewSource((s) => ({
+                            ...s,
+                            provider: e.target.value as "rss" | "youtube",
+                          }))
+                        }
+                        className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none dark:bg-input/30"
+                      >
+                        <option value="rss">RSS</option>
+                        <option value="youtube">YouTube</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        ID (único)
+                        {newSource.provider === "youtube"
+                          ? " — opcional, gerado da URL"
+                          : ""}
+                      </Label>
+                      <Input
+                        value={newSource.id}
+                        onChange={(e) =>
+                          setNewSource((s) => ({ ...s, id: e.target.value }))
+                        }
+                        placeholder={
+                          newSource.provider === "youtube"
+                            ? "Deixe em branco para gerar automaticamente"
+                            : "Ex: meu-canal-yt"
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nome</Label>
+                      <Input
+                        value={newSource.name}
+                        onChange={(e) =>
+                          setNewSource((s) => ({ ...s, name: e.target.value }))
+                        }
+                        placeholder="Ex: Canal Games"
+                      />
+                    </div>
+                    {newSource.provider === "rss" ? (
+                      <div className="space-y-2">
+                        <Label>URL do feed RSS</Label>
+                        <Input
+                          value={newSource.rss_url}
+                          onChange={(e) =>
+                            setNewSource((s) => ({ ...s, rss_url: e.target.value }))
+                          }
+                          placeholder="https://exemplo.com/feed.xml"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label>URL do canal ou Channel ID (YouTube)</Label>
+                        <Input
+                          value={newSource.channel_id}
+                          onChange={(e) =>
+                            setNewSource((s) => ({
+                              ...s,
+                              channel_id: e.target.value,
+                            }))
+                          }
+                          placeholder="https://www.youtube.com/@Canal/videos ou UC..."
+                        />
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button type="submit" size="sm">
+                        Criar fonte
+                      </Button>
+                      {addSourceError ? (
+                        <span className="text-sm text-destructive">
+                          {addSourceError}
+                        </span>
+                      ) : null}
+                      {addSourceSuccess ? (
+                        <span className="text-sm text-primary">Fonte criada.</span>
+                      ) : null}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
 
-      <button onClick={onTriggerIngestion} disabled={isLoading}>
-        {isLoading ? "Processando..." : "Buscar e criar notícias"}
-      </button>
-
-      {error ? <p style={{ color: "#f87171" }}>{error}</p> : null}
-      {result ? (
-        <div
-          style={{
-            marginTop: "1rem",
-            padding: "1rem",
-            background: "#1e293b",
-            color: "#e2e8f0",
-            borderRadius: "8px",
-            border: "1px solid #334155"
-          }}
-        >
-          <p style={{ margin: "0 0 0.5rem" }}>
-            <strong>Total criados:</strong>{" "}
-            {result.createdArticles > 0 && `${result.createdArticles} artigos`}
-            {result.createdArticles > 0 && (result.createdVideos ?? 0) > 0 && " · "}
-            {(result.createdVideos ?? 0) > 0 && `${result.createdVideos} vídeos (tabela youtube_videos)`}
-            {result.createdArticles === 0 && (result.createdVideos ?? 0) === 0 && "0"}
-            {" · Descartados (idioma): "}{result.discardedByLanguage}
-            {" · Descartados (validação): "}{result.discardedByValidation ?? 0}
-          </p>
-          {(result.createdVideos ?? 0) > 0 ? (
-            <p style={{ margin: "0 0 0.25rem", fontSize: 13, color: "#94a3b8" }}>
-              Os vídeos YouTube ficam na tabela <strong>youtube_videos</strong> no Supabase e ainda não aparecem na listagem pública de notícias do site.
-            </p>
-          ) : null}
-          {result.createdBySource && Object.keys(result.createdBySource).length > 0 ? (
-            <p style={{ margin: "0 0 0.25rem" }}>
-              <strong>Criados por fonte:</strong>{" "}
-              {Object.entries(result.createdBySource)
-                .map(([id, n]) => `${id}: ${n}`)
-                .join(" · ")}
-            </p>
-          ) : null}
-          {result.failedSources && Object.keys(result.failedSources).length > 0 ? (
-            <div style={{ marginTop: "0.75rem" }}>
-              <strong style={{ color: "#fbbf24" }}>Fontes com erro (RSS indisponível ou TLS):</strong>
-              <ul style={{ margin: "0.25rem 0 0 1.25rem", padding: 0, fontSize: 13, color: "#fcd34d" }}>
-                {Object.entries(result.failedSources).map(([id, msg]) => (
-                  <li key={id}>
-                    <strong>{id}</strong>: {msg.slice(0, 120)}{msg.length > 120 ? "…" : ""}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {result.skippedArticles && result.skippedArticles.length > 0 ? (
-            <div style={{ marginTop: "0.75rem" }}>
-              <strong>Já existentes (não duplicados):</strong>
-              <ul style={{ margin: "0.25rem 0 0 1.25rem", padding: 0, fontSize: 14 }}>
-                {result.skippedArticles.map((a, i) => (
-                  <li key={`${a.sourceId}-${i}-${a.title.slice(0, 30)}`}>
-                    {a.title}
-                    {a.sourceUrl ? (
-                      <span style={{ opacity: 0.85, fontSize: 12 }}>
-                        {" "}
-                        · <a href={a.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#7dd3fc" }}>link</a>
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          <pre
-            style={{
-              marginTop: "0.75rem",
-              padding: "0.75rem",
-              background: "#0f172a",
-              color: "#94a3b8",
-              borderRadius: "6px",
-              fontSize: 11,
-              overflow: "auto"
-            }}
+          <Button
+            onClick={onTriggerIngestion}
+            disabled={isLoading}
           >
-            {JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
+            {isLoading ? "Processando..." : "Buscar e criar notícias"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <p className="text-sm text-destructive">{error}</p>
+      ) : null}
+      {result ? (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <p className="text-sm">
+              <strong>Total criados:</strong>{" "}
+              {result.createdArticles > 0 && `${result.createdArticles} artigos`}
+              {result.createdArticles > 0 &&
+                (result.createdVideos ?? 0) > 0 &&
+                " · "}
+              {(result.createdVideos ?? 0) > 0 &&
+                `${result.createdVideos} vídeos (tabela youtube_videos)`}
+              {result.createdArticles === 0 &&
+                (result.createdVideos ?? 0) === 0 &&
+                "0"}
+              {" · Descartados (idioma): "}
+              {result.discardedByLanguage}
+              {" · Descartados (validação): "}
+              {result.discardedByValidation ?? 0}
+            </p>
+            {(result.createdVideos ?? 0) > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Os vídeos YouTube ficam na tabela{" "}
+                <strong>youtube_videos</strong> no Supabase e ainda não aparecem
+                na listagem pública de notícias do site.
+              </p>
+            ) : null}
+            {result.createdBySource &&
+            Object.keys(result.createdBySource).length > 0 ? (
+              <p className="text-sm">
+                <strong>Criados por fonte:</strong>{" "}
+                {Object.entries(result.createdBySource)
+                  .map(([id, n]) => `${id}: ${n}`)
+                  .join(" · ")}
+              </p>
+            ) : null}
+            {result.failedSources &&
+            Object.keys(result.failedSources).length > 0 ? (
+              <div className="space-y-1">
+                <strong className="text-destructive">
+                  Fontes com erro (RSS indisponível ou TLS):
+                </strong>
+                <ul className="list-inside space-y-0.5 text-sm text-destructive/90">
+                  {Object.entries(result.failedSources).map(([id, msg]) => (
+                    <li key={id}>
+                      <strong>{id}</strong>:{" "}
+                      {msg.slice(0, 120)}
+                      {msg.length > 120 ? "…" : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {result.skippedArticles && result.skippedArticles.length > 0 ? (
+              <div className="space-y-1">
+                <strong>Já existentes (não duplicados):</strong>
+                <ul className="list-inside space-y-0.5 text-sm">
+                  {result.skippedArticles.map((a, i) => (
+                    <li key={`${a.sourceId}-${i}-${a.title.slice(0, 30)}`}>
+                      {a.title}
+                      {a.sourceUrl ? (
+                        <span className="text-xs opacity-85">
+                          {" "}
+                          ·{" "}
+                          <a
+                            href={a.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            link
+                          </a>
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
       ) : null}
     </div>
   );

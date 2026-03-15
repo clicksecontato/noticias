@@ -1,22 +1,27 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../../src/content-provider";
 import { buildNewsQueryPath, parseNewsListParams } from "../../src/news-list-query";
-import { EntityChips } from "../components/EntityChips";
-
-type MaybePromise<T> = T | Promise<T>;
+import { FilterChipRow } from "../components/FilterChipRow";
+import { NewsCard } from "../components/NewsCard";
+import { PageBackLink } from "../components/PageBackLink";
+import { PaginationNav } from "../components/PaginationNav";
+import { SearchForm } from "../components/SearchForm";
+import { SortChips } from "../components/SortChips";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = {
   title: "Notícias",
   description:
-    "Listagem de notícias de games em português brasileiro. Paginação, busca por termo e filtro por fonte."
+    "Listagem de notícias de games em português brasileiro. Paginação, busca por termo e filtro por fonte.",
 };
 
 export default async function NewsListingPage({
-  searchParams
+  searchParams,
 }: {
-  searchParams?: MaybePromise<{ page?: string; source?: string; q?: string; sort?: string }>;
+  searchParams?: Promise<{ page?: string; source?: string; q?: string; sort?: string }>;
 }) {
-  const resolvedSearchParams = parseNewsListParams(await Promise.resolve(searchParams ?? {}));
+  const resolvedSearchParams = parseNewsListParams((await searchParams) ?? {});
   const { page: currentPage, sourceId, query, sortMode } = resolvedSearchParams;
   const pageSize = 6;
 
@@ -30,177 +35,76 @@ export default async function NewsListingPage({
       sourceId || undefined,
       query || undefined,
       sortMode
-    )
+    ),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
 
+  const buildQueryPath = (page: number, source: string, sort: typeof sortMode) =>
+    buildNewsQueryPath({ page, sourceId: source, query, sortMode: sort, basePath: "/news" });
+
   return (
-    <section>
-      <p className="page-back">
-        <Link href="/">← Início</Link>
+    <section className="space-y-6">
+      <PageBackLink href="/">← Início</PageBackLink>
+      <h2 className="text-2xl font-semibold">Notícias de Games</h2>
+      <p className="text-muted-foreground">
+        Listagem com paginação, busca por termo e filtro por fonte.
       </p>
-      <h2>Notícias de Games</h2>
-      <p>Listagem com paginação, busca por termo e filtro por fonte.</p>
 
-      <div className="card">
-        <form action="/news" method="get" style={{ marginBottom: 12 }}>
-          <input type="hidden" name="source" value={sourceId} />
-          <input type="hidden" name="sort" value={sortMode} />
-          <label htmlFor="q" style={{ display: "block", marginBottom: 6 }}>
-            Buscar por termo
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              id="q"
-              name="q"
-              defaultValue={query}
-              placeholder="Ex.: GTA, Elden Ring..."
-              style={{ flex: 1 }}
-            />
-            <button type="submit" aria-label="Buscar notícias">Buscar</button>
-          </div>
-        </form>
-
-        <p style={{ marginTop: 0 }}>Ordenação:</p>
-        <div className="chipList" style={{ marginBottom: 12 }}>
-          <Link
-            className={`chip ${sortMode === "published_desc" ? "active" : ""}`}
-            href={buildNewsQueryPath({
-              page: 1,
-              sourceId,
-              query,
-              sortMode: "published_desc",
-              basePath: "/news"
-            })}
-          >
-            Mais novas
-          </Link>
-          <Link
-            className={`chip ${sortMode === "published_asc" ? "active" : ""}`}
-            href={buildNewsQueryPath({
-              page: 1,
-              sourceId,
-              query,
-              sortMode: "published_asc",
-              basePath: "/news"
-            })}
-          >
-            Mais antigas
-          </Link>
-        </div>
-
-        <p style={{ marginTop: 0 }}>Filtrar por fonte:</p>
-        <div className="chipList">
-          <Link
-            className={`chip ${sourceId ? "" : "active"}`}
-            href={buildNewsQueryPath({
-              page: 1,
-              sourceId: "",
-              query,
-              sortMode,
-              basePath: "/news"
-            })}
-          >
-            Todas
-          </Link>
-          {filters.map((filter) => (
-            <Link
-              key={filter.id}
-              className={`chip ${sourceId === filter.id ? "active" : ""}`}
-              href={buildNewsQueryPath({
-                page: 1,
-                sourceId: filter.id,
-                query,
-                sortMode,
-                basePath: "/news"
-              })}
-            >
-              {filter.name}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardContent className="pt-4 space-y-4">
+          <SearchForm
+            action="/news"
+            query={query ?? undefined}
+            hiddenFields={{ source: sourceId ?? "", sort: sortMode }}
+          />
+          <p className="text-sm font-medium text-muted-foreground">Ordenação:</p>
+          <SortChips
+            currentSort={sortMode}
+            buildHref={(sort) => buildQueryPath(1, sourceId ?? "", sort)}
+          />
+          <p className="text-sm font-medium text-muted-foreground">Filtrar por fonte:</p>
+          <FilterChipRow
+            items={filters}
+            activeId={sourceId || null}
+            buildHref={(id) => buildQueryPath(1, id, sortMode)}
+          />
+        </CardContent>
+      </Card>
 
       {cards.length === 0 ? (
-        <div className="card empty-state">
-          <p>Nenhuma notícia encontrada com os filtros atuais.</p>
-          <Link href="/news" className="chip active">Limpar filtros</Link>
-        </div>
-      ) : null}
-      {cards.map((card) => (
-        <article className="card newsCard" key={card.slug}>
-          {card.imageUrl ? (
-            <Link href={`/news/${card.slug}`} className="newsCard-imageWrap">
-              <img
-                src={card.imageUrl}
-                alt=""
-                className="newsCard-image"
-                width={400}
-                height={220}
-                loading="lazy"
-              />
+        <Card>
+          <CardContent className="pt-4">
+            <p className="mb-3 text-muted-foreground">
+              Nenhuma notícia encontrada com os filtros atuais.
+            </p>
+            <Link href="/news" className={buttonVariants({ variant: "default" })}>
+              Limpar filtros
             </Link>
-          ) : null}
-          <h3>
-            <Link href={`/news/${card.slug}`}>{card.title}</Link>
-          </h3>
-          <p>{card.summary}</p>
-          <small style={{ opacity: 0.75 }}>Fonte: {card.sourceName}</small>
-          <br />
-          <small style={{ opacity: 0.65 }}>
-            Publicado em: {new Date(card.publishedAt).toLocaleString("pt-BR")}
-          </small>
-          <EntityChips
-            gameNames={card.gameNames}
-            tagNames={card.tagNames}
-            genreNames={card.genreNames}
-            platformNames={card.platformNames}
-          />
-        </article>
-      ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <nav className="pagination" aria-label="Paginação">
-        {prevPage ? (
-          <Link
-            className="chip"
-            href={buildNewsQueryPath({
-              page: prevPage,
-              sourceId,
-              query,
-              sortMode,
-              basePath: "/news"
-            })}
-            aria-label="Página anterior"
-          >
-            Página anterior
-          </Link>
-        ) : (
-          <span className="chip muted" aria-hidden="true">Página anterior</span>
-        )}
-        <span className="chip muted" aria-live="polite">
-          Página {currentPage} de {totalPages}
-        </span>
-        {nextPage ? (
-          <Link
-            className="chip"
-            href={buildNewsQueryPath({
-              page: nextPage,
-              sourceId,
-              query,
-              sortMode,
-              basePath: "/news"
-            })}
-            aria-label="Próxima página"
-          >
-            Próxima página
-          </Link>
-        ) : (
-          <span className="chip muted" aria-hidden="true">Próxima página</span>
-        )}
-      </nav>
+      <div className="space-y-6">
+        {cards.map((card) => (
+          <NewsCard
+            key={card.slug}
+            card={card}
+            formatDate={(iso) => new Date(iso).toLocaleString("pt-BR")}
+          />
+        ))}
+      </div>
+
+      <PaginationNav
+        prevPage={prevPage}
+        nextPage={nextPage}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        buildPrevHref={() => buildQueryPath(prevPage!, sourceId ?? "", sortMode)}
+        buildNextHref={() => buildQueryPath(nextPage!, sourceId ?? "", sortMode)}
+      />
     </section>
   );
 }

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "Início" },
@@ -38,48 +40,62 @@ export function Navigation() {
     return pathname.startsWith(href);
   };
 
+  const linkClass = (href: string) =>
+    cn(
+      "text-sm font-medium transition-colors hover:text-foreground",
+      isActive(href) ? "text-foreground" : "text-muted-foreground"
+    );
+
   return (
     <>
-      <nav className="site-nav" role="navigation" aria-label="Menu principal">
-        <div className="site-nav__container">
-          <div className="site-nav__inner">
-            <Link href="/" className="site-nav__brand" onClick={() => setMobileOpen(false)}>
-              Notícias <span className="site-nav__brandAccent">Games</span>
-            </Link>
+      <nav
+        className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        role="navigation"
+        aria-label="Menu principal"
+      >
+        <div className="mx-auto flex h-14 max-w-[960px] items-center justify-between px-4">
+          <Link
+            href="/"
+            className="text-lg font-semibold tracking-tight text-foreground no-underline hover:no-underline"
+            onClick={() => setMobileOpen(false)}
+          >
+            Notícias <span className="text-primary">Games</span>
+          </Link>
 
-            <ul className="site-nav__links">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`site-nav__link ${isActive(item.href) ? "active" : ""}`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          <ul className="hidden gap-6 md:flex">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className={linkClass(item.href)}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-            <button
-              type="button"
-              className="site-nav__toggle"
-              onClick={() => setMobileOpen((o) => !o)}
-              aria-expanded={mobileOpen}
-              aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-            >
-              <MenuIcon open={mobileOpen} />
-            </button>
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+          >
+            <MenuIcon open={mobileOpen} />
+          </Button>
         </div>
 
         {mobileOpen && (
-          <div className="site-nav__mobile">
-            <ul className="site-nav__mobileList">
+          <div className="absolute left-0 right-0 top-14 border-b border-border bg-card md:hidden">
+            <ul className="flex flex-col gap-0 px-4 py-3">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`site-nav__mobileLink ${isActive(item.href) ? "active" : ""}`}
+                    className={cn(
+                      "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      isActive(item.href) ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
                     onClick={() => setMobileOpen(false)}
                   >
                     {item.label}
@@ -90,7 +106,7 @@ export function Navigation() {
           </div>
         )}
       </nav>
-      <div className="site-nav__spacer" aria-hidden />
+      <div className="h-14 shrink-0" aria-hidden />
     </>
   );
 }

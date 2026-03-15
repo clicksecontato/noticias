@@ -1,13 +1,7 @@
-import {
-  generateRouteMetadata,
-  getRevalidateSeconds
-} from "../../../../src/publishing";
+import { generateRouteMetadata } from "../../../../src/publishing";
 import { createRouteContentProvider } from "../../../../src/content-provider";
 
-export const routeTemplate = "/best/[genre]/[platform]";
-export const revalidate = getRevalidateSeconds("best");
-
-type MaybePromise<T> = T | Promise<T>;
+export const revalidate = 43200;
 
 export async function generateStaticParams(): Promise<
   Array<{ genre: string; platform: string }>
@@ -17,11 +11,11 @@ export async function generateStaticParams(): Promise<
 }
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: MaybePromise<{ genre: string; platform: string }>;
+  params: Promise<{ genre: string; platform: string }>;
 }) {
-  const { genre, platform } = await Promise.resolve(params);
+  const { genre, platform } = await params;
   const genreName = genre.replace(/-/g, " ");
   const platformName = platform.replace(/-/g, " ");
 
@@ -34,11 +28,11 @@ export async function generateMetadata({
 }
 
 export default async function BestGenrePlatformPage({
-  params
+  params,
 }: {
-  params: MaybePromise<{ genre: string; platform: string }>;
+  params: Promise<{ genre: string; platform: string }>;
 }) {
-  const { genre, platform } = await Promise.resolve(params);
+  const { genre, platform } = await params;
   const genreName = genre.replace(/-/g, " ");
   const platformName = platform.replace(/-/g, " ");
 

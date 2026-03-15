@@ -1,13 +1,7 @@
-import {
-  generateRouteMetadata,
-  getRevalidateSeconds
-} from "../../../src/publishing";
+import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 
-export const routeTemplate = "/games-like/[slug]";
-export const revalidate = getRevalidateSeconds("games-like");
-
-type MaybePromise<T> = T | Promise<T>;
+export const revalidate = 86400;
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const contentProvider = createRouteContentProvider();
@@ -16,11 +10,11 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: MaybePromise<{ slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const titleBase = `Jogos como ${slug.replace(/-/g, " ")}`;
 
   return generateRouteMetadata({
@@ -32,11 +26,11 @@ export async function generateMetadata({
 }
 
 export default async function GamesLikePage({
-  params
+  params,
 }: {
-  params: MaybePromise<{ slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const titleBase = `Jogos como ${slug.replace(/-/g, " ")}`;
 
   return (
