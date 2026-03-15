@@ -80,4 +80,46 @@ describe("Database Agent - content repository", () => {
     expect(second.skippedItems[0].title).toBe("Noticia duplicada por URL");
     expect(second.skippedItems[0].sourceUrl).toBe("https://fonte.com/ja-existe");
   });
+
+  it("getContentSourcesForIngestion retorna fontes ativas (pt-BR/pt) com provider, rssUrl e channelId", async () => {
+    const repository = createContentRepository();
+    const sources = await repository.getContentSourcesForIngestion();
+
+    expect(sources.length).toBeGreaterThan(0);
+    const rssOnly = sources.filter((s) => s.provider === "rss");
+    expect(rssOnly.length).toBe(sources.length);
+    sources.forEach((s) => {
+      expect(s).toMatchObject({
+        id: expect.any(String),
+        name: expect.any(String),
+        language: expect.stringMatching(/^pt(-BR)?$/),
+        provider: "rss",
+        isActive: true
+      });
+      expect(typeof s.rssUrl === "string" || s.rssUrl === null).toBe(true);
+      expect(s.channelId === null || typeof s.channelId === "string").toBe(true);
+    });
+    const ign = sources.find((s) => s.name.includes("IGN"));
+    expect(ign).toBeUndefined();
+  });
+
+  it("saveYoutubeVideos retorna shape esperado (memory: no-op)", async () => {
+    const repository = createContentRepository();
+    const result = await repository.saveYoutubeVideos("s1", [
+      {
+        videoId: "abc123",
+        title: "Video teste",
+        description: "Desc",
+        url: "https://youtube.com/watch?v=abc123",
+        publishedAt: new Date().toISOString(),
+        thumbnailUrl: null
+      }
+    ]);
+
+    expect(result).toMatchObject({
+      created: 0,
+      skipped: 0,
+      skippedItems: []
+    });
+  });
 });

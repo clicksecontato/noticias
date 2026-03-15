@@ -5,3 +5,7 @@ node_modules/
 dist/
 coverage/
 .DS_Store
+
+# Credenciais Google (OAuth client secret) — nunca commitar
+client_secret*.json
+*credentials*.json

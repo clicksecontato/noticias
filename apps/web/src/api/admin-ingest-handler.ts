@@ -6,11 +6,15 @@ export interface AdminIngestRequestBody {
 export interface AdminIngestResponseBody {
   processedSourceIds: string[];
   createdArticles: number;
+  /** Vídeos YouTube gravados em youtube_videos (não aparecem na listagem de notícias). */
+  createdVideos?: number;
   discardedByLanguage: number;
   discardedByValidation: number;
   createdBySource: Record<string, number>;
   skippedBySource: Record<string, number>;
   skippedArticles: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
+  /** Fontes que falharam ao buscar (RSS/YouTube). */
+  failedSources?: Record<string, string>;
 }
 
 export interface AdminIngestResponse {

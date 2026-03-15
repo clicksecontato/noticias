@@ -18,6 +18,19 @@ export interface NewsSourceFilter {
   name: string;
 }
 
+/** Card de vídeo para a seção Vídeos (YouTube). */
+export interface YoutubeVideoCard {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  videoId: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  thumbnailUrl: string | null;
+  url: string;
+}
+
 /** Artigo para exibição em /news/[slug] (agregador: título + resumo + link para fonte) */
 export interface NewsArticleFull {
   slug: string;
@@ -65,6 +78,13 @@ export interface RouteContentProvider {
     sort?: NewsSortMode
   ): Promise<HomeCard[]>;
   getNewsSourceFilters(): Promise<NewsSourceFilter[]>;
+  getPaginatedYoutubeVideos(
+    page: number,
+    pageSize: number,
+    sourceId?: string
+  ): Promise<YoutubeVideoCard[]>;
+  getYoutubeVideosTotal(sourceId?: string): Promise<number>;
+  getYoutubeSourceFilters(): Promise<NewsSourceFilter[]>;
 }
 
 function buildFilteredNews(
@@ -229,6 +249,35 @@ export function createRouteContentProvider(): RouteContentProvider {
         id: source.id,
         name: source.name
       }));
+    },
+    async getPaginatedYoutubeVideos(page: number, pageSize: number, sourceId?: string) {
+      const safePage = Math.max(1, page);
+      const safePageSize = Math.max(1, pageSize);
+      const offset = (safePage - 1) * safePageSize;
+      const videos = await repository.getYoutubeVideos({
+        limit: safePageSize,
+        offset,
+        sourceId
+      });
+      return videos.map((v) => ({
+        id: v.id,
+        sourceId: v.sourceId,
+        sourceName: v.sourceName,
+        videoId: v.videoId,
+        title: v.title,
+        description: v.description,
+        publishedAt: v.publishedAt,
+        thumbnailUrl: v.thumbnailUrl,
+        url: v.url
+      }));
+    },
+    async getYoutubeVideosTotal(sourceId?: string) {
+      return repository.getYoutubeVideosTotal(sourceId);
+    },
+    async getYoutubeSourceFilters() {
+      const sources = await repository.getContentSourcesForIngestion();
+      const youtubeSources = sources.filter((s) => s.provider === "youtube");
+      return youtubeSources.map((s) => ({ id: s.id, name: s.name }));
     }
   };
 }

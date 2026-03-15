@@ -1,8 +1,4 @@
-import type {
-  FetchNewsBySource,
-  RawNewsItem,
-  SourceInput
-} from "./ingestion-orchestrator";
+import type { RawNewsItem, SourceInput } from "./ingestion-orchestrator";
 
 interface ParsedRssEntry {
   title: string;
@@ -19,6 +15,21 @@ const DEFAULT_FETCH_OPTIONS: RequestInit = {
     Accept: "application/rss+xml, application/xml, text/xml, */*"
   }
 };
+
+/** Normaliza URL: remove ponto final do hostname para evitar ERR_TLS_CERT_ALTNAME_INVALID. */
+function normalizeRssUrl(url: string): string {
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname.endsWith(".")) {
+      parsed.hostname = parsed.hostname.slice(0, -1);
+      return parsed.toString();
+    }
+    return trimmed;
+  } catch {
+    return trimmed;
+  }
+}
 
 function cleanXmlValue(value: string): string {
   return value.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
@@ -104,17 +115,24 @@ function parseRssEntries(xml: string): ParsedRssEntry[] {
   return entries.slice(0, 6);
 }
 
+export interface FetchRssOptions {
+  fetch?: typeof globalThis.fetch;
+}
+
 /**
  * Agregador: só título, descrição (resumo) e link para o site de origem.
  * Não busca a página do artigo nem armazena conteúdo completo.
  */
-export const fetchRssItemsBySource: FetchNewsBySource = async (
-  source: SourceInput
-): Promise<RawNewsItem[]> => {
-  const response = await fetch(source.rssUrl, DEFAULT_FETCH_OPTIONS);
+export async function fetchRssItemsBySource(
+  source: SourceInput,
+  options?: FetchRssOptions
+): Promise<RawNewsItem[]> {
+  const fetchFn = options?.fetch ?? fetch;
+  const feedUrl = normalizeRssUrl(source.rssUrl);
+  const response = await fetchFn(feedUrl, DEFAULT_FETCH_OPTIONS);
   if (!response.ok) {
     throw new Error(
-      `RSS fetch failed for ${source.id}: ${response.status} ${response.statusText} (${source.rssUrl})`
+      `RSS fetch failed for ${source.id}: ${response.status} ${response.statusText} (${feedUrl})`
     );
   }
   const xml = await response.text();
@@ -136,4 +154,4 @@ export const fetchRssItemsBySource: FetchNewsBySource = async (
   }
 
   return items;
-};
+}

@@ -35,6 +35,8 @@ export interface IngestionResult {
   createdBySource: Record<string, number>;
   skippedBySource: Record<string, number>;
   skippedArticles: SkippedArticle[];
+  /** Fontes que falharam ao buscar RSS (ex.: TLS, timeout). */
+  failedSources?: Record<string, string>;
 }
 
 export type FetchNewsBySource = (source: SourceInput) => Promise<RawNewsItem[]>;
@@ -75,9 +77,20 @@ export async function runManualNewsIngestion(
   const createdBySource: Record<string, number> = {};
   const skippedBySource: Record<string, number> = {};
   const skippedArticles: SkippedArticle[] = [];
+  const failedSources: Record<string, string> = {};
 
   for (const source of selectedSources) {
-    const items = await input.fetchNewsBySource(source);
+    let items: RawNewsItem[];
+    try {
+      items = await input.fetchNewsBySource(source);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      failedSources[source.id] = message;
+      createdBySource[source.id] = 0;
+      skippedBySource[source.id] = 0;
+      continue;
+    }
+
     const acceptedItems: RawNewsItem[] = [];
     for (const item of items) {
       if (item.language === "pt-BR" || item.language === "pt") {
@@ -111,6 +124,7 @@ export async function runManualNewsIngestion(
     discardedByValidation,
     createdBySource,
     skippedBySource,
-    skippedArticles
+    skippedArticles,
+    ...(Object.keys(failedSources).length > 0 && { failedSources })
   };
 }

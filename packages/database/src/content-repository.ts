@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { getDatabaseConfig, type DatabaseConfig } from "./config";
+import type {
+  ContentSourceRecord,
+  YoutubeVideoItem,
+  SaveYoutubeVideosResult,
+  YoutubeVideoDisplay
+} from "./content-source-types";
 
 export interface NewsArticleRecord {
   slug: string;
@@ -62,6 +68,20 @@ export interface ContentRepository {
       imageUrl?: string;
     }>
   ): Promise<SaveIngestedResult>;
+  /** Fontes ativas para ingestão (RSS + YouTube), com flag provider. */
+  getContentSourcesForIngestion(): Promise<ContentSourceRecord[]>;
+  /** Persiste vídeos do YouTube; dedup por (source_id, video_id). */
+  saveYoutubeVideos(
+    sourceId: string,
+    items: YoutubeVideoItem[]
+  ): Promise<SaveYoutubeVideosResult>;
+  /** Lista vídeos para a seção Vídeos (ordenado por published_at desc). */
+  getYoutubeVideos(options?: {
+    limit?: number;
+    offset?: number;
+    sourceId?: string;
+  }): Promise<YoutubeVideoDisplay[]>;
+  getYoutubeVideosTotal(sourceId?: string): Promise<number>;
 }
 
 const NEWS_ARTICLES: NewsArticleRecord[] = [
@@ -219,6 +239,31 @@ function createMemoryContentRepository(): ContentRepository {
           source.isActive && (source.language === "pt-BR" || source.language === "pt")
       );
     },
+    async getContentSourcesForIngestion(): Promise<ContentSourceRecord[]> {
+      return SOURCES.filter(
+        (s) => s.isActive && (s.language === "pt-BR" || s.language === "pt")
+      ).map((s) => ({
+        id: s.id,
+        name: s.name,
+        language: s.language,
+        provider: "rss" as const,
+        rssUrl: s.rssUrl,
+        channelId: null,
+        isActive: s.isActive
+      }));
+    },
+    async saveYoutubeVideos(
+      _sourceId: string,
+      _items: YoutubeVideoItem[]
+    ): Promise<SaveYoutubeVideosResult> {
+      return { created: 0, skipped: 0, skippedItems: [] };
+    },
+    async getYoutubeVideos(): Promise<YoutubeVideoDisplay[]> {
+      return [];
+    },
+    async getYoutubeVideosTotal(): Promise<number> {
+      return 0;
+    },
     async saveIngestedNewsItems(items) {
       let created = 0;
       const skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
@@ -296,6 +341,29 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       rssUrl: row.rss_url,
       isActive: row.is_active
     })) as SourceRecord[];
+  };
+
+  const fetchContentSourcesForIngestion = async (): Promise<ContentSourceRecord[]> => {
+    const { data, error } = await readClient
+      .from("sources")
+      .select("id,name,language,provider,rss_url,channel_id,is_active")
+      .eq("is_active", true)
+      .in("language", ["pt-BR", "pt"])
+      .limit(100);
+
+    if (error) {
+      throw new Error(`Failed to fetch content sources: ${error.message}`);
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      language: row.language,
+      provider: (row.provider === "youtube" ? "youtube" : "rss") as ContentSourceRecord["provider"],
+      rssUrl: row.rss_url ?? null,
+      channelId: row.channel_id ?? null,
+      isActive: row.is_active
+    }));
   };
 
   return {
@@ -434,6 +502,111 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
     },
     async getActivePortugueseSources() {
       return fetchActivePortugueseSources();
+    },
+    async getContentSourcesForIngestion() {
+      return fetchContentSourcesForIngestion();
+    },
+    async saveYoutubeVideos(
+      sourceId: string,
+      items: YoutubeVideoItem[]
+    ): Promise<SaveYoutubeVideosResult> {
+      let created = 0;
+      const skippedItems: Array<{ sourceId: string; title: string; url?: string }> = [];
+
+      for (const item of items) {
+        const { data: existing } = await readClient
+          .from("youtube_videos")
+          .select("id")
+          .eq("source_id", sourceId)
+          .eq("video_id", item.videoId)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          skippedItems.push({ sourceId, title: item.title, url: item.url });
+          continue;
+        }
+
+        const { error } = await writeClient.from("youtube_videos").insert({
+          source_id: sourceId,
+          video_id: item.videoId,
+          title: item.title,
+          description: item.description ?? "",
+          published_at: item.publishedAt,
+          thumbnail_url: item.thumbnailUrl ?? null,
+          url: item.url
+        });
+
+        if (error) {
+          throw new Error(`Failed to insert youtube video: ${error.message}`);
+        }
+        created += 1;
+      }
+
+      return { created, skipped: skippedItems.length, skippedItems };
+    },
+    async getYoutubeVideos(options?: {
+      limit?: number;
+      offset?: number;
+      sourceId?: string;
+    }): Promise<YoutubeVideoDisplay[]> {
+      const limit = options?.limit ?? 24;
+      const offset = options?.offset ?? 0;
+      let query = readClient
+        .from("youtube_videos")
+        .select("id, source_id, video_id, title, description, published_at, thumbnail_url, url")
+        .order("published_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (options?.sourceId) {
+        query = query.eq("source_id", options.sourceId);
+      }
+      const { data, error } = await query;
+      if (error) {
+        throw new Error(`Failed to fetch youtube videos: ${error.message}`);
+      }
+      const rows = (data || []) as Array<{
+        id: string;
+        source_id: string;
+        video_id: string;
+        title: string;
+        description: string;
+        published_at: string;
+        thumbnail_url: string | null;
+        url: string;
+      }>;
+      const sourceIds = [...new Set(rows.map((r) => r.source_id))];
+      const sourceNames = new Map<string, string>();
+      if (sourceIds.length > 0) {
+        const { data: sourcesData } = await readClient
+          .from("sources")
+          .select("id, name")
+          .in("id", sourceIds);
+        for (const s of sourcesData || []) {
+          sourceNames.set(s.id, s.name);
+        }
+      }
+      return rows.map((row) => ({
+        id: row.id,
+        sourceId: row.source_id,
+        sourceName: sourceNames.get(row.source_id) ?? "YouTube",
+        videoId: row.video_id,
+        title: row.title,
+        description: row.description ?? "",
+        publishedAt: row.published_at,
+        thumbnailUrl: row.thumbnail_url,
+        url: row.url
+      }));
+    },
+    async getYoutubeVideosTotal(sourceId?: string): Promise<number> {
+      let query = readClient.from("youtube_videos").select("id", { count: "exact", head: true });
+      if (sourceId) {
+        query = query.eq("source_id", sourceId);
+      }
+      const { count, error } = await query;
+      if (error) {
+        throw new Error(`Failed to count youtube videos: ${error.message}`);
+      }
+      return count ?? 0;
     },
     async saveIngestedNewsItems(items) {
       let created = 0;
