@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createReportRepository } from "../../../../../packages/database/src/report-repository";
 import { PageBackLink } from "../../components/PageBackLink";
+import { TopSourcesChart } from "../../components/reports/TopSourcesChart";
+import { VolumeChart } from "../../components/reports/VolumeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
@@ -98,12 +100,16 @@ function ReportPayload({
   payload: Record<string, unknown>;
 }) {
   if (type === "volume") {
-    const series =
+    const rawSeries =
       (payload.series as Array<{
         date: string;
         articles: number;
         videos: number;
       }>) ?? [];
+    const series = rawSeries.map((row) => ({
+      ...row,
+      total: row.articles + row.videos,
+    }));
     const totals = (payload.totals as { articles: number; videos: number }) ?? {
       articles: 0,
       videos: 0,
@@ -128,6 +134,7 @@ function ReportPayload({
                 : "por mês"}
             )
           </h3>
+          <VolumeChart data={series} groupBy={groupBy} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -171,7 +178,8 @@ function ReportPayload({
         <CardHeader>
           <CardTitle>Ranking de fontes</CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="space-y-6 pt-0">
+          <TopSourcesChart data={items} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
