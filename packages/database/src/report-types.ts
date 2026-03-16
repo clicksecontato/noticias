@@ -10,7 +10,8 @@ export const REPORT_TYPES = [
   "executive_summary",
   "rss_vs_youtube",
   "timeline",
-  "by_source_detail"
+  "by_source_detail",
+  "top_games"
 ] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];

@@ -67,6 +67,12 @@ export interface ReportRepository {
     periodEnd: string,
     filters?: ReportFilters
   ): Promise<Array<{ tag_id: string; tag_name: string; count: number }>>;
+  /** Contagem de artigos e vídeos por jogo no período (para relatório top_games). */
+  getGameCountsForReports(
+    periodStart: string,
+    periodEnd: string,
+    filters?: ReportFilters
+  ): Promise<Array<{ game_id: string; game_name: string; articles: number; videos: number; total: number }>>;
 }
 
 function createSupabaseReportRepository(): ReportRepository {
@@ -370,7 +376,174 @@ function createSupabaseReportRepository(): ReportRepository {
           count: allTagCounts.get(tag_id) ?? 0
         }))
         .sort((a, b) => b.count - a.count);
-    }
+    },
+
+    async getGameCountsForReports(periodStart, periodEnd, filters) {
+      const { data: articles, error: articlesError } = await client
+        .from("articles")
+        .select("id")
+        .gte("published_at", periodStart)
+        .lte("published_at", periodEnd);
+      if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
+      let articleIds = (articles ?? []).map((a) => a.id);
+
+      const { data: videos, error: videosError } = await client
+        .from("youtube_videos")
+        .select("id, source_id")
+        .gte("published_at", periodStart)
+        .lte("published_at", periodEnd);
+      if (videosError) throw new Error(`Failed to fetch videos: ${videosError.message}`);
+      let videoIds = (videos ?? []).map((v) => v.id);
+
+      if (filters?.gameId) {
+        if (articleIds.length > 0) {
+          const { data: gameLinks } = await client
+            .from("article_games")
+            .select("article_id")
+            .eq("game_id", filters.gameId)
+            .in("article_id", articleIds);
+          const ids = new Set((gameLinks || []).map((l) => l.article_id));
+          articleIds = articleIds.filter((id) => ids.has(id));
+        }
+        if (videoIds.length > 0) {
+          const { data: gameLinks } = await client
+            .from("youtube_video_games")
+            .select("youtube_video_id")
+            .eq("game_id", filters.gameId)
+            .in("youtube_video_id", videoIds);
+          const ids = new Set((gameLinks || []).map((l) => l.youtube_video_id));
+          videoIds = videoIds.filter((id) => ids.has(id));
+        }
+      }
+      if (articleIds.length > 0 && filters?.tagId) {
+        const { data: tagLinks } = await client
+          .from("article_tags")
+          .select("article_id")
+          .eq("tag_id", filters.tagId)
+          .in("article_id", articleIds);
+        const ids = new Set((tagLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (videoIds.length > 0 && filters?.tagId) {
+        const { data: tagLinks } = await client
+          .from("youtube_video_tags")
+          .select("youtube_video_id")
+          .eq("tag_id", filters.tagId)
+          .in("youtube_video_id", videoIds);
+        const ids = new Set((tagLinks || []).map((l) => l.youtube_video_id));
+        videoIds = videoIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.genreId) {
+        const { data: genreLinks } = await client
+          .from("article_genres")
+          .select("article_id")
+          .eq("genre_id", filters.genreId)
+          .in("article_id", articleIds);
+        const ids = new Set((genreLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (videoIds.length > 0 && filters?.genreId) {
+        const { data: genreLinks } = await client
+          .from("youtube_video_genres")
+          .select("youtube_video_id")
+          .eq("genre_id", filters.genreId)
+          .in("youtube_video_id", videoIds);
+        const ids = new Set((genreLinks || []).map((l) => l.youtube_video_id));
+        videoIds = videoIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.platformId) {
+        const { data: platformLinks } = await client
+          .from("article_platforms")
+          .select("article_id")
+          .eq("platform_id", filters.platformId)
+          .in("article_id", articleIds);
+        const ids = new Set((platformLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (videoIds.length > 0 && filters?.platformId) {
+        const { data: platformLinks } = await client
+          .from("youtube_video_platforms")
+          .select("youtube_video_id")
+          .eq("platform_id", filters.platformId)
+          .in("youtube_video_id", videoIds);
+        const ids = new Set((platformLinks || []).map((l) => l.youtube_video_id));
+        videoIds = videoIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.sourceId) {
+        const { data: sourceLinks } = await client
+          .from("article_sources")
+          .select("article_id")
+          .eq("source_id", filters.sourceId)
+          .in("article_id", articleIds);
+        const ids = new Set((sourceLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (videoIds.length > 0 && filters?.sourceId) {
+        const withSource = (videos ?? []).filter(
+          (v: { id: string; source_id?: string }) => v.source_id === filters?.sourceId
+        );
+        videoIds = withSource.map((v: { id: string }) => v.id);
+      }
+
+      const gameCounts = new Map<string, { articles: number; videos: number }>();
+
+      if (articleIds.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < articleIds.length; i += batchSize) {
+          const batch = articleIds.slice(i, i + batchSize);
+          const { data: links, error: linksError } = await client
+            .from("article_games")
+            .select("game_id")
+            .in("article_id", batch);
+          if (linksError) throw new Error(`Failed to fetch article_games: ${linksError.message}`);
+          for (const row of links ?? []) {
+            const cur = gameCounts.get(row.game_id) ?? { articles: 0, videos: 0 };
+            cur.articles += 1;
+            gameCounts.set(row.game_id, cur);
+          }
+        }
+      }
+      if (videoIds.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < videoIds.length; i += batchSize) {
+          const batch = videoIds.slice(i, i + batchSize);
+          const { data: links, error: linksError } = await client
+            .from("youtube_video_games")
+            .select("game_id")
+            .in("youtube_video_id", batch);
+          if (linksError) throw new Error(`Failed to fetch youtube_video_games: ${linksError.message}`);
+          for (const row of links ?? []) {
+            const cur = gameCounts.get(row.game_id) ?? { articles: 0, videos: 0 };
+            cur.videos += 1;
+            gameCounts.set(row.game_id, cur);
+          }
+        }
+      }
+
+      const gameIds = Array.from(gameCounts.keys());
+      if (gameIds.length === 0) return [];
+
+      const { data: gamesRows, error: gamesError } = await client
+        .from("games")
+        .select("id, name")
+        .in("id", gameIds);
+      if (gamesError) throw new Error(`Failed to fetch games: ${gamesError.message}`);
+      const nameById = new Map((gamesRows ?? []).map((r) => [r.id, r.name ?? r.id]));
+
+      return gameIds
+        .map((game_id) => {
+          const counts = gameCounts.get(game_id)!;
+          const total = counts.articles + counts.videos;
+          return {
+            game_id,
+            game_name: nameById.get(game_id) ?? game_id,
+            articles: counts.articles,
+            videos: counts.videos,
+            total,
+          };
+        })
+        .sort((a, b) => b.total - a.total);
+    },
   };
 }
 
@@ -398,7 +571,10 @@ function createMemoryReportRepository(): ReportRepository {
     },
     async getTagCountsForReports() {
       return [];
-    }
+    },
+    async getGameCountsForReports() {
+      return [];
+    },
   };
 }
 

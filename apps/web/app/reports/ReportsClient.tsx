@@ -62,6 +62,8 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   by_tags: "Por tags",
   activity_by_weekday: "Atividade por dia da semana",
   by_source_detail: "Detalhe por fonte",
+  top_games: "Top jogos por período",
+  executive_summary: "Resumo executivo",
 };
 
 const statusVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -87,6 +89,7 @@ export function ReportsClient() {
     groupBy: "day",
     limitSources: 20,
     limitTags: 100,
+    limitGames: 20,
     filterGameId: "",
     filterTagId: "",
     filterGenreId: "",
@@ -146,9 +149,14 @@ export function ReportsClient() {
       setGenerateLoading(false);
       return;
     }
+    if (form.reportType === "executive_summary" && !form.periodEnd) {
+      setGenerateError("Informe a data de referência para o resumo executivo.");
+      setGenerateLoading(false);
+      return;
+    }
     const body: Record<string, unknown> = {
       reportType: form.reportType,
-      periodStart: form.periodStart,
+      periodStart: form.reportType === "executive_summary" ? form.periodEnd : form.periodStart,
       periodEnd: form.periodEnd,
     };
     if (form.reportType === "volume") {
@@ -157,6 +165,8 @@ export function ReportsClient() {
       body.options = { limit_sources: form.limitSources };
     } else if (form.reportType === "by_tags") {
       body.options = { limit_tags: form.limitTags };
+    } else if (form.reportType === "top_games") {
+      body.options = { limit_games: form.limitGames };
     }
     if (
       form.filterGameId ||
@@ -232,31 +242,56 @@ export function ReportsClient() {
                     <SelectItem value="by_source_detail">
                       Detalhe por fonte
                     </SelectItem>
+                    <SelectItem value="top_games">
+                      Top jogos por período
+                    </SelectItem>
+                    <SelectItem value="executive_summary">
+                      Resumo executivo
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Início do período</Label>
-                <Input
-                  type="date"
-                  value={form.periodStart}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, periodStart: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Fim do período</Label>
-                <Input
-                  type="date"
-                  value={form.periodEnd}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, periodEnd: e.target.value }))
-                  }
-                  required
-                />
-              </div>
+              {form.reportType !== "executive_summary" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Início do período</Label>
+                    <Input
+                      type="date"
+                      value={form.periodStart}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, periodStart: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fim do período</Label>
+                    <Input
+                      type="date"
+                      value={form.periodEnd}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, periodEnd: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Data de referência</Label>
+                  <Input
+                    type="date"
+                    value={form.periodEnd}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, periodEnd: e.target.value }))
+                    }
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Últimos 7, 30 e 90 dias até esta data.
+                  </p>
+                </div>
+              )}
               {form.reportType === "volume" ? (
                 <div className="space-y-2">
                   <Label>Agrupar por</Label>
@@ -320,6 +355,22 @@ export function ReportsClient() {
                       setForm((f) => ({
                         ...f,
                         limitTags: Number(e.target.value) || 100,
+                      }))
+                    }
+                  />
+                </div>
+              ) : form.reportType === "top_games" ? (
+                <div className="space-y-2">
+                  <Label>Limite de jogos</Label>
+                  <Input
+                    type="number"
+                    min={5}
+                    max={100}
+                    value={form.limitGames}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        limitGames: Number(e.target.value) || 20,
                       }))
                     }
                   />
@@ -493,6 +544,8 @@ export function ReportsClient() {
                   <SelectItem value="by_source_detail">
                     Detalhe por fonte
                   </SelectItem>
+                  <SelectItem value="top_games">Top jogos por período</SelectItem>
+                  <SelectItem value="executive_summary">Resumo executivo</SelectItem>
                 </SelectContent>
             </Select>
           </div>

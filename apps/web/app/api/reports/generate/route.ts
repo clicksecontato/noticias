@@ -1,12 +1,13 @@
 import { createReportRepository } from "../../../../../../packages/database/src/report-repository";
 import type { ReportType } from "../../../../../../packages/database/src/report-types";
 import { generateReportPayload, SUPPORTED_REPORT_TYPES } from "../../../../src/reports/run-report";
+import { generateExecutiveSummaryReport } from "../../../../src/reports/generators/executive-summary";
 
 type GenerateBody = {
   reportType: ReportType;
   periodStart: string;
   periodEnd: string;
-  options?: { group_by?: "day" | "week" | "month"; limit_sources?: number; limit_tags?: number };
+  options?: { group_by?: "day" | "week" | "month"; limit_sources?: number; limit_tags?: number; limit_games?: number };
   filters?: { gameId?: string; tagId?: string; genreId?: string; platformId?: string; sourceId?: string };
 };
 
@@ -22,9 +23,22 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const { reportType, periodStart, periodEnd, options = {}, filters } = body;
-  if (!reportType || !periodStart || !periodEnd) {
+  const isExecutiveSummary = reportType === "executive_summary";
+  if (!reportType) {
     return Response.json(
-      { error: "Obrigatório: reportType, periodStart, periodEnd" },
+      { error: "Obrigatório: reportType" },
+      { status: 400 }
+    );
+  }
+  if (!isExecutiveSummary && (!periodStart || !periodEnd)) {
+    return Response.json(
+      { error: "Obrigatório: periodStart, periodEnd" },
+      { status: 400 }
+    );
+  }
+  if (isExecutiveSummary && !periodEnd) {
+    return Response.json(
+      { error: "Resumo executivo exige periodEnd (data de referência)" },
       { status: 400 }
     );
   }
@@ -35,8 +49,12 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const start = new Date(periodStart);
-  const end = new Date(periodEnd);
+  const end = new Date(periodEnd ?? "");
+  const start = periodStart ? new Date(periodStart) : new Date(end);
+  if (isExecutiveSummary) {
+    start.setTime(end.getTime());
+    start.setUTCDate(start.getUTCDate() - 90);
+  }
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return Response.json(
       { error: "periodStart e periodEnd devem ser datas válidas (ISO 8601)" },
@@ -49,6 +67,9 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400 }
     );
   }
+
+  const periodStartFinal = isExecutiveSummary ? start.toISOString().slice(0, 10) : periodStart;
+  const periodEndFinal = periodEnd ?? end.toISOString().slice(0, 10);
 
   const repo = createReportRepository();
   const reportFilters = filters
@@ -64,8 +85,8 @@ export async function POST(request: Request): Promise<Response> {
   try {
     reportId = await repo.createReport({
       report_type: reportType,
-      period_start: periodStart,
-      period_end: periodEnd,
+      period_start: periodStartFinal,
+      period_end: periodEndFinal,
       parameters: { ...options, filters: reportFilters }
     });
   } catch (err) {
@@ -89,10 +110,63 @@ export async function POST(request: Request): Promise<Response> {
         { limit_tags: options.limit_tags }
       );
       await repo.saveReportResult(reportId, payload);
+    } else if (reportType === "top_games") {
+      const gameCounts = await repo.getGameCountsForReports(
+        periodStartFinal,
+        periodEndFinal,
+        reportFilters
+      );
+      const payload = generateReportPayload(
+        reportType,
+        { articles: [], videos: [], sourceNames: new Map(), gameCounts },
+        { limit_games: options.limit_games }
+      );
+      await repo.saveReportResult(reportId, payload);
+    } else if (reportType === "executive_summary") {
+      const refDate = new Date(periodEndFinal);
+      const toIso = (d: Date) => d.toISOString().slice(0, 10);
+      const start7 = new Date(refDate);
+      start7.setUTCDate(start7.getUTCDate() - 6);
+      const start30 = new Date(refDate);
+      start30.setUTCDate(start30.getUTCDate() - 29);
+      const start90 = new Date(refDate);
+      start90.setUTCDate(start90.getUTCDate() - 89);
+
+      const [
+        sourceNames,
+        articles7,
+        videos7,
+        gameCounts7,
+        articles30,
+        videos30,
+        gameCounts30,
+        articles90,
+        videos90,
+        gameCounts90,
+      ] = await Promise.all([
+        repo.getSourceIdToName(),
+        repo.getArticlesForReports(toIso(start7), periodEndFinal, reportFilters),
+        repo.getVideosForReports(toIso(start7), periodEndFinal, reportFilters),
+        repo.getGameCountsForReports(toIso(start7), periodEndFinal, reportFilters),
+        repo.getArticlesForReports(toIso(start30), periodEndFinal, reportFilters),
+        repo.getVideosForReports(toIso(start30), periodEndFinal, reportFilters),
+        repo.getGameCountsForReports(toIso(start30), periodEndFinal, reportFilters),
+        repo.getArticlesForReports(toIso(start90), periodEndFinal, reportFilters),
+        repo.getVideosForReports(toIso(start90), periodEndFinal, reportFilters),
+        repo.getGameCountsForReports(toIso(start90), periodEndFinal, reportFilters),
+      ]);
+
+      const payload = generateExecutiveSummaryReport(
+        periodEndFinal,
+        { articles: articles7, videos: videos7, sourceNames, gameCounts: gameCounts7 },
+        { articles: articles30, videos: videos30, sourceNames, gameCounts: gameCounts30 },
+        { articles: articles90, videos: videos90, sourceNames, gameCounts: gameCounts90 }
+      );
+      await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
     } else {
       const [articles, videos, sourceNames] = await Promise.all([
-        repo.getArticlesForReports(periodStart, periodEnd, reportFilters),
-        repo.getVideosForReports(periodStart, periodEnd, reportFilters),
+        repo.getArticlesForReports(periodStartFinal, periodEndFinal, reportFilters),
+        repo.getVideosForReports(periodStartFinal, periodEndFinal, reportFilters),
         repo.getSourceIdToName()
       ]);
 
@@ -102,8 +176,8 @@ export async function POST(request: Request): Promise<Response> {
 
       if (reportType === "by_source_detail") {
         tagCounts = await repo.getTagCountsForReports(
-          periodStart,
-          periodEnd,
+          periodStartFinal,
+          periodEndFinal,
           reportFilters
         );
       }
@@ -125,6 +199,7 @@ export async function POST(request: Request): Promise<Response> {
           group_by: options.group_by,
           limit_sources: options.limit_sources,
           limit_tags: options.limit_tags,
+          limit_games: options.limit_games,
         }
       );
       await repo.saveReportResult(reportId, payload);
@@ -149,8 +224,8 @@ export async function POST(request: Request): Promise<Response> {
     {
       reportId,
       status: "completed",
-      periodStart,
-      periodEnd,
+      periodStart: periodStartFinal,
+      periodEnd: periodEndFinal,
       reportType
     },
     { status: 201 }
