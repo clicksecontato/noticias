@@ -37,6 +37,7 @@ export interface ReportFilters {
   tagId?: string;
   genreId?: string;
   platformId?: string;
+  sourceId?: string;
 }
 
 export interface ReportRepository {
@@ -327,6 +328,16 @@ function createSupabaseReportRepository(): ReportRepository {
           .eq("platform_id", filters.platformId)
           .in("article_id", articleIds);
         const ids = new Set((platformLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.sourceId) {
+        const { data: sourceLinks, error: sourceError } = await client
+          .from("article_sources")
+          .select("article_id")
+          .eq("source_id", filters.sourceId)
+          .in("article_id", articleIds);
+        if (sourceError) throw new Error(`Failed to fetch article_sources: ${sourceError.message}`);
+        const ids = new Set((sourceLinks || []).map((l) => l.article_id));
         articleIds = articleIds.filter((id) => ids.has(id));
       }
       if (articleIds.length === 0) return [];

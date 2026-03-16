@@ -9,6 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 
 interface ReportListItem {
   id: string;
@@ -33,10 +48,19 @@ interface Catalogs {
   platforms: CatalogItem[];
 }
 
+interface SourceItem {
+  id: string;
+  name: string;
+  provider?: "rss" | "youtube";
+  language: string;
+  isActive: boolean;
+}
+
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes",
   by_tags: "Por tags",
+  by_source_detail: "Detalhe por fonte",
 };
 
 const statusVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -66,9 +90,12 @@ export function ReportsClient() {
     filterTagId: "",
     filterGenreId: "",
     filterPlatformId: "",
+    sourceId: "",
   });
 
   const [catalogs, setCatalogs] = useState<Catalogs | null>(null);
+  const [sources, setSources] = useState<SourceItem[]>([]);
+  const [sourceSearch, setSourceSearch] = useState("");
   const pageSize = 10;
 
   useEffect(() => {
@@ -76,6 +103,16 @@ export function ReportsClient() {
       .then((res) => res.json())
       .then((data: Catalogs) => setCatalogs(data))
       .catch(() => setCatalogs({ games: [], tags: [], genres: [], platforms: [] }));
+  }, []);
+
+  useEffect(() => {
+    // Carrega fontes para o dropdown de detalhe por fonte
+    fetch("/api/admin/sources")
+      .then((res) => res.json())
+      .then((data: { sources?: SourceItem[] }) => {
+        setSources(data.sources ?? []);
+      })
+      .catch(() => setSources([]));
   }, []);
 
   function loadReports() {
@@ -103,6 +140,11 @@ export function ReportsClient() {
     setGenerateError(null);
     setGenerateSuccess(null);
     setGenerateLoading(true);
+    if (form.reportType === "by_source_detail" && !form.sourceId) {
+      setGenerateError("Selecione uma fonte para o relatório de detalhe por fonte.");
+      setGenerateLoading(false);
+      return;
+    }
     const body: Record<string, unknown> = {
       reportType: form.reportType,
       periodStart: form.periodStart,
@@ -119,13 +161,15 @@ export function ReportsClient() {
       form.filterGameId ||
       form.filterTagId ||
       form.filterGenreId ||
-      form.filterPlatformId
+      form.filterPlatformId ||
+      form.sourceId
     ) {
       body.filters = {
         ...(form.filterGameId && { gameId: form.filterGameId }),
         ...(form.filterTagId && { tagId: form.filterTagId }),
         ...(form.filterGenreId && { genreId: form.filterGenreId }),
         ...(form.filterPlatformId && { platformId: form.filterPlatformId }),
+        ...(form.sourceId && { sourceId: form.sourceId }),
       };
     }
     try {
@@ -168,21 +212,24 @@ export function ReportsClient() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label>Tipo</Label>
-                <select
+                <Select
                   value={form.reportType}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, reportType: e.target.value }))
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, reportType: value }))
                   }
-                  className={cn(
-                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                    "dark:bg-input/30"
-                  )}
                 >
-                  <option value="volume">Volume por período</option>
-                  <option value="top_sources">Ranking de fontes</option>
-                  <option value="by_tags">Por tags</option>
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="volume">Volume por período</SelectItem>
+                    <SelectItem value="top_sources">Ranking de fontes</SelectItem>
+                    <SelectItem value="by_tags">Por tags</SelectItem>
+                    <SelectItem value="by_source_detail">
+                      Detalhe por fonte
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Início do período</Label>
@@ -209,21 +256,21 @@ export function ReportsClient() {
               {form.reportType === "volume" ? (
                 <div className="space-y-2">
                   <Label>Agrupar por</Label>
-                  <select
+                  <Select
                     value={form.groupBy}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, groupBy: e.target.value }))
+                    onValueChange={(value) =>
+                      setForm((f) => ({ ...f, groupBy: value }))
                     }
-                    className={cn(
-                      "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                      "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                      "dark:bg-input/30"
-                    )}
                   >
-                    <option value="day">Dia</option>
-                    <option value="week">Semana</option>
-                    <option value="month">Mês</option>
-                  </select>
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Dia</SelectItem>
+                      <SelectItem value="week">Semana</SelectItem>
+                      <SelectItem value="month">Mês</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               ) : form.reportType === "top_sources" ? (
                 <div className="space-y-2">
@@ -257,90 +304,150 @@ export function ReportsClient() {
                     }
                   />
                 </div>
+              ) : form.reportType === "by_source_detail" ? (
+                <div className="space-y-2">
+                  <Label>Limite de tags</Label>
+                  <Input
+                    type="number"
+                    min={10}
+                    max={200}
+                    value={form.limitTags}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        limitTags: Number(e.target.value) || 100,
+                      }))
+                    }
+                  />
+                </div>
               ) : null}
               <div className="space-y-2">
                 <Label>Jogo</Label>
-                <select
+                <Select
                   value={form.filterGameId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, filterGameId: e.target.value }))
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, filterGameId: value }))
                   }
-                  className={cn(
-                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                    "dark:bg-input/30"
-                  )}
                 >
-                  <option value="">Todos</option>
-                  {catalogs?.games.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {catalogs?.games.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Tag</Label>
-                <select
+                <Select
                   value={form.filterTagId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, filterTagId: e.target.value }))
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, filterTagId: value }))
                   }
-                  className={cn(
-                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                    "dark:bg-input/30"
-                  )}
                 >
-                  <option value="">Todas</option>
-                  {catalogs?.tags.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas</SelectItem>
+                    {catalogs?.tags.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              {form.reportType === "by_source_detail" && (
+                <div className="space-y-2">
+                  <Label>Fonte</Label>
+                  <Combobox
+                    value={form.sourceId}
+                    onValueChange={(value) =>
+                      setForm((f) => ({ ...f, sourceId: value ?? "" }))
+                    }
+                  >
+                    <ComboboxInput
+                      placeholder="Buscar por nome ou ID..."
+                      showTrigger
+                      showClear={!!form.sourceId}
+                      onChange={(event) =>
+                        setSourceSearch(event.target.value)
+                      }
+                    >
+                      <ComboboxContent>
+                        <ComboboxEmpty>Nenhuma fonte encontrada.</ComboboxEmpty>
+                        <ComboboxList>
+                          {sources
+                            .filter((s) => {
+                              if (!sourceSearch.trim()) return true;
+                              const q = sourceSearch.toLowerCase();
+                              return (
+                                s.id.toLowerCase().includes(q) ||
+                                s.name.toLowerCase().includes(q)
+                              );
+                            })
+                            .map((s) => (
+                              <ComboboxItem
+                                key={s.id}
+                                value={s.id}
+                                textValue={`${s.name} ${s.id}`}
+                              >
+                                {s.name} ({s.id})
+                              </ComboboxItem>
+                            ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </ComboboxInput>
+                  </Combobox>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Gênero</Label>
-                <select
+                <Select
                   value={form.filterGenreId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, filterGenreId: e.target.value }))
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, filterGenreId: value }))
                   }
-                  className={cn(
-                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                    "dark:bg-input/30"
-                  )}
                 >
-                  <option value="">Todos</option>
-                  {catalogs?.genres.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {catalogs?.genres.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Plataforma</Label>
-                <select
+                <Select
                   value={form.filterPlatformId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, filterPlatformId: e.target.value }))
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, filterPlatformId: value }))
                   }
-                  className={cn(
-                    "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                    "dark:bg-input/30"
-                  )}
                 >
-                  <option value="">Todas</option>
-                  {catalogs?.platforms.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas</SelectItem>
+                    {catalogs?.platforms.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button type="submit" disabled={generateLoading}>
@@ -361,23 +468,26 @@ export function ReportsClient() {
           <CardTitle>Relatórios gerados</CardTitle>
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Label className="sr-only">Filtrar por tipo</Label>
-            <select
+            <Select
               value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
+              onValueChange={(value) => {
+                setTypeFilter(value);
                 setPage(1);
               }}
-              className={cn(
-                "h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm",
-                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
-                "dark:bg-input/30"
-              )}
             >
-              <option value="">Todos</option>
-              <option value="volume">Volume</option>
-              <option value="top_sources">Ranking de fontes</option>
-              <option value="by_tags">Por tags</option>
-            </select>
+              <SelectTrigger className="h-8 w-full max-w-xs">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="volume">Volume</SelectItem>
+                <SelectItem value="top_sources">Ranking de fontes</SelectItem>
+                <SelectItem value="by_tags">Por tags</SelectItem>
+                <SelectItem value="by_source_detail">
+                  Detalhe por fonte
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="pt-0">

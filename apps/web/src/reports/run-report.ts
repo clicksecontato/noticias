@@ -8,8 +8,8 @@ export interface ReportDataInput {
   articles: ArticleRow[];
   videos: VideoRow[];
   sourceNames: Map<string, string>;
-  /** Contagem de notícias por tag (para relatório by_tags). */
   tagCounts?: Array<{ tag_id: string; tag_name: string; count: number }>;
+  sourceId?: string;
 }
 
 export interface GenerateReportOptions {
@@ -26,7 +26,7 @@ export function generateReportPayload(
   data: ReportDataInput,
   options: GenerateReportOptions = {}
 ): Record<string, unknown> {
-  const { articles, videos, sourceNames, tagCounts } = data;
+  const { articles, videos, sourceNames, tagCounts, sourceId } = data;
   switch (reportType) {
     case "volume":
       return generateVolumeReport(articles, videos, {
@@ -42,9 +42,23 @@ export function generateReportPayload(
         limit: options.limit_tags ?? 100
       }) as unknown as Record<string, unknown>;
     }
+    case "by_source_detail": {
+      if (!sourceId) {
+        throw new Error("by_source_detail requer sourceId nos dados");
+      }
+      const sourceName = sourceNames.get(sourceId) ?? sourceId;
+      const tags = tagCounts ?? [];
+      return {
+        source_id: sourceId,
+        source_name: sourceName,
+        articles_total: articles.length,
+        videos_total: videos.length,
+        tags,
+      } as Record<string, unknown>;
+    }
     default:
       throw new Error(`Report type not implemented: ${reportType}`);
   }
 }
 
-export const SUPPORTED_REPORT_TYPES: ReportType[] = ["volume", "top_sources", "by_tags"];
+export const SUPPORTED_REPORT_TYPES: ReportType[] = ["volume", "top_sources", "by_tags", "by_source_detail"];

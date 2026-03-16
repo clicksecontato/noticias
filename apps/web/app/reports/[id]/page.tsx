@@ -10,6 +10,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes",
   by_tags: "Por tags",
+  by_source_detail: "Detalhe por fonte",
 };
 
 async function getReport(id: string) {
@@ -235,6 +236,55 @@ function ReportPayload({
               </thead>
               <tbody>
                 {items.map((row, i) => (
+                  <tr key={row.tag_id} className="border-b border-border">
+                    <td className="p-3">{i + 1}</td>
+                    <td className="p-3">{row.tag_name}</td>
+                    <td className="p-3 text-right font-medium">{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "by_source_detail") {
+    const sourceId = (payload.source_id as string) ?? "";
+    const sourceName = (payload.source_name as string) ?? sourceId;
+    const tags =
+      (payload.tags as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalhe por fonte</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
+          <p className="text-sm text-muted-foreground">
+            Fonte: <span className="font-medium text-foreground">{sourceName}</span>
+            {sourceId && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({sourceId})
+              </span>
+            )}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Distribuição de notícias (artigos) desta fonte por tag, no período selecionado.
+          </p>
+          <TagsChart data={tags} />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="p-3 text-left">#</th>
+                  <th className="p-3 text-left">Tag</th>
+                  <th className="p-3 text-right">Quantidade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tags.map((row, i) => (
                   <tr key={row.tag_id} className="border-b border-border">
                     <td className="p-3">{i + 1}</td>
                     <td className="p-3">{row.tag_name}</td>

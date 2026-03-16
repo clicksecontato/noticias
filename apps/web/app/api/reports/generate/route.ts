@@ -7,7 +7,7 @@ type GenerateBody = {
   periodStart: string;
   periodEnd: string;
   options?: { group_by?: "day" | "week" | "month"; limit_sources?: number; limit_tags?: number };
-  filters?: { gameId?: string; tagId?: string; genreId?: string; platformId?: string };
+  filters?: { gameId?: string; tagId?: string; genreId?: string; platformId?: string; sourceId?: string };
 };
 
 export async function POST(request: Request): Promise<Response> {
@@ -56,7 +56,8 @@ export async function POST(request: Request): Promise<Response> {
         ...(filters.gameId && { gameId: filters.gameId }),
         ...(filters.tagId && { tagId: filters.tagId }),
         ...(filters.genreId && { genreId: filters.genreId }),
-        ...(filters.platformId && { platformId: filters.platformId })
+        ...(filters.platformId && { platformId: filters.platformId }),
+        ...(filters.sourceId && { sourceId: filters.sourceId })
       }
     : undefined;
   let reportId: string;
@@ -77,7 +78,11 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     if (reportType === "by_tags") {
-      const tagCounts = await repo.getTagCountsForReports(periodStart, periodEnd, reportFilters);
+      const tagCounts = await repo.getTagCountsForReports(
+        periodStart,
+        periodEnd,
+        reportFilters
+      );
       const payload = generateReportPayload(
         reportType,
         { articles: [], videos: [], sourceNames: new Map(), tagCounts },
@@ -90,12 +95,36 @@ export async function POST(request: Request): Promise<Response> {
         repo.getVideosForReports(periodStart, periodEnd, reportFilters),
         repo.getSourceIdToName()
       ]);
+
+      let tagCounts:
+        | Array<{ tag_id: string; tag_name: string; count: number }>
+        | undefined;
+
+      if (reportType === "by_source_detail") {
+        tagCounts = await repo.getTagCountsForReports(
+          periodStart,
+          periodEnd,
+          reportFilters
+        );
+      }
+
       const payload = generateReportPayload(
         reportType,
-        { articles, videos, sourceNames },
+        {
+          articles,
+          videos,
+          sourceNames,
+          ...(reportType === "by_source_detail"
+            ? {
+                tagCounts,
+                sourceId: reportFilters?.sourceId ?? "",
+              }
+            : {}),
+        },
         {
           group_by: options.group_by,
-          limit_sources: options.limit_sources
+          limit_sources: options.limit_sources,
+          limit_tags: options.limit_tags,
         }
       );
       await repo.saveReportResult(reportId, payload);
