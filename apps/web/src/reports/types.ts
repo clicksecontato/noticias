@@ -41,3 +41,13 @@ export interface ByTagsPayload {
     count: number;
   }>;
 }
+
+export interface ActivityByWeekdayPayload {
+  items: Array<{
+    weekday: number; // 0 = domingo ... 6 = sábado
+    label: string;
+    articles: number;
+    videos: number;
+    total: number;
+  }>;
+}

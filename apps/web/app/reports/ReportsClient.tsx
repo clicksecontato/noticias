@@ -60,6 +60,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes",
   by_tags: "Por tags",
+  activity_by_weekday: "Atividade por dia da semana",
   by_source_detail: "Detalhe por fonte",
 };
 
@@ -225,6 +226,9 @@ export function ReportsClient() {
                     <SelectItem value="volume">Volume por período</SelectItem>
                     <SelectItem value="top_sources">Ranking de fontes</SelectItem>
                     <SelectItem value="by_tags">Por tags</SelectItem>
+                    <SelectItem value="activity_by_weekday">
+                      Atividade por dia da semana
+                    </SelectItem>
                     <SelectItem value="by_source_detail">
                       Detalhe por fonte
                     </SelectItem>
@@ -478,15 +482,18 @@ export function ReportsClient() {
               <SelectTrigger className="h-8 w-full max-w-xs">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
-                <SelectItem value="volume">Volume</SelectItem>
-                <SelectItem value="top_sources">Ranking de fontes</SelectItem>
-                <SelectItem value="by_tags">Por tags</SelectItem>
-                <SelectItem value="by_source_detail">
-                  Detalhe por fonte
-                </SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="volume">Volume</SelectItem>
+                  <SelectItem value="top_sources">Ranking de fontes</SelectItem>
+                  <SelectItem value="by_tags">Por tags</SelectItem>
+                  <SelectItem value="activity_by_weekday">
+                    Atividade por dia da semana
+                  </SelectItem>
+                  <SelectItem value="by_source_detail">
+                    Detalhe por fonte
+                  </SelectItem>
+                </SelectContent>
             </Select>
           </div>
         </CardHeader>

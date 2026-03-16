@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createReportRepository } from "../../../../../packages/database/src/report-repository";
 import { PageBackLink } from "../../components/PageBackLink";
 import { TagsChart } from "../../components/reports/TagsChart";
+import { ActivityWeekdayChart } from "../../components/reports/ActivityWeekdayChart";
 import { TopSourcesChart } from "../../components/reports/TopSourcesChart";
 import { VolumeChart } from "../../components/reports/VolumeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   top_sources: "Ranking de fontes",
   by_tags: "Por tags",
   by_source_detail: "Detalhe por fonte",
+  activity_by_weekday: "Atividade por dia da semana",
 };
 
 async function getReport(id: string) {
@@ -289,6 +291,54 @@ function ReportPayload({
                     <td className="p-3">{i + 1}</td>
                     <td className="p-3">{row.tag_name}</td>
                     <td className="p-3 text-right font-medium">{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "activity_by_weekday") {
+    const items =
+      (payload.items as Array<{
+        weekday: number;
+        label: string;
+        articles: number;
+        videos: number;
+        total: number;
+      }>) ?? [];
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Atividade por dia da semana</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
+          <p className="text-sm text-muted-foreground">
+            Quantidade de notícias (artigos) e vídeos publicados em cada dia da
+            semana.
+          </p>
+          <ActivityWeekdayChart data={items} />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="p-3 text-left">Dia</th>
+                  <th className="p-3 text-right">Artigos</th>
+                  <th className="p-3 text-right">Vídeos</th>
+                  <th className="p-3 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((row) => (
+                  <tr key={row.weekday} className="border-b border-border">
+                    <td className="p-3">{row.label}</td>
+                    <td className="p-3 text-right">{row.articles}</td>
+                    <td className="p-3 text-right">{row.videos}</td>
+                    <td className="p-3 text-right">{row.total}</td>
                   </tr>
                 ))}
               </tbody>

@@ -3,6 +3,7 @@ import type { ArticleRow, VideoRow } from "./types";
 import { generateVolumeReport } from "./generators/volume";
 import { generateTopSourcesReport } from "./generators/top-sources";
 import { generateByTagsReport } from "./generators/by-tags";
+import { generateActivityByWeekdayReport } from "./generators/activity-by-weekday";
 
 export interface ReportDataInput {
   articles: ArticleRow[];
@@ -36,6 +37,11 @@ export function generateReportPayload(
       return generateTopSourcesReport(articles, videos, sourceNames, {
         limit: options.limit_sources ?? 50
       }) as unknown as Record<string, unknown>;
+    case "activity_by_weekday":
+      return generateActivityByWeekdayReport(
+        articles,
+        videos
+      ) as unknown as Record<string, unknown>;
     case "by_tags": {
       const counts = tagCounts ?? [];
       return generateByTagsReport(counts, {
@@ -61,4 +67,10 @@ export function generateReportPayload(
   }
 }
 
-export const SUPPORTED_REPORT_TYPES: ReportType[] = ["volume", "top_sources", "by_tags", "by_source_detail"];
+export const SUPPORTED_REPORT_TYPES: ReportType[] = [
+  "volume",
+  "top_sources",
+  "by_tags",
+  "activity_by_weekday",
+  "by_source_detail",
+];

@@ -15,11 +15,17 @@ Objetivo: estruturar relatórios úteis para **empresas e profissionais** que qu
 | **Comparativo RSS vs YouTube** | Contagem e percentual por tipo de mídia no período. | Entender peso de texto vs vídeo no ecossistema. |
 | **Linha do tempo (timeline)** | Série temporal: publicações por dia ou semana em um intervalo. | Gráficos de tendência; picos de cobertura. |
 | **Conteúdo por fonte (detalhado)** | Por fonte: total de itens, primeiros e últimos publicados, exemplo de títulos. | Perfil de cada canal/portal para curadoria ou parceria. |
+| **Top jogos por período** | Ranking de jogos por quantidade de notícias/vídeos no período (com variação vs período anterior). | Entender quais jogos dominam a pauta e como a “curva de hype” evolui. |
+| **Tags/temas em alta** | Ranking de tags/temas mais mencionados, com comparação entre períodos e por tipo de mídia (RSS vs YouTube). | Mapear macrotemas (ex.: “remake”, “microtransações”, “indie brasileiro”) relevantes para criadores e marcas. |
+| **RSS vs YouTube (profundo)** | Além de totais, breakdown por jogo, tag, gênero e fonte, com foco em onde a conversa está acontecendo (texto x vídeo). | Guiar estratégia de presença (publicar artigo, vídeo ou ambos) e parcerias com criadores. |
+| **Padrões de publicação (dia/hora)** | Heatmaps de dia da semana x horário, com volume de publicações. | Definir melhores janelas de publicação de conteúdo profissional. |
+| **Especial BR / jogos brasileiros** | Recorte de todos os relatórios focado apenas em jogos brasileiros e/ou fontes PT-BR. | Mostrar a “temperatura” do mercado local de desenvolvimento e cobertura. |
 
 **Futuro (com mais dados ou NLP):**
 
 - **Temas/jogos mais citados** – extração de entidades (nomes de jogos, estúdios) ou palavras-chave nos títulos/descrições.
 - **Sentimento ou categorização** – classificação automática (notícia, review, trailer, etc.).
+- **Clusters de temas** – agrupar tags/jogos em “assuntos” (ex.: polêmicas de preço, lançamentos, eSports) para análises macro.
 
 ---
 
