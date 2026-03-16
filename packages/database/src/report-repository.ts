@@ -60,6 +60,12 @@ export interface ReportRepository {
     filters?: ReportFilters
   ): Promise<VideoRowForReport[]>;
   getSourceIdToName(): Promise<Map<string, string>>;
+  /** Contagem de notícias (artigos) por tag no período. Sem fontes. */
+  getTagCountsForReports(
+    periodStart: string,
+    periodEnd: string,
+    filters?: ReportFilters
+  ): Promise<Array<{ tag_id: string; tag_name: string; count: number }>>;
 }
 
 function createSupabaseReportRepository(): ReportRepository {
@@ -275,6 +281,84 @@ function createSupabaseReportRepository(): ReportRepository {
         map.set(row.id, row.name);
       }
       return map;
+    },
+
+    async getTagCountsForReports(periodStart, periodEnd, filters) {
+      const { data: articles, error: articlesError } = await client
+        .from("articles")
+        .select("id")
+        .gte("published_at", periodStart)
+        .lte("published_at", periodEnd);
+      if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
+      let articleIds = (articles ?? []).map((a) => a.id);
+      if (articleIds.length === 0) return [];
+
+      if (filters?.gameId) {
+        const { data: gameLinks } = await client
+          .from("article_games")
+          .select("article_id")
+          .eq("game_id", filters.gameId)
+          .in("article_id", articleIds);
+        const ids = new Set((gameLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.tagId) {
+        const { data: tagLinks } = await client
+          .from("article_tags")
+          .select("article_id")
+          .eq("tag_id", filters.tagId)
+          .in("article_id", articleIds);
+        const ids = new Set((tagLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.genreId) {
+        const { data: genreLinks } = await client
+          .from("article_genres")
+          .select("article_id")
+          .eq("genre_id", filters.genreId)
+          .in("article_id", articleIds);
+        const ids = new Set((genreLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length > 0 && filters?.platformId) {
+        const { data: platformLinks } = await client
+          .from("article_platforms")
+          .select("article_id")
+          .eq("platform_id", filters.platformId)
+          .in("article_id", articleIds);
+        const ids = new Set((platformLinks || []).map((l) => l.article_id));
+        articleIds = articleIds.filter((id) => ids.has(id));
+      }
+      if (articleIds.length === 0) return [];
+
+      const batchSize = 500;
+      const allTagCounts = new Map<string, number>();
+      for (let i = 0; i < articleIds.length; i += batchSize) {
+        const batch = articleIds.slice(i, i + batchSize);
+        const { data: links, error: linksError } = await client
+          .from("article_tags")
+          .select("tag_id")
+          .in("article_id", batch);
+        if (linksError) throw new Error(`Failed to fetch article_tags: ${linksError.message}`);
+        for (const row of links ?? []) {
+          allTagCounts.set(row.tag_id, (allTagCounts.get(row.tag_id) ?? 0) + 1);
+        }
+      }
+      const tagIds = Array.from(allTagCounts.keys());
+      if (tagIds.length === 0) return [];
+      const { data: tagsRows, error: tagsError } = await client
+        .from("tags")
+        .select("id, name")
+        .in("id", tagIds);
+      if (tagsError) throw new Error(`Failed to fetch tags: ${tagsError.message}`);
+      const nameById = new Map((tagsRows ?? []).map((r) => [r.id, r.name ?? r.id]));
+      return tagIds
+        .map((tag_id) => ({
+          tag_id,
+          tag_name: nameById.get(tag_id) ?? tag_id,
+          count: allTagCounts.get(tag_id) ?? 0
+        }))
+        .sort((a, b) => b.count - a.count);
     }
   };
 }
@@ -300,6 +384,9 @@ function createMemoryReportRepository(): ReportRepository {
     },
     async getSourceIdToName() {
       return new Map();
+    },
+    async getTagCountsForReports() {
+      return [];
     }
   };
 }

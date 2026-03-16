@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createReportRepository } from "../../../../../packages/database/src/report-repository";
 import { PageBackLink } from "../../components/PageBackLink";
+import { TagsChart } from "../../components/reports/TagsChart";
 import { TopSourcesChart } from "../../components/reports/TopSourcesChart";
 import { VolumeChart } from "../../components/reports/VolumeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes",
+  by_tags: "Por tags",
 };
 
 async function getReport(id: string) {
@@ -199,6 +201,44 @@ function ReportPayload({
                     <td className="p-3 text-right">{row.articles}</td>
                     <td className="p-3 text-right">{row.videos}</td>
                     <td className="p-3 text-right font-semibold">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "by_tags") {
+    const items =
+      (payload.items as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Notícias por tag</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
+          <p className="text-sm text-muted-foreground">
+            Quantidade de notícias (artigos) associadas a cada tag no período. Fontes não exibidas.
+          </p>
+          <TagsChart data={items} />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="p-3 text-left">#</th>
+                  <th className="p-3 text-left">Tag</th>
+                  <th className="p-3 text-right">Quantidade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((row, i) => (
+                  <tr key={row.tag_id} className="border-b border-border">
+                    <td className="p-3">{i + 1}</td>
+                    <td className="p-3">{row.tag_name}</td>
+                    <td className="p-3 text-right font-medium">{row.count}</td>
                   </tr>
                 ))}
               </tbody>

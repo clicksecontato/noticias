@@ -6,7 +6,7 @@ type GenerateBody = {
   reportType: ReportType;
   periodStart: string;
   periodEnd: string;
-  options?: { group_by?: "day" | "week" | "month"; limit_sources?: number };
+  options?: { group_by?: "day" | "week" | "month"; limit_sources?: number; limit_tags?: number };
   filters?: { gameId?: string; tagId?: string; genreId?: string; platformId?: string };
 };
 
@@ -76,22 +76,31 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const [articles, videos, sourceNames] = await Promise.all([
-      repo.getArticlesForReports(periodStart, periodEnd, reportFilters),
-      repo.getVideosForReports(periodStart, periodEnd, reportFilters),
-      repo.getSourceIdToName()
-    ]);
+    if (reportType === "by_tags") {
+      const tagCounts = await repo.getTagCountsForReports(periodStart, periodEnd, reportFilters);
+      const payload = generateReportPayload(
+        reportType,
+        { articles: [], videos: [], sourceNames: new Map(), tagCounts },
+        { limit_tags: options.limit_tags }
+      );
+      await repo.saveReportResult(reportId, payload);
+    } else {
+      const [articles, videos, sourceNames] = await Promise.all([
+        repo.getArticlesForReports(periodStart, periodEnd, reportFilters),
+        repo.getVideosForReports(periodStart, periodEnd, reportFilters),
+        repo.getSourceIdToName()
+      ]);
+      const payload = generateReportPayload(
+        reportType,
+        { articles, videos, sourceNames },
+        {
+          group_by: options.group_by,
+          limit_sources: options.limit_sources
+        }
+      );
+      await repo.saveReportResult(reportId, payload);
+    }
 
-    const payload = generateReportPayload(
-      reportType,
-      { articles, videos, sourceNames },
-      {
-        group_by: options.group_by,
-        limit_sources: options.limit_sources
-      }
-    );
-
-    await repo.saveReportResult(reportId, payload);
     await repo.updateReportStatus(reportId, "completed", {
       generated_at: new Date().toISOString()
     });

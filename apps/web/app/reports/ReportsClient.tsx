@@ -36,6 +36,7 @@ interface Catalogs {
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
   top_sources: "Ranking de fontes",
+  by_tags: "Por tags",
 };
 
 const statusVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -60,6 +61,7 @@ export function ReportsClient() {
     periodEnd: "",
     groupBy: "day",
     limitSources: 20,
+    limitTags: 100,
     filterGameId: "",
     filterTagId: "",
     filterGenreId: "",
@@ -108,8 +110,10 @@ export function ReportsClient() {
     };
     if (form.reportType === "volume") {
       body.options = { group_by: form.groupBy };
-    } else {
+    } else if (form.reportType === "top_sources") {
       body.options = { limit_sources: form.limitSources };
+    } else if (form.reportType === "by_tags") {
+      body.options = { limit_tags: form.limitTags };
     }
     if (
       form.filterGameId ||
@@ -177,6 +181,7 @@ export function ReportsClient() {
                 >
                   <option value="volume">Volume por período</option>
                   <option value="top_sources">Ranking de fontes</option>
+                  <option value="by_tags">Por tags</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -220,7 +225,7 @@ export function ReportsClient() {
                     <option value="month">Mês</option>
                   </select>
                 </div>
-              ) : (
+              ) : form.reportType === "top_sources" ? (
                 <div className="space-y-2">
                   <Label>Limite de fontes</Label>
                   <Input
@@ -236,7 +241,23 @@ export function ReportsClient() {
                     }
                   />
                 </div>
-              )}
+              ) : form.reportType === "by_tags" ? (
+                <div className="space-y-2">
+                  <Label>Limite de tags</Label>
+                  <Input
+                    type="number"
+                    min={10}
+                    max={200}
+                    value={form.limitTags}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        limitTags: Number(e.target.value) || 100,
+                      }))
+                    }
+                  />
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label>Jogo</Label>
                 <select
@@ -355,6 +376,7 @@ export function ReportsClient() {
               <option value="">Todos</option>
               <option value="volume">Volume</option>
               <option value="top_sources">Ranking de fontes</option>
+              <option value="by_tags">Por tags</option>
             </select>
           </div>
         </CardHeader>

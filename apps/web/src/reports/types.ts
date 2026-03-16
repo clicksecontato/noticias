@@ -32,3 +32,12 @@ export interface TopSourcesPayload {
     total: number;
   }>;
 }
+
+/** Item do relatório por tags: quantidade de notícias por tag (sem fontes). */
+export interface ByTagsPayload {
+  items: Array<{
+    tag_id: string;
+    tag_name: string;
+    count: number;
+  }>;
+}

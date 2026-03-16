@@ -5,6 +5,7 @@
 export const REPORT_TYPES = [
   "volume",
   "top_sources",
+  "by_tags",
   "activity_by_weekday",
   "executive_summary",
   "rss_vs_youtube",
