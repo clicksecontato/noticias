@@ -4,6 +4,7 @@ import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 import { EntityChips } from "../../components/EntityChips";
 import { PageBackLink } from "../../components/PageBackLink";
+import { classifyMediaUrl } from "../../../src/media-utils";
 
 export const revalidate = 900;
 
@@ -55,6 +56,7 @@ export default async function NewsPage({
   if (!article) {
     notFound();
   }
+  const media = classifyMediaUrl(article.imageUrl);
 
   return (
     <article className="space-y-6">
@@ -76,15 +78,28 @@ export default async function NewsPage({
         />
       </header>
 
-      {article.imageUrl ? (
+      {media?.kind === "image" ? (
         <div className="overflow-hidden rounded-lg border border-border">
           <img
-            src={article.imageUrl}
+            src={media.url}
             alt=""
             className="h-auto w-full object-cover"
             width={720}
             height={405}
           />
+        </div>
+      ) : media?.kind === "video" ? (
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div className="aspect-video w-full overflow-hidden bg-black">
+            <iframe
+              src={media.url}
+              title={article.title}
+              className="h-full w-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
         </div>
       ) : null}
 

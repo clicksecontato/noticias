@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { EntityChips } from "./EntityChips";
 import { cn } from "@/lib/utils";
+import { classifyMediaUrl } from "@/src/media-utils";
 
 export interface NewsCardData {
   slug: string;
@@ -45,16 +46,17 @@ export function NewsCard({
   formatDate = defaultFormatDate,
   className,
 }: NewsCardProps) {
+  const media = classifyMediaUrl(card.imageUrl);
   return (
     <article>
       <Card className={cn("overflow-hidden", className)}>
-        {card.imageUrl ? (
+        {media?.kind === "image" ? (
           <Link
             href={`/news/${card.slug}`}
             className="block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <img
-              src={card.imageUrl}
+              src={media.url}
               alt=""
               className="h-auto w-full object-cover"
               width={400}
@@ -62,6 +64,17 @@ export function NewsCard({
               loading="lazy"
             />
           </Link>
+        ) : media?.kind === "video" ? (
+          <div className="aspect-video w-full overflow-hidden bg-black">
+            <iframe
+              src={media.url}
+              title={card.title}
+              className="h-full w-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
         ) : null}
         <CardHeader className="pb-1">
           <CardTitle>

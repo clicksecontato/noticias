@@ -76,10 +76,36 @@ function extractImageUrl(block: string, descriptionHtml: string): string | undef
   );
   if (enclosureMatch) return enclosureMatch[1].trim();
 
-  const mediaContentMatch = block.match(
-    /<media:content\s[^>]*\burl=["'](https?:\/\/[^"']+)["']/i
+  // Muitos feeds colocam vídeo em <media:content> e a miniatura em <media:thumbnail>.
+  // Preferimos sempre o thumbnail quando existir.
+  const mediaThumbnailMatch = block.match(
+    /<media:thumbnail\s[^>]*\burl=["'](https?:\/\/[^"']+)["']/i
   );
-  if (mediaContentMatch) return mediaContentMatch[1].trim();
+  if (mediaThumbnailMatch) return mediaThumbnailMatch[1].trim();
+
+  const mediaContentMatch = block.match(
+    /<media:content\s[^>]*\burl=["'](https?:\/\/[^"']+)["'][^>]*>/i
+  );
+  if (mediaContentMatch) {
+    const mediaTag = mediaContentMatch[0];
+    const mediaUrl = mediaContentMatch[1].trim();
+    const typeMatch = mediaTag.match(/\btype=["']([^"']+)["']/i);
+    const type = typeMatch?.[1]?.toLowerCase();
+
+    // Se o feed declarar o MIME type, só aceita image/*
+    if (type) {
+      if (type.startsWith("image/")) return mediaUrl;
+      // video/*, audio/*, etc: não é capa.
+    } else {
+      // Sem type: heurística pelo path (evita .mp4 etc).
+      try {
+        const pathname = new URL(mediaUrl).pathname.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(pathname)) return mediaUrl;
+      } catch {
+        // Ignora URL inválida
+      }
+    }
+  }
 
   const imgMatch = descriptionHtml.match(/<img\s[^>]*\bsrc=["'](https?:\/\/[^"']+)["']/i);
   if (imgMatch) return imgMatch[1].trim();
