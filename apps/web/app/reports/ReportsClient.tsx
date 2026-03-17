@@ -226,7 +226,7 @@ export function ReportsClient() {
                 <Select
                   value={form.reportType}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, reportType: value }))
+                    setForm((f) => ({ ...f, reportType: value ?? "volume" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -298,7 +298,7 @@ export function ReportsClient() {
                   <Select
                     value={form.groupBy}
                     onValueChange={(value) =>
-                      setForm((f) => ({ ...f, groupBy: value }))
+                      setForm((f) => ({ ...f, groupBy: value ?? "day" }))
                     }
                   >
                     <SelectTrigger className="h-8 w-full">
@@ -381,7 +381,7 @@ export function ReportsClient() {
                 <Select
                   value={form.filterGameId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterGameId: value }))
+                    setForm((f) => ({ ...f, filterGameId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -402,7 +402,7 @@ export function ReportsClient() {
                 <Select
                   value={form.filterTagId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterTagId: value }))
+                    setForm((f) => ({ ...f, filterTagId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -451,7 +451,6 @@ export function ReportsClient() {
                               <ComboboxItem
                                 key={s.id}
                                 value={s.id}
-                                textValue={`${s.name} ${s.id}`}
                               >
                                 {s.name} ({s.id})
                               </ComboboxItem>
@@ -467,7 +466,7 @@ export function ReportsClient() {
                 <Select
                   value={form.filterGenreId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterGenreId: value }))
+                    setForm((f) => ({ ...f, filterGenreId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -488,7 +487,7 @@ export function ReportsClient() {
                 <Select
                   value={form.filterPlatformId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterPlatformId: value }))
+                    setForm((f) => ({ ...f, filterPlatformId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -526,7 +525,7 @@ export function ReportsClient() {
             <Select
               value={typeFilter}
               onValueChange={(value) => {
-                setTypeFilter(value);
+                setTypeFilter(value ?? "");
                 setPage(1);
               }}
             >

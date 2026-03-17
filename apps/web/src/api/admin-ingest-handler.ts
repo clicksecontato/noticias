@@ -1,5 +1,5 @@
 export interface AdminIngestRequestBody {
-  token: string;
+  token?: string;
   sourceIds: string[];
 }
 
@@ -26,12 +26,23 @@ export type ExecuteIngestion = (
   sourceIds: string[]
 ) => Promise<AdminIngestResponseBody>;
 
+export interface AdminIngestRequestContext {
+  ADMIN_INGEST_TOKEN?: string;
+  /** Quando true, não exige token no body (auth já feita por sessão no middleware). */
+  authorizedBySession?: boolean;
+}
+
 export async function handleAdminIngestRequest(
   request: AdminIngestRequestBody,
-  env: { ADMIN_INGEST_TOKEN?: string },
+  context: AdminIngestRequestContext,
   executeIngestion: ExecuteIngestion
 ): Promise<AdminIngestResponse> {
-  if (!env.ADMIN_INGEST_TOKEN || request.token !== env.ADMIN_INGEST_TOKEN) {
+  const authorizedBySession = context.authorizedBySession === true;
+  const validToken =
+    context.ADMIN_INGEST_TOKEN &&
+    request.token === context.ADMIN_INGEST_TOKEN;
+
+  if (!authorizedBySession && !validToken) {
     return {
       status: 401,
       body: {

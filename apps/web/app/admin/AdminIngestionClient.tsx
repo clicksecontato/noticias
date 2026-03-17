@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/src/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +29,12 @@ interface ApiResult {
   failedSources?: Record<string, string>;
 }
 
-export function AdminIngestionClient() {
-  const router = useRouter();
+export function AdminIngestionClient({
+  useSessionAuth = false,
+}: {
+  /** Quando true, não exibe campo de token e envia apenas sourceIds (auth por sessão). */
+  useSessionAuth?: boolean;
+}) {
   const [token, setToken] = useState("");
   const [sourceIds, setSourceIds] = useState("");
   const [sources, setSources] = useState<SourceItem[]>([]);
@@ -48,13 +50,6 @@ export function AdminIngestionClient() {
   });
   const [addSourceError, setAddSourceError] = useState<string | null>(null);
   const [addSourceSuccess, setAddSourceSuccess] = useState(false);
-
-  async function onLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/admin/login");
-    router.refresh();
-  }
 
   function loadSources() {
     fetch("/api/admin/sources")
@@ -139,10 +134,13 @@ export function AdminIngestionClient() {
         .map((item) => item.trim())
         .filter(Boolean);
 
+      const body: { sourceIds: string[]; token?: string } = { sourceIds: ids };
+      if (!useSessionAuth) body.token = token;
+
       const response = await fetch("/api/admin/ingest-news", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, sourceIds: ids }),
+        body: JSON.stringify(body),
       });
 
       const data = (await response.json()) as ApiResult;
@@ -159,29 +157,28 @@ export function AdminIngestionClient() {
   }
 
   return (
-    <div className="mx-auto max-w-[720px] space-y-6 py-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Admin de Ingestão Manual</h1>
-        <Button type="button" variant="outline" size="sm" onClick={onLogout}>
-          Sair
-        </Button>
+        <h1 className="text-2xl font-semibold">Ingestão manual</h1>
       </div>
       <p className="text-muted-foreground">
-        Dispare a busca e criação de notícias em Português Brasileiro.
+        Dispare a busca e criação de notícias em Português Brasileiro. O token admin é validado automaticamente pela sua sessão.
       </p>
 
       <Card>
         <CardContent className="pt-4 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="token">Token Admin</Label>
-            <Input
-              id="token"
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              className="w-full"
-            />
-          </div>
+          {!useSessionAuth ? (
+            <div className="space-y-2">
+              <Label htmlFor="token">Token Admin</Label>
+              <Input
+                id="token"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          ) : null}
 
           {sources.length > 0 ? (
             <Card className="border-border bg-muted/30">

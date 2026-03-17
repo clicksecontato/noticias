@@ -1,5 +1,5 @@
-import { AdminIngestionClient } from "./AdminIngestionClient";
+import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-  return <AdminIngestionClient />;
+  redirect("/admin/ingestao");
 }

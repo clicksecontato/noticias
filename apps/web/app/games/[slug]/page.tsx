@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 
@@ -16,8 +17,12 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const contentProvider = createRouteContentProvider();
-  const metadataInput = await contentProvider.getGameMetadataBySlug(slug);
-
+  let metadataInput;
+  try {
+    metadataInput = await contentProvider.getGameMetadataBySlug(slug);
+  } catch {
+    notFound();
+  }
   return generateRouteMetadata({
     pageType: "game",
     titleBase: metadataInput.titleBase,
@@ -33,8 +38,12 @@ export default async function GamePage({
 }) {
   const { slug } = await params;
   const contentProvider = createRouteContentProvider();
-  const metadataInput = await contentProvider.getGameMetadataBySlug(slug);
-
+  let metadataInput;
+  try {
+    metadataInput = await contentProvider.getGameMetadataBySlug(slug);
+  } catch {
+    notFound();
+  }
   return (
     <article>
       <h2>{metadataInput.titleBase}</h2>
