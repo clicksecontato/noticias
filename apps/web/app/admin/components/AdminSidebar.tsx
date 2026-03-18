@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Download,
   Rss,
+  Newspaper,
   Gamepad2,
   Tag,
   Layers,
@@ -25,6 +26,7 @@ export interface AdminMenuItem {
 
 const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { path: "/admin/ingestao", label: "Ingestão", icon: Download, showLabel: true },
+  { path: "/admin/noticias", label: "Notícias", icon: Newspaper, showLabel: true },
   { path: "/admin/fontes", label: "Fontes", icon: Rss, showLabel: true },
   { path: "/admin/jogos", label: "Jogos", icon: Gamepad2, showLabel: true },
   { path: "/admin/tags", label: "Tags", icon: Tag, showLabel: true },
@@ -46,11 +48,11 @@ export function AdminSidebar({
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-border bg-card text-card-foreground",
+        "fixed left-0 top-14 bottom-0 z-40 flex flex-col border-r border-border bg-card text-card-foreground shadow-sm",
         collapsed ? "w-[56px]" : "w-56"
       )}
     >
-      <div className="flex h-14 shrink-0 items-center border-b border-border px-3">
+      <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
         {showLabel ? (
           <Link href="/admin" className="flex items-center gap-2 font-semibold">
             <LayoutDashboard className="h-5 w-5" />
@@ -62,7 +64,7 @@ export function AdminSidebar({
           </Link>
         )}
       </div>
-      <nav className="flex-1 space-y-0.5 p-2" aria-label="Menu admin">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3" aria-label="Menu admin">
         {ADMIN_MENU_ITEMS.map((item) => {
           const isActive =
             pathname === item.path || (item.path !== "/admin" && pathname.startsWith(item.path));
@@ -85,7 +87,7 @@ export function AdminSidebar({
         })}
       </nav>
       {onLogout ? (
-        <div className="border-t border-border p-2">
+        <div className="shrink-0 border-t border-border p-3">
           <Button
             variant="ghost"
             size="sm"

@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SourceItem {
   id: string;
@@ -235,19 +242,23 @@ export function AdminIngestionClient({
                   <form onSubmit={onAddSource} className="space-y-4">
                     <div className="space-y-2">
                       <Label>Tipo</Label>
-                      <select
+                      <Select
                         value={newSource.provider}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           setNewSource((s) => ({
                             ...s,
-                            provider: e.target.value as "rss" | "youtube",
+                            provider: (value ?? "rss") as "rss" | "youtube",
                           }))
                         }
-                        className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none dark:bg-input/30"
                       >
-                        <option value="rss">RSS</option>
-                        <option value="youtube">YouTube</option>
-                      </select>
+                        <SelectTrigger className="h-9 w-full bg-background text-foreground">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rss">RSS</SelectItem>
+                          <SelectItem value="youtube">YouTube</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>

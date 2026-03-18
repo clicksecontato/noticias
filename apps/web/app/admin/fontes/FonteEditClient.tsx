@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SourceEdit {
   id: string;
@@ -114,16 +121,19 @@ export function FonteEditClient({ source }: { source: SourceEdit }) {
             ) : null}
             <div className="space-y-2">
               <Label htmlFor="language">Idioma</Label>
-              <select
-                id="language"
+              <Select
                 value={form.language}
-                onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                onValueChange={(value) => setForm((f) => ({ ...f, language: value ?? "pt-BR" }))}
               >
-                <option value="pt-BR">pt-BR</option>
-                <option value="pt">pt</option>
-                <option value="en-US">en-US</option>
-              </select>
+                <SelectTrigger id="language" className="h-9 w-full bg-background text-foreground">
+                  <SelectValue placeholder="Idioma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pt-BR">pt-BR</SelectItem>
+                  <SelectItem value="pt">pt</SelectItem>
+                  <SelectItem value="en-US">en-US</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="trustScore">Trust score (0–100)</Label>

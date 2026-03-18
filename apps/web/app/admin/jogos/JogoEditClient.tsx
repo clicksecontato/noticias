@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface JogoEdit {
   id: string;
@@ -101,15 +108,19 @@ export function JogoEditClient({ jogo }: { jogo: JogoEdit }) {
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
-              <select
+              <Select
                 value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                onValueChange={(value) => setForm((f) => ({ ...f, status: value ?? "published" }))}
               >
-                <option value="published">published</option>
-                <option value="draft">draft</option>
-                <option value="archived">archived</option>
-              </select>
+                <SelectTrigger className="h-9 w-full bg-background text-foreground">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="published">published</SelectItem>
+                  <SelectItem value="draft">draft</SelectItem>
+                  <SelectItem value="archived">archived</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <div className="flex gap-2">
