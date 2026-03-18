@@ -436,6 +436,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         .select(
           "id,slug,title,excerpt,content_md,content_html,canonical_url,source_article_hash,ai_model,quality_score,published_at,image_url"
         )
+        .eq("is_news", true)
         .order("published_at", { ascending: false })
         .limit(200);
 
@@ -938,7 +939,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
               quality_score: qualityScore,
               status: "published",
               published_at: now,
-              image_url: item.imageUrl ?? null
+              image_url: item.imageUrl ?? null,
+              is_news: true
             },
             { onConflict: "slug" }
           )

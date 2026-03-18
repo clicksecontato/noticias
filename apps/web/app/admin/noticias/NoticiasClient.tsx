@@ -21,6 +21,7 @@ interface ArticleRow {
   title: string;
   excerpt: string | null;
   published_at: string;
+  is_news: boolean;
   sourceId: string;
   sourceName: string;
   gameNames: string[];
@@ -241,6 +242,7 @@ export function NoticiasClient() {
                   <thead>
                     <tr className="border-b border-border">
                       <th className="p-2 text-left">Título</th>
+                      <th className="p-2 text-left">Notícia</th>
                       <th className="p-2 text-left">Fonte</th>
                       <th className="p-2 text-left">Data</th>
                       <th className="p-2 text-left">Jogos / Tags</th>
@@ -254,6 +256,11 @@ export function NoticiasClient() {
                           <Link href={`/admin/noticias/${a.id}`} className="font-medium text-primary hover:underline line-clamp-2">
                             {a.title}
                           </Link>
+                        </td>
+                        <td className="p-2">
+                          <Badge variant={a.is_news ? "default" : "secondary"}>
+                            {a.is_news ? "Sim" : "Não"}
+                          </Badge>
                         </td>
                         <td className="p-2 text-muted-foreground">{a.sourceName || a.sourceId || "—"}</td>
                         <td className="p-2 text-muted-foreground">{formatDate(a.published_at)}</td>

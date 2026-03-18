@@ -32,6 +32,7 @@ export interface ArticleListRow {
   title: string;
   excerpt: string | null;
   published_at: string;
+  is_news: boolean;
   sourceId: string;
   sourceName: string;
   gameNames: string[];
@@ -50,6 +51,7 @@ export interface ArticleEditRow {
   image_url: string | null;
   published_at: string;
   status: string;
+  is_news: boolean;
   sourceId: string;
   sourceUrl: string | null;
   gameIds: string[];
@@ -113,7 +115,7 @@ export const newsRepository = {
 
     let query = client
       .from("articles")
-      .select("id,slug,title,excerpt,published_at")
+      .select("id,slug,title,excerpt,published_at,is_news")
       .order("published_at", { ascending: false });
 
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
@@ -132,7 +134,7 @@ export const newsRepository = {
 
     const { data: rows, error } = await query.range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);
-    const articles = (rows ?? []) as Array<{ id: string; slug: string; title: string; excerpt: string | null; published_at: string }>;
+    const articles = (rows ?? []) as Array<{ id: string; slug: string; title: string; excerpt: string | null; published_at: string; is_news: boolean }>;
     if (articles.length === 0) return [];
 
     const ids = articles.map((a) => a.id);
@@ -180,6 +182,7 @@ export const newsRepository = {
         title: a.title,
         excerpt: a.excerpt,
         published_at: a.published_at,
+        is_news: a.is_news ?? true,
         sourceId,
         sourceName: sourceNameById.get(sourceId) ?? "",
         gameNames: gameNamesByArticle.get(a.id) ?? [],
@@ -194,7 +197,7 @@ export const newsRepository = {
     const client = getClient();
     const { data: article, error } = await client
       .from("articles")
-      .select("id,slug,title,excerpt,content_md,content_html,image_url,published_at,status")
+      .select("id,slug,title,excerpt,content_md,content_html,image_url,published_at,status,is_news")
       .eq("id", id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -218,6 +221,7 @@ export const newsRepository = {
       image_url: article.image_url ?? null,
       published_at: article.published_at,
       status: article.status ?? "published",
+      is_news: article.is_news ?? true,
       sourceId: sourceLink?.data?.source_id ?? "",
       sourceUrl: sourceLink?.data?.source_url ?? null,
       gameIds: (games.data ?? []).map((r: { game_id: string }) => r.game_id),
@@ -259,6 +263,7 @@ export const newsRepository = {
         image_url: params.imageUrl?.trim() || null,
         published_at: publishedAt,
         status: "published",
+        is_news: true,
         canonical_url: `https://noticias-gaming-platform.local/news/${slug}`,
         source_article_hash: "",
         ai_model: "admin",
@@ -293,6 +298,7 @@ export const newsRepository = {
       contentMd: string | null;
       contentHtml: string | null;
       status: string;
+      is_news: boolean;
     }>
   ): Promise<void> {
     const client = getClient();
@@ -305,6 +311,7 @@ export const newsRepository = {
     if (updates.contentMd !== undefined) body.content_md = updates.contentMd?.trim() || null;
     if (updates.contentHtml !== undefined) body.content_html = updates.contentHtml?.trim() || null;
     if (updates.status !== undefined) body.status = updates.status;
+    if (updates.is_news !== undefined) body.is_news = updates.is_news;
     if (Object.keys(body).length > 1) {
       const { error } = await client.from("articles").update(body).eq("id", id);
       if (error) throw new Error(error.message);

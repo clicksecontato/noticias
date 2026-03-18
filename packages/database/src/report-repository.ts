@@ -193,6 +193,7 @@ function createSupabaseReportRepository(): ReportRepository {
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id, published_at")
+        .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
@@ -318,6 +319,7 @@ function createSupabaseReportRepository(): ReportRepository {
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id")
+        .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
@@ -408,6 +410,7 @@ function createSupabaseReportRepository(): ReportRepository {
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id")
+        .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);

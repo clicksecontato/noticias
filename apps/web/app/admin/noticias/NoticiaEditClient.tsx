@@ -115,6 +115,7 @@ export function NoticiaEditClient({
     sourceUrl: article.sourceUrl ?? "",
     imageUrl: article.image_url ?? "",
     publishedAt: article.published_at.slice(0, 16),
+    is_news: article.is_news ?? true,
   });
   const [gameIds, setGameIds] = useState<string[]>(article.gameIds);
   const [tagIds, setTagIds] = useState<string[]>(article.tagIds);
@@ -137,6 +138,7 @@ export function NoticiaEditClient({
           sourceUrl: form.sourceUrl.trim() || null,
           imageUrl: form.imageUrl.trim() || null,
           publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : article.published_at,
+          is_news: form.is_news,
           gameIds,
           tagIds,
           genreIds,
@@ -209,6 +211,18 @@ export function NoticiaEditClient({
                   onChange={(e) => setForm((f) => ({ ...f, publishedAt: e.target.value }))}
                 />
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="is_news"
+                type="checkbox"
+                checked={form.is_news}
+                onChange={(e) => setForm((f) => ({ ...f, is_news: e.target.checked }))}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="is_news" className="cursor-pointer font-normal">
+                Considerar como notícia (exibir no site e contabilizar nos relatórios). Desmarque para gameplays/assuntos off-topic.
+              </Label>
             </div>
             <div className="space-y-2">
               <Label htmlFor="sourceId">Fonte</Label>

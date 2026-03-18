@@ -43,7 +43,7 @@ export function getSchemaPolicies(): TablePolicy[] {
     },
     {
       table: "articles",
-      requiredColumns: ["id", "slug", "title", "published_at", "status"],
+      requiredColumns: ["id", "slug", "title", "published_at", "status", "is_news"],
       requiredIndexes: ["articles_slug_unique_idx", "articles_published_at_idx"],
       requiredConstraints: [
         "articles_pk",

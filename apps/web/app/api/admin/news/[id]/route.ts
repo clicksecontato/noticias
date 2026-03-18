@@ -27,6 +27,7 @@ type PatchBody = Partial<{
   contentMd: string | null;
   contentHtml: string | null;
   status: string;
+  is_news: boolean;
   gameIds: string[];
   tagIds: string[];
   genreIds: string[];
@@ -54,6 +55,7 @@ export async function PATCH(
     if (body.contentMd !== undefined) updates.contentMd = body.contentMd;
     if (body.contentHtml !== undefined) updates.contentHtml = body.contentHtml;
     if (body.status !== undefined) updates.status = body.status;
+    if (body.is_news !== undefined) updates.is_news = body.is_news;
     if (Object.keys(updates).length > 0) {
       await newsRepository.updateArticle(id, updates);
     }
