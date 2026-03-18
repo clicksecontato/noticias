@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +134,15 @@ export function PlataformasClient() {
                       <td className="p-2 text-muted-foreground">{row.slug}</td>
                       <td className="p-2">{row.vendor ?? "—"}</td>
                       <td className="p-2 text-right">
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(row.id, row.name)}>
+                        <Link href={`/admin/plataformas/${encodeURIComponent(row.id)}`}>
+                          <Button variant="outline" size="sm">Editar</Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-1 text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(row.id, row.name)}
+                        >
                           Excluir
                         </Button>
                       </td>

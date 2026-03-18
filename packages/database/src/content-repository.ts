@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import { getDatabaseConfig, type DatabaseConfig } from "./config";
 import { extractEntityIdsFromText } from "./enrichment";
+import { extractEntitiesWithGemini, isEnrichmentAiEnabled } from "./enrichment-ai";
 import type {
   ContentSourceRecord,
   YoutubeVideoItem,
@@ -80,6 +81,14 @@ export interface EntityIds {
   platformIds: string[];
 }
 
+/** Nomes sugeridos por IA para resolver ou criar (enriquecimento com IA). */
+export interface SuggestedEntities {
+  games: string[];
+  tags: string[];
+  genres: string[];
+  platforms: string[];
+}
+
 export interface ContentRepository {
   getNewsArticles(): Promise<NewsArticleRecord[]>;
   getGames(): Promise<GameRecord[]>;
@@ -120,6 +129,8 @@ export interface ContentRepository {
   getArticlesForEnrichmentBackfill(): Promise<{ id: string; title: string; excerpt: string }[]>;
   /** Lista vídeos YouTube existentes para backfill de enriquecimento (id, título, description). */
   getYoutubeVideosForEnrichmentBackfill(): Promise<{ id: string; title: string; description: string }[]>;
+  /** Resolve IDs existentes ou cria entidades a partir de nomes sugeridos (ex.: pela IA). */
+  resolveOrCreateEntityIds(suggested: SuggestedEntities): Promise<EntityIds>;
 }
 
 const NEWS_ARTICLES: NewsArticleRecord[] = [
@@ -356,6 +367,9 @@ function createMemoryContentRepository(): ContentRepository {
     },
     async getYoutubeVideosForEnrichmentBackfill() {
       return [];
+    },
+    async resolveOrCreateEntityIds(): Promise<EntityIds> {
+      return { gameIds: [], tagIds: [], genreIds: [], platformIds: [] };
     }
   };
 }
@@ -631,7 +645,25 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         }
         if (inserted?.id) {
           const description = item.description ?? "";
-          const ids = extractEntityIdsFromText(item.title, description.slice(0, 2000), catalog);
+          let ids: EntityIds;
+          if (isEnrichmentAiEnabled()) {
+            try {
+              const suggested = await extractEntitiesWithGemini(item.title, description.slice(0, 2000));
+              ids = await this.resolveOrCreateEntityIds(suggested);
+              const fromText = extractEntityIdsFromText(item.title, description.slice(0, 2000), catalog);
+              ids = {
+                gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+                tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
+                genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
+                platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+              };
+            } catch (e) {
+              console.warn("[enrichment] AI enrichment failed for video, using text match:", (e as Error).message);
+              ids = extractEntityIdsFromText(item.title, description.slice(0, 2000), catalog);
+            }
+          } else {
+            ids = extractEntityIdsFromText(item.title, description.slice(0, 2000), catalog);
+          }
           await this.linkYoutubeVideoToEntities(inserted.id, ids);
         }
         created += 1;
@@ -757,6 +789,52 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         genres: (genresRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" })),
         platforms: (platformsRes.data || []).map((r) => ({ id: r.id, name: r.name ?? "", slug: r.slug ?? "" }))
       };
+    },
+    async resolveOrCreateEntityIds(suggested: SuggestedEntities): Promise<EntityIds> {
+      const slugToId = async (
+        table: "games" | "tags" | "genres" | "platforms",
+        names: string[]
+      ): Promise<string[]> => {
+        const bySlug = new Map<string, string>();
+        for (const name of names) {
+          const s = slugify(name.trim());
+          if (!s || bySlug.has(s)) continue;
+          bySlug.set(s, name.trim());
+        }
+        const ids: string[] = [];
+        for (const [sl, name] of bySlug) {
+          const { data: existing } = await readClient.from(table).select("id").eq("slug", sl).limit(1).maybeSingle();
+          if (existing?.id) {
+            ids.push(existing.id);
+            continue;
+          }
+          if (table === "games") {
+            const { data: inserted, error } = await writeClient
+              .from("games")
+              .insert({ slug: sl, name, summary: null, release_date: null, rating: null, status: "published" })
+              .select("id")
+              .single();
+            if (!error && inserted?.id) ids.push(inserted.id);
+          } else if (table === "tags") {
+            const { data: inserted, error } = await writeClient.from("tags").insert({ slug: sl, name }).select("id").single();
+            if (!error && inserted?.id) ids.push(inserted.id);
+          } else if (table === "genres") {
+            const { data: inserted, error } = await writeClient.from("genres").insert({ slug: sl, name, description: null }).select("id").single();
+            if (!error && inserted?.id) ids.push(inserted.id);
+          } else {
+            const { data: inserted, error } = await writeClient.from("platforms").insert({ slug: sl, name, vendor: null }).select("id").single();
+            if (!error && inserted?.id) ids.push(inserted.id);
+          }
+        }
+        return ids;
+      };
+      const [gameIds, tagIds, genreIds, platformIds] = await Promise.all([
+        slugToId("games", suggested.games),
+        slugToId("tags", suggested.tags),
+        slugToId("genres", suggested.genres),
+        slugToId("platforms", suggested.platforms)
+      ]);
+      return { gameIds, tagIds, genreIds, platformIds };
     },
     async linkArticleToEntities(articleId: string, ids: EntityIds): Promise<void> {
       for (const gameId of ids.gameIds) {
@@ -887,7 +965,25 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           throw new Error(`Failed to upsert article source link: ${sourceLinkError.message}`);
         }
 
-        const ids = extractEntityIdsFromText(item.title, item.content.slice(0, 500), catalog);
+        let ids: EntityIds;
+        if (isEnrichmentAiEnabled()) {
+          try {
+            const suggested = await extractEntitiesWithGemini(item.title, item.content.slice(0, 500));
+            ids = await this.resolveOrCreateEntityIds(suggested);
+            const fromText = extractEntityIdsFromText(item.title, item.content.slice(0, 500), catalog);
+            ids = {
+              gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+              tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
+              genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
+              platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+            };
+          } catch (e) {
+            console.warn("[enrichment] AI enrichment failed, using text match:", (e as Error).message);
+            ids = extractEntityIdsFromText(item.title, item.content.slice(0, 500), catalog);
+          }
+        } else {
+          ids = extractEntityIdsFromText(item.title, item.content.slice(0, 500), catalog);
+        }
         await this.linkArticleToEntities(persistedArticle.id, ids);
         created += 1;
       }

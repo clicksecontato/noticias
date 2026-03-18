@@ -56,10 +56,17 @@ export function FontesClient() {
     }
   }
 
+  const rssCount = sources.filter((s) => s.provider === "rss").length;
+  const youtubeCount = sources.filter((s) => s.provider === "youtube").length;
+  const titleSuffix =
+    loading ? "" : ` (RSS[${rssCount}] - YouTube[${youtubeCount}])`;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Fontes</h1>
+        <h1 className="text-2xl font-semibold">
+          Fontes{titleSuffix}
+        </h1>
         <Link href="/admin/ingestao">
           <Button size="sm">Adicionar fonte (ingestão)</Button>
         </Link>

@@ -1,6 +1,7 @@
 import { createClient } from "../../../../src/lib/supabase/server";
-import { createContentRepository } from "../../../../../../packages/database/src/content-repository";
+import { createContentRepository, type EntityIds } from "../../../../../../packages/database/src/content-repository";
 import { extractEntityIdsFromText } from "../../../../../../packages/database/src/enrichment";
+import { extractEntitiesWithGemini, isEnrichmentAiEnabled } from "../../../../../../packages/database/src/enrichment-ai";
 
 /**
  * POST /api/admin/enrichment-backfill
@@ -51,22 +52,50 @@ export async function POST(request: Request): Promise<Response> {
       repo.getYoutubeVideosForEnrichmentBackfill()
     ]);
 
+    const useAi = isEnrichmentAiEnabled();
+
     for (const article of articles) {
-      const ids = extractEntityIdsFromText(
-        article.title,
-        article.excerpt.slice(0, 500),
-        catalog
-      );
+      let ids: EntityIds;
+      if (useAi) {
+        try {
+          const suggested = await extractEntitiesWithGemini(article.title, article.excerpt.slice(0, 500));
+          ids = await repo.resolveOrCreateEntityIds(suggested);
+          const fromText = extractEntityIdsFromText(article.title, article.excerpt.slice(0, 500), catalog);
+          ids = {
+            gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+            tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
+            genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
+            platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+          };
+        } catch {
+          ids = extractEntityIdsFromText(article.title, article.excerpt.slice(0, 500), catalog);
+        }
+      } else {
+        ids = extractEntityIdsFromText(article.title, article.excerpt.slice(0, 500), catalog);
+      }
       await repo.linkArticleToEntities(article.id, ids);
       articlesProcessed += 1;
     }
 
     for (const video of videos) {
-      const ids = extractEntityIdsFromText(
-        video.title,
-        video.description.slice(0, 2000),
-        catalog
-      );
+      let ids: EntityIds;
+      if (useAi) {
+        try {
+          const suggested = await extractEntitiesWithGemini(video.title, video.description.slice(0, 2000));
+          ids = await repo.resolveOrCreateEntityIds(suggested);
+          const fromText = extractEntityIdsFromText(video.title, video.description.slice(0, 2000), catalog);
+          ids = {
+            gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+            tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
+            genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
+            platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+          };
+        } catch {
+          ids = extractEntityIdsFromText(video.title, video.description.slice(0, 2000), catalog);
+        }
+      } else {
+        ids = extractEntityIdsFromText(video.title, video.description.slice(0, 2000), catalog);
+      }
       await repo.linkYoutubeVideoToEntities(video.id, ids);
       videosProcessed += 1;
     }
