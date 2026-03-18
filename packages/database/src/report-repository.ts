@@ -75,6 +75,24 @@ export interface ReportRepository {
   ): Promise<Array<{ game_id: string; game_name: string; articles: number; videos: number; total: number }>>;
 }
 
+/** Início do dia em UTC quando a string é só data (YYYY-MM-DD). */
+function normalizePeriodStart(s: string): string {
+  if (s.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return s + "T00:00:00.000Z";
+  }
+  return s;
+}
+
+/** Início do dia seguinte em UTC para usar com .lt() e incluir o dia inteiro até 23:59:59. */
+function periodEndExclusive(s: string): string {
+  if (s.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const d = new Date(s + "T00:00:00.000Z");
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString();
+  }
+  return s;
+}
+
 function createSupabaseReportRepository(): ReportRepository {
   const config = getDatabaseConfig();
   const url = config.supabaseUrl;
@@ -170,11 +188,13 @@ function createSupabaseReportRepository(): ReportRepository {
     },
 
     async getArticlesForReports(periodStart, periodEnd, filters) {
+      const start = normalizePeriodStart(periodStart);
+      const endExclusive = periodEndExclusive(periodEnd);
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id, published_at")
-        .gte("published_at", periodStart)
-        .lte("published_at", periodEnd);
+        .gte("published_at", start)
+        .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
       let list = articles ?? [];
 
@@ -233,11 +253,13 @@ function createSupabaseReportRepository(): ReportRepository {
     },
 
     async getVideosForReports(periodStart, periodEnd, filters) {
+      const start = normalizePeriodStart(periodStart);
+      const endExclusive = periodEndExclusive(periodEnd);
       const { data: videos, error } = await client
         .from("youtube_videos")
         .select("id, published_at, source_id")
-        .gte("published_at", periodStart)
-        .lte("published_at", periodEnd);
+        .gte("published_at", start)
+        .lt("published_at", endExclusive);
       if (error) throw new Error(`Failed to fetch videos: ${error.message}`);
       let list = videos ?? [];
 
@@ -291,11 +313,13 @@ function createSupabaseReportRepository(): ReportRepository {
     },
 
     async getTagCountsForReports(periodStart, periodEnd, filters) {
+      const start = normalizePeriodStart(periodStart);
+      const endExclusive = periodEndExclusive(periodEnd);
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id")
-        .gte("published_at", periodStart)
-        .lte("published_at", periodEnd);
+        .gte("published_at", start)
+        .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
       let articleIds = (articles ?? []).map((a) => a.id);
       if (articleIds.length === 0) return [];
@@ -379,19 +403,21 @@ function createSupabaseReportRepository(): ReportRepository {
     },
 
     async getGameCountsForReports(periodStart, periodEnd, filters) {
+      const start = normalizePeriodStart(periodStart);
+      const endExclusive = periodEndExclusive(periodEnd);
       const { data: articles, error: articlesError } = await client
         .from("articles")
         .select("id")
-        .gte("published_at", periodStart)
-        .lte("published_at", periodEnd);
+        .gte("published_at", start)
+        .lt("published_at", endExclusive);
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
       let articleIds = (articles ?? []).map((a) => a.id);
 
       const { data: videos, error: videosError } = await client
         .from("youtube_videos")
         .select("id, source_id")
-        .gte("published_at", periodStart)
-        .lte("published_at", periodEnd);
+        .gte("published_at", start)
+        .lt("published_at", endExclusive);
       if (videosError) throw new Error(`Failed to fetch videos: ${videosError.message}`);
       let videoIds = (videos ?? []).map((v) => v.id);
 
