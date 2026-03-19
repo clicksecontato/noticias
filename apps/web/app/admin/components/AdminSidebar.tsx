@@ -14,6 +14,7 @@ import {
   Monitor,
   Sparkles,
   BarChart3,
+  Presentation,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { path: "/admin/generos", label: "Gêneros", icon: Layers, showLabel: true },
   { path: "/admin/plataformas", label: "Plataformas", icon: Monitor, showLabel: true },
   { path: "/admin/enriquecimento", label: "Enriquecimento", icon: Sparkles, showLabel: true },
+  { path: "/admin/month-presentation", label: "Apresentação do Mês", icon: Presentation, showLabel: true },
 ];
 
 export function AdminSidebar({
