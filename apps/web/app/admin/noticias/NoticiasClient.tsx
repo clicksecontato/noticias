@@ -43,6 +43,7 @@ export function NoticiasClient() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [sources, setSources] = useState<SourceOption[]>([]);
 
   const [page, setPage] = useState(1);
@@ -96,6 +97,29 @@ export function NoticiasClient() {
       })
       .catch(() => setSources([]));
   }, []);
+
+  async function handleToggleIsNews(id: string, current: boolean) {
+    if (togglingId) return;
+    const next = !current;
+    setList((prev) => prev.map((a) => (a.id === id ? { ...a, is_news: next } : a)));
+    setTogglingId(id);
+    try {
+      const res = await fetch(`/api/admin/news/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_news: next }),
+      });
+      if (!res.ok) {
+        setList((prev) => prev.map((a) => (a.id === id ? { ...a, is_news: current } : a)));
+        alert("Falha ao atualizar. Tente de novo.");
+      }
+    } catch {
+      setList((prev) => prev.map((a) => (a.id === id ? { ...a, is_news: current } : a)));
+      alert("Falha ao atualizar. Tente de novo.");
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   function applyFilters() {
     setPage(1);
@@ -258,9 +282,17 @@ export function NoticiasClient() {
                           </Link>
                         </td>
                         <td className="p-2">
-                          <Badge variant={a.is_news ? "default" : "secondary"}>
-                            {a.is_news ? "Sim" : "Não"}
-                          </Badge>
+                          <Button
+                            type="button"
+                            variant={a.is_news ? "default" : "secondary"}
+                            size="sm"
+                            className="h-7 cursor-pointer px-2.5 font-normal transition-opacity hover:opacity-90"
+                            disabled={togglingId === a.id}
+                            onClick={() => handleToggleIsNews(a.id, a.is_news)}
+                            title="Clique para alternar entre Sim e Não"
+                          >
+                            {togglingId === a.id ? "…" : a.is_news ? "Sim" : "Não"}
+                          </Button>
                         </td>
                         <td className="p-2 text-muted-foreground">{a.sourceName || a.sourceId || "—"}</td>
                         <td className="p-2 text-muted-foreground">{formatDate(a.published_at)}</td>

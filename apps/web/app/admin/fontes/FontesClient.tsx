@@ -23,16 +23,41 @@ export function FontesClient() {
   const [sources, setSources] = useState<SourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   function loadSources() {
     setLoading(true);
-    fetch("/api/admin/sources")
+    fetch("/api/admin/sources?all=true")
       .then((res) => res.json())
       .then((data: { sources?: SourceItem[] }) => {
         setSources(Array.isArray(data.sources) ? data.sources : []);
       })
       .catch(() => setSources([]))
       .finally(() => setLoading(false));
+  }
+
+  async function handleToggleActive(id: string, current: boolean) {
+    if (togglingId) return;
+    const next = !current;
+    setSources((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: next } : s)));
+    setTogglingId(id);
+    try {
+      const res = await fetch(`/api/admin/sources/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: next }),
+      });
+      if (!res.ok) {
+        setSources((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: current } : s)));
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Falha ao atualizar. Tente de novo.");
+      }
+    } catch {
+      setSources((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: current } : s)));
+      alert("Falha ao atualizar. Tente de novo.");
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   useEffect(() => {
@@ -109,7 +134,19 @@ export function FontesClient() {
                         </Badge>
                       </td>
                       <td className="p-2">{s.language}</td>
-                      <td className="p-2">{s.isActive ? "Sim" : "Não"}</td>
+                      <td className="p-2">
+                        <Button
+                          type="button"
+                          variant={s.isActive ? "default" : "secondary"}
+                          size="sm"
+                          className="h-7 cursor-pointer px-2.5 font-normal transition-opacity hover:opacity-90"
+                          disabled={togglingId === s.id}
+                          onClick={() => handleToggleActive(s.id, s.isActive)}
+                          title="Clique para alternar entre Sim e Não"
+                        >
+                          {togglingId === s.id ? "…" : s.isActive ? "Sim" : "Não"}
+                        </Button>
+                      </td>
                       <td className="p-2 text-right">
                         <Link href={`/admin/fontes/${encodeURIComponent(s.id)}`}>
                           <Button variant="outline" size="sm">Editar</Button>

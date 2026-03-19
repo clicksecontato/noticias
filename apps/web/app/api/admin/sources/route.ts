@@ -1,7 +1,35 @@
 import { createClient } from "@supabase/supabase-js";
 import { createContentRepository } from "../../../../../../packages/database/src/content-repository";
 
-export async function GET(): Promise<Response> {
+function getSupabaseClient() {
+  const url = process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) throw new Error("Supabase não configurado");
+  return createClient(url, key);
+}
+
+export async function GET(request: Request): Promise<Response> {
+  const all = new URL(request.url).searchParams.get("all") === "true";
+
+  if (all) {
+    const client = getSupabaseClient();
+    const { data: rows, error } = await client
+      .from("sources")
+      .select("id,name,language,provider,rss_url,channel_id,is_active")
+      .order("name");
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    const sources = (rows ?? []).map((r: { id: string; name: string; language: string; provider: string | null; rss_url: string | null; channel_id: string | null; is_active: boolean }) => ({
+      id: r.id,
+      name: r.name,
+      rssUrl: r.rss_url ?? undefined,
+      language: r.language,
+      isActive: r.is_active ?? true,
+      provider: (r.provider === "youtube" ? "youtube" : "rss") as "rss" | "youtube",
+      channelId: r.channel_id ?? undefined
+    }));
+    return Response.json({ sources });
+  }
+
   const repository = createContentRepository();
   const sources = await repository.getContentSourcesForIngestion();
   const sourceIds = sources.map((s) => s.id);

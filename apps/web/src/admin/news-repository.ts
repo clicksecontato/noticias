@@ -80,6 +80,7 @@ export const newsRepository = {
     const { data, error } = await getClient()
       .from("sources")
       .select("id,name")
+      .eq("is_active", true)
       .order("name");
     if (error) throw new Error(error.message);
     return (data ?? []) as SourceOption[];
