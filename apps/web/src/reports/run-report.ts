@@ -84,4 +84,5 @@ export const SUPPORTED_REPORT_TYPES: ReportType[] = [
   "by_source_detail",
   "top_games",
   "executive_summary",
+  "month_presentation",
 ];

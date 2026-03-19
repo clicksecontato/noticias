@@ -1,6 +1,7 @@
 import { createReportRepository } from "../../../../../../../packages/database/src/report-repository";
 import type { ReportType } from "../../../../../../../packages/database/src/report-types";
 import { generateExecutiveSummaryReport } from "../../../../../src/reports/generators/executive-summary";
+import { generateMonthPresentationReport } from "../../../../../src/reports/generators/month-presentation";
 import { generateReportPayload, SUPPORTED_REPORT_TYPES } from "../../../../../src/reports/run-report";
 
 type GenerateBody = {
@@ -32,6 +33,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const { reportType, periodStart, periodEnd, options = {}, filters } = body;
   const isExecutiveSummary = reportType === "executive_summary";
+  const isMonthPresentation = reportType === "month_presentation";
   if (!reportType) {
     return Response.json({ error: "Obrigatório: reportType" }, { status: 400 });
   }
@@ -144,6 +146,9 @@ export async function POST(request: Request): Promise<Response> {
         { articles: articles30, videos: videos30, sourceNames, gameCounts: gameCounts30 },
         { articles: articles90, videos: videos90, sourceNames, gameCounts: gameCounts90 }
       );
+      await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
+    } else if (isMonthPresentation) {
+      const payload = await generateMonthPresentationReport(periodStartFinal, periodEndFinal);
       await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
     } else {
       const [articles, videos, sourceNames] = await Promise.all([

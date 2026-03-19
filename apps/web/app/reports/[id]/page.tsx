@@ -17,6 +17,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   activity_by_weekday: "Atividade por dia da semana",
   top_games: "Top jogos por período",
   executive_summary: "Resumo executivo",
+  month_presentation: "Apresentação mensal",
 };
 
 async function getReport(id: string) {

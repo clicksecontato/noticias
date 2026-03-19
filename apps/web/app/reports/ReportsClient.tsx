@@ -64,7 +64,23 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   by_source_detail: "Detalhe por fonte",
   top_games: "Top jogos por período",
   executive_summary: "Resumo executivo",
+  month_presentation: "Apresentação mensal",
 };
+
+const MONTH_OPTIONS = [
+  { value: "01", label: "Janeiro" },
+  { value: "02", label: "Fevereiro" },
+  { value: "03", label: "Março" },
+  { value: "04", label: "Abril" },
+  { value: "05", label: "Maio" },
+  { value: "06", label: "Junho" },
+  { value: "07", label: "Julho" },
+  { value: "08", label: "Agosto" },
+  { value: "09", label: "Setembro" },
+  { value: "10", label: "Outubro" },
+  { value: "11", label: "Novembro" },
+  { value: "12", label: "Dezembro" },
+];
 
 const statusVariant = (status: string): "default" | "secondary" | "destructive" => {
   if (status === "completed") return "default";
@@ -73,6 +89,11 @@ const statusVariant = (status: string): "default" | "secondary" | "destructive" 
 };
 
 export function ReportsClient() {
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const yearOptions = Array.from({ length: 8 }, (_, i) => String(currentYear - i));
+
   const [items, setItems] = useState<ReportListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -86,6 +107,8 @@ export function ReportsClient() {
     reportType: "volume",
     periodStart: "",
     periodEnd: "",
+    monthPresentationYear: String(currentYear),
+    monthPresentationMonth: currentMonth,
     groupBy: "day",
     limitSources: 20,
     limitTags: 100,
@@ -154,10 +177,47 @@ export function ReportsClient() {
       setGenerateLoading(false);
       return;
     }
+
+    if (
+      form.reportType === "month_presentation" &&
+      (!form.monthPresentationYear || !form.monthPresentationMonth)
+    ) {
+      setGenerateError("Selecione ano e mês para a apresentação mensal.");
+      setGenerateLoading(false);
+      return;
+    }
+
+    const periodFromMonth = (() => {
+      if (form.reportType !== "month_presentation") return null;
+      const yearRaw = form.monthPresentationYear;
+      const monthRaw = form.monthPresentationMonth;
+      const year = Number(yearRaw);
+      const month = Number(monthRaw);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return null;
+      const firstDay = `${yearRaw}-${String(month).padStart(2, "0")}-01`;
+      const lastDate = new Date(Date.UTC(year, month, 0));
+      const lastDay = lastDate.toISOString().slice(0, 10);
+      return { firstDay, lastDay };
+    })();
+
+    if (form.reportType === "month_presentation" && !periodFromMonth) {
+      setGenerateError("Mês inválido para apresentação mensal.");
+      setGenerateLoading(false);
+      return;
+    }
+
     const body: Record<string, unknown> = {
       reportType: form.reportType,
-      periodStart: form.reportType === "executive_summary" ? form.periodEnd : form.periodStart,
-      periodEnd: form.periodEnd,
+      periodStart:
+        form.reportType === "executive_summary"
+          ? form.periodEnd
+          : form.reportType === "month_presentation"
+            ? periodFromMonth!.firstDay
+            : form.periodStart,
+      periodEnd:
+        form.reportType === "month_presentation"
+          ? periodFromMonth!.lastDay
+          : form.periodEnd,
     };
     if (form.reportType === "volume") {
       body.options = { group_by: form.groupBy };
@@ -248,10 +308,56 @@ export function ReportsClient() {
                     <SelectItem value="executive_summary">
                       Resumo executivo
                     </SelectItem>
+                    <SelectItem value="month_presentation">
+                      Apresentação mensal
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {form.reportType !== "executive_summary" ? (
+              {form.reportType === "month_presentation" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Ano de referência</Label>
+                    <Select
+                      value={form.monthPresentationYear}
+                      onValueChange={(value) =>
+                        setForm((f) => ({ ...f, monthPresentationYear: value ?? String(currentYear) }))
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-full">
+                        <SelectValue placeholder="Selecione o ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((year) => (
+                          <SelectItem key={year} value={year}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mês de referência</Label>
+                    <Select
+                      value={form.monthPresentationMonth}
+                      onValueChange={(value) =>
+                        setForm((f) => ({ ...f, monthPresentationMonth: value ?? currentMonth }))
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-full">
+                        <SelectValue placeholder="Selecione o mês" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTH_OPTIONS.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : form.reportType !== "executive_summary" ? (
                 <>
                   <div className="space-y-2">
                     <Label>Início do período</Label>
@@ -545,6 +651,7 @@ export function ReportsClient() {
                   </SelectItem>
                   <SelectItem value="top_games">Top jogos por período</SelectItem>
                   <SelectItem value="executive_summary">Resumo executivo</SelectItem>
+                  <SelectItem value="month_presentation">Apresentação mensal</SelectItem>
                 </SelectContent>
             </Select>
           </div>

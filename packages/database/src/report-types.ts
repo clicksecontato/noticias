@@ -8,6 +8,7 @@ export const REPORT_TYPES = [
   "by_tags",
   "activity_by_weekday",
   "executive_summary",
+  "month_presentation",
   "rss_vs_youtube",
   "timeline",
   "by_source_detail",

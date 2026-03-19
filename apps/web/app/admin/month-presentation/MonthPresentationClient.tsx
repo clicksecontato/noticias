@@ -25,62 +25,32 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const headlineKpis = [
-  {
-    label: "Fontes ativas analisadas",
-    value: "132",
-    note: "84 RSS e 48 YouTube no mês (mock)",
-  },
-  {
-    label: "Conteúdos classificados",
-    value: "5.940",
-    note: "3.780 artigos + 2.160 vídeos (mock)",
-  },
-  {
-    label: "Vínculos gerados",
-    value: "18.412",
-    note: "jogos, tags, gêneros e plataformas (mock)",
-  },
-  {
-    label: "Densidade de contexto",
-    value: "3,1",
-    note: "média de vínculos por conteúdo (mock)",
-  },
-];
-
-const sourceMix = [
-  { tipo: "RSS", fontes: 84, conteudos: 3780, share: 64 },
-  { tipo: "YouTube", fontes: 48, conteudos: 2160, share: 36 },
-];
-
-const monthlyEvolution = [
-  { mes: "Jan", conteudos: 5220, vinculos: 14980 },
-  { mes: "Fev", conteudos: 5510, vinculos: 16440 },
-  { mes: "Mar", conteudos: 5940, vinculos: 18412 },
-];
-
-const linkQualityByType = [
-  { tipo: "Notícia RSS", jogos: 1.4, tags: 2.2, generos: 0.9, plataformas: 0.8 },
-  { tipo: "Vídeo YouTube", jogos: 1.9, tags: 2.8, generos: 1.2, plataformas: 0.7 },
-];
-
-const topEntityClusters = [
-  { cluster: "GTA VI + mundo aberto", citacoes: 1240 },
-  { cluster: "Game Pass + lançamentos", citacoes: 1095 },
-  { cluster: "PS5 Pro + desempenho", citacoes: 980 },
-  { cluster: "CS2 + competitivo", citacoes: 910 },
-  { cluster: "Nintendo Switch 2", citacoes: 875 },
-];
-
-const cadenceByWeekday = [
-  { dia: "Seg", rss: 540, youtube: 280 },
-  { dia: "Ter", rss: 630, youtube: 350 },
-  { dia: "Qua", rss: 680, youtube: 390 },
-  { dia: "Qui", rss: 710, youtube: 410 },
-  { dia: "Sex", rss: 690, youtube: 430 },
-  { dia: "Sáb", rss: 320, youtube: 210 },
-  { dia: "Dom", rss: 210, youtube: 90 },
-];
+interface MonthPresentationPayload {
+  summary: {
+    period_start: string;
+    period_end: string;
+    sources_total: number;
+    sources_rss: number;
+    sources_youtube: number;
+    contents_total: number;
+    articles_total: number;
+    videos_total: number;
+    links_total: number;
+    links_per_content: number;
+  };
+  source_mix: Array<{ tipo: "RSS" | "YouTube"; fontes: number; conteudos: number; share: number }>;
+  monthly_evolution: Array<{ mes: string; conteudos: number; vinculos: number }>;
+  link_quality: Array<{
+    tipo: "Notícia RSS" | "Vídeo YouTube";
+    jogos: number;
+    tags: number;
+    generos: number;
+    plataformas: number;
+  }>;
+  top_clusters: Array<{ cluster: string; citacoes: number }>;
+  cadence: Array<{ dia: string; rss: number; youtube: number }>;
+  script: Array<{ title: string; text: string }>;
+}
 
 const pieColors = [
   "hsl(var(--chart-1))",
@@ -109,7 +79,61 @@ const cadenceConfig = {
   youtube: { label: "YouTube", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
-export function MonthPresentationClient() {
+export function MonthPresentationClient({
+  reportId,
+  reportPayload,
+  periodStart,
+  periodEnd,
+}: {
+  reportId: string | null;
+  reportPayload: Record<string, unknown> | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+}) {
+  const payload = (reportPayload as MonthPresentationPayload | null) ?? null;
+  const sourceMix = payload?.source_mix ?? [];
+  const monthlyEvolution = payload?.monthly_evolution ?? [];
+  const linkQualityByType = payload?.link_quality ?? [];
+  const topEntityClusters = payload?.top_clusters ?? [];
+  const cadenceByWeekday = payload?.cadence ?? [];
+  const scripts = payload?.script ?? [];
+
+  const summary = payload?.summary ?? {
+    period_start: periodStart ?? "",
+    period_end: periodEnd ?? "",
+    sources_total: 0,
+    sources_rss: 0,
+    sources_youtube: 0,
+    contents_total: 0,
+    articles_total: 0,
+    videos_total: 0,
+    links_total: 0,
+    links_per_content: 0,
+  };
+
+  const headlineKpis = [
+    {
+      label: "Fontes ativas analisadas",
+      value: String(summary.sources_total),
+      note: `${summary.sources_rss} RSS e ${summary.sources_youtube} YouTube`,
+    },
+    {
+      label: "Conteúdos classificados",
+      value: String(summary.contents_total),
+      note: `${summary.articles_total} artigos + ${summary.videos_total} vídeos`,
+    },
+    {
+      label: "Vínculos gerados",
+      value: String(summary.links_total),
+      note: "jogos, tags, gêneros e plataformas",
+    },
+    {
+      label: "Densidade de contexto",
+      value: String(summary.links_per_content),
+      note: "média de vínculos por conteúdo",
+    },
+  ];
+
   return (
     <section className="space-y-6">
       <PageBackLink href="/admin">← Admin</PageBackLink>
@@ -118,15 +142,34 @@ export function MonthPresentationClient() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Roteiro Visual do Mês (Fontes e Vínculos)</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Leitura editorial do mês com dados mockados: quem publicou, como os conteúdos se conectam
+            Leitura editorial do mês com dados reais: quem publicou, como os conteúdos se conectam
             e quais histórias explicam o período para público leigo e também para quem é do ramo.
           </p>
+          {summary.period_start && summary.period_end ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Período do relatório: {summary.period_start} a {summary.period_end}
+            </p>
+          ) : null}
         </div>
         <div className="flex gap-2">
-          <Badge variant="secondary">Dados mockados</Badge>
+          <Badge variant={reportId ? "default" : "secondary"}>
+            {reportId ? "Dados reais gerados" : "Sem relatório gerado"}
+          </Badge>
           <Button size="sm">Exportar roteiro</Button>
         </div>
       </div>
+
+      {!payload ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nenhum relatório gerado</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Gere um relatório do tipo <strong className="text-foreground">month-presentation</strong> em
+            <strong className="text-foreground"> /admin/reports</strong> para preencher esta página com dados reais.
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {headlineKpis.map((kpi, idx) => (
@@ -185,7 +228,7 @@ export function MonthPresentationClient() {
               </ChartContainer>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Leitura rápida: RSS domina em volume bruto, YouTube puxa contexto mais denso por conteúdo.
+            Leitura rápida: RSS domina em volume bruto, YouTube tende a puxar contexto mais denso por conteúdo.
             </p>
           </CardContent>
         </Card>
@@ -208,7 +251,7 @@ export function MonthPresentationClient() {
               </ChartContainer>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Mesmo com menos fontes, YouTube representa 36% do volume e concentra blocos de assunto de maior recorrência.
+              Mesmo com menos fontes, YouTube pode concentrar blocos de assunto de maior recorrência no mês.
             </p>
           </CardContent>
         </Card>
@@ -248,8 +291,7 @@ export function MonthPresentationClient() {
               </ChartContainer>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Conteúdo subiu ~7,8% de fev para mar, enquanto vínculos subiram ~11,9%: o mês não só teve mais peças, teve
-              mais contexto por peça.
+              Quando a curva de vínculos cresce mais que a de conteúdos, a cobertura fica mais conectada e contextual.
             </p>
           </CardContent>
         </Card>
@@ -293,7 +335,7 @@ export function MonthPresentationClient() {
             </ChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Explicação para vídeo: vídeos costumam trazer mais jogo/tag por peça, enquanto RSS tende a dar maior cobertura ampla.
+            Explicação para vídeo: compare densidade por tipo para mostrar o equilíbrio entre volume e profundidade.
           </p>
         </CardContent>
       </Card>
@@ -317,7 +359,7 @@ export function MonthPresentationClient() {
             </ChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Ponto prático para o vídeo: terça a sexta concentra o pico de pauta; fim de semana cai volume e aumenta peso de tema recorrente.
+            Ponto prático para o vídeo: identifique os dias com pico de pauta para organizar calendário editorial.
           </p>
         </CardContent>
       </Card>
@@ -327,34 +369,17 @@ export function MonthPresentationClient() {
           <CardTitle>Roteiro sugerido para vídeo (8 a 12 minutos)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-relaxed">
-          <div className="rounded-lg border border-border p-4">
-            <p className="font-semibold">1) Abertura (0:00 - 1:00)</p>
-            <p className="text-muted-foreground">
-              "Neste mês analisamos 132 fontes e quase 6 mil conteúdos. O diferencial não foi só volume:
-              foram 18 mil vínculos entre jogos, tags, gêneros e plataformas."
-            </p>
-          </div>
-          <div className="rounded-lg border border-border p-4">
-            <p className="font-semibold">2) De onde vieram os dados (1:00 - 3:00)</p>
-            <p className="text-muted-foreground">
-              Mostre o mix RSS x YouTube e explique de forma simples: RSS trouxe escala de cobertura e YouTube
-              trouxe contexto forte por conteúdo.
-            </p>
-          </div>
-          <div className="rounded-lg border border-border p-4">
-            <p className="font-semibold">3) O que o mês contou pra gente (3:00 - 7:00)</p>
-            <p className="text-muted-foreground">
-              Foque em evolução mensal + clusters temáticos: quais assuntos dominaram e como eles se conectaram
-              entre plataformas e formatos.
-            </p>
-          </div>
-          <div className="rounded-lg border border-border p-4">
-            <p className="font-semibold">4) Fechamento para leigo e especialista (7:00 - 10:00)</p>
-            <p className="text-muted-foreground">
-              Leigo: "o que foi mais falado e por quê". Especialista: "o que isso indica para pauta, produção e timing
-              do próximo mês". Finalize com 2 hipóteses para o próximo ciclo.
-            </p>
-          </div>
+          {(scripts.length ? scripts : [
+            {
+              title: "Abertura",
+              text: "Gere o relatório month-presentation para preencher o roteiro automático.",
+            },
+          ]).map((item, idx) => (
+            <div key={`${item.title}-${idx}`} className="rounded-lg border border-border p-4">
+              <p className="font-semibold">{idx + 1}) {item.title}</p>
+              <p className="text-muted-foreground">{item.text}</p>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </section>
