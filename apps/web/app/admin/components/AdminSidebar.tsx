@@ -7,6 +7,7 @@ import {
   Download,
   Rss,
   Newspaper,
+  Video,
   Gamepad2,
   Tag,
   Layers,
@@ -27,6 +28,7 @@ export interface AdminMenuItem {
 const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { path: "/admin/ingestao", label: "Ingestão", icon: Download, showLabel: true },
   { path: "/admin/noticias", label: "Notícias", icon: Newspaper, showLabel: true },
+  { path: "/admin/videos", label: "Vídeos", icon: Video, showLabel: true },
   { path: "/admin/fontes", label: "Fontes", icon: Rss, showLabel: true },
   { path: "/admin/jogos", label: "Jogos", icon: Gamepad2, showLabel: true },
   { path: "/admin/tags", label: "Tags", icon: Tag, showLabel: true },

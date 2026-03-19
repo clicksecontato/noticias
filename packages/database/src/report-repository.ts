@@ -259,6 +259,7 @@ function createSupabaseReportRepository(): ReportRepository {
       const { data: videos, error } = await client
         .from("youtube_videos")
         .select("id, published_at, source_id")
+        .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
       if (error) throw new Error(`Failed to fetch videos: ${error.message}`);
@@ -419,6 +420,7 @@ function createSupabaseReportRepository(): ReportRepository {
       const { data: videos, error: videosError } = await client
         .from("youtube_videos")
         .select("id, source_id")
+        .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
       if (videosError) throw new Error(`Failed to fetch videos: ${videosError.message}`);

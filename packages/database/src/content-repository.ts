@@ -636,7 +636,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
             description: item.description ?? "",
             published_at: item.publishedAt,
             thumbnail_url: item.thumbnailUrl ?? null,
-            url: item.url
+            url: item.url,
+            is_news: true
           })
           .select("id")
           .single();
@@ -682,6 +683,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       let query = readClient
         .from("youtube_videos")
         .select("id, source_id, video_id, title, description, published_at, thumbnail_url, url")
+        .eq("is_news", true)
         .order("published_at", { ascending: false })
         .range(offset, offset + limit - 1);
       if (options?.sourceId) {

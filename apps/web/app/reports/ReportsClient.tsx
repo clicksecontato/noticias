@@ -571,8 +571,7 @@ export function ReportsClient() {
                       {REPORT_TYPE_LABELS[r.report_type] ?? r.report_type}
                     </Link>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(r.period_start).toLocaleDateString("pt-BR")} –{" "}
-                      {new Date(r.period_end).toLocaleDateString("pt-BR")}
+                      {formatYMDAsPTBR(r.period_start)} – {formatYMDAsPTBR(r.period_end)}
                     </span>
                     <Badge variant={statusVariant(r.status)} className="font-normal">
                       {r.status}
@@ -615,4 +614,13 @@ export function ReportsClient() {
       </Card>
     </section>
   );
+}
+
+function formatYMDAsPTBR(value: string): string {
+  // value esperado: "YYYY-MM-DD" (ou ISO completo).
+  // Não usar `new Date(value)` para evitar deslocamento por fuso.
+  const ymd = value.includes("T") ? value.slice(0, 10) : value;
+  const [y, m, d] = ymd.split("-");
+  if (!y || !m || !d) return value;
+  return `${d}/${m}/${y}`;
 }

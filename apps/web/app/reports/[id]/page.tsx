@@ -76,8 +76,7 @@ export default async function ReportDetailPage({
       <PageBackLink href="/reports">← Relatórios</PageBackLink>
       <h2 className="text-2xl font-semibold">{label}</h2>
       <p className="text-muted-foreground">
-        Período: {new Date(report.periodStart).toLocaleDateString("pt-BR")} a{" "}
-        {new Date(report.periodEnd).toLocaleDateString("pt-BR")}
+        Período: {formatYMDAsPTBR(report.periodStart)} a {formatYMDAsPTBR(report.periodEnd)}
       </p>
       <p className="text-sm text-muted-foreground">
         Status: <strong>{report.status}</strong>
@@ -98,6 +97,15 @@ export default async function ReportDetailPage({
       ) : null}
     </section>
   );
+}
+
+function formatYMDAsPTBR(value: string): string {
+  // value esperado: "YYYY-MM-DD" (ou ISO completo). Não usar `new Date(value)` porque
+  // isso pode deslocar o dia por fuso horário.
+  const ymd = value.includes("T") ? value.slice(0, 10) : value;
+  const [y, m, d] = ymd.split("-");
+  if (!y || !m || !d) return value;
+  return `${d}/${m}/${y}`;
 }
 
 function ReportPayload({
