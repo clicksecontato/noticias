@@ -1,112 +1,11 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createReportRepository } from "../../../../../packages/database/src/report-repository";
-import { PageBackLink } from "../../components/PageBackLink";
-import { TagsChart } from "../../components/reports/TagsChart";
-import { ActivityWeekdayChart } from "../../components/reports/ActivityWeekdayChart";
-import { TopSourcesChart } from "../../components/reports/TopSourcesChart";
-import { TopGamesChart } from "../../components/reports/TopGamesChart";
-import { VolumeChart } from "../../components/reports/VolumeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActivityWeekdayChart } from "../components/reports/ActivityWeekdayChart";
+import { TagsChart } from "../components/reports/TagsChart";
+import { TopGamesChart } from "../components/reports/TopGamesChart";
+import { TopSourcesChart } from "../components/reports/TopSourcesChart";
+import { VolumeChart } from "../components/reports/VolumeChart";
 
-const REPORT_TYPE_LABELS: Record<string, string> = {
-  volume: "Volume por período",
-  top_sources: "Ranking de fontes",
-  by_tags: "Por tags",
-  by_source_detail: "Detalhe por fonte",
-  activity_by_weekday: "Atividade por dia da semana",
-  top_games: "Top jogos por período",
-  executive_summary: "Resumo executivo",
-};
-
-async function getReport(id: string) {
-  const repo = createReportRepository();
-  const report = await repo.getReportById(id);
-  if (!report) return null;
-  return {
-    id: report.id,
-    reportType: report.report_type,
-    periodStart: report.period_start,
-    periodEnd: report.period_end,
-    parameters: report.parameters,
-    status: report.status,
-    errorMessage: report.error_message,
-    generatedAt: report.generated_at,
-    createdAt: report.created_at,
-    result: report.result?.payload ?? null,
-  };
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const report = await getReport(id);
-  if (!report) return { title: "Relatório" };
-  const label = REPORT_TYPE_LABELS[report.reportType] ?? report.reportType;
-  return {
-    title: `${label} – ${report.periodStart} a ${report.periodEnd}`,
-    description: `Relatório: ${label}`,
-  };
-}
-
-export default async function ReportDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  redirect(`/admin/reports/${encodeURIComponent(id)}`);
-  const report = await getReport(id);
-
-  if (!report) {
-    return (
-      <section className="space-y-4">
-        <PageBackLink href="/reports">← Relatórios</PageBackLink>
-        <p className="text-muted-foreground">Relatório não encontrado.</p>
-      </section>
-    );
-  }
-
-  const safeReport = report!;
-  const label = REPORT_TYPE_LABELS[safeReport.reportType] ?? safeReport.reportType;
-  const result = safeReport.result as Record<string, unknown> | null;
-
-  return (
-    <section className="space-y-6">
-      <PageBackLink href="/reports">← Relatórios</PageBackLink>
-      <h2 className="text-2xl font-semibold">{label}</h2>
-      <p className="text-muted-foreground">
-        Período: {formatYMDAsPTBR(safeReport.periodStart)} a{" "}
-        {formatYMDAsPTBR(safeReport.periodEnd)}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Status: <strong>{safeReport.status}</strong>
-        {safeReport.generatedAt
-          ? ` · Gerado em ${new Date(safeReport.generatedAt!).toLocaleString("pt-BR")}`
-          : null}
-      </p>
-      {safeReport.errorMessage ? (
-        <Card className="border-destructive/50 bg-destructive/10">
-          <CardContent className="pt-4">
-            <strong className="text-destructive">Erro:</strong>{" "}
-            <span className="text-destructive/90">{safeReport.errorMessage}</span>
-          </CardContent>
-        </Card>
-      ) : null}
-      {result && safeReport.status === "completed" ? (
-        <ReportPayload
-          type={safeReport.reportType}
-          payload={result as Record<string, unknown>}
-        />
-      ) : null}
-    </section>
-  );
-}
-
-function formatYMDAsPTBR(value: string): string {
+export function formatYMDAsPTBR(value: string): string {
   // value esperado: "YYYY-MM-DD" (ou ISO completo). Não usar `new Date(value)` porque
   // isso pode deslocar o dia por fuso horário.
   const ymd = value.includes("T") ? value.slice(0, 10) : value;
@@ -115,7 +14,7 @@ function formatYMDAsPTBR(value: string): string {
   return `${d}/${m}/${y}`;
 }
 
-function ReportPayload({
+export function ReportPayload({
   type,
   payload,
 }: {
@@ -384,8 +283,7 @@ function ReportPayload({
         </CardHeader>
         <CardContent className="space-y-6 pt-0">
           <p className="text-sm text-muted-foreground">
-            Quantidade de notícias (artigos) e vídeos publicados em cada dia da
-            semana.
+            Quantidade de notícias (artigos) e vídeos publicados em cada dia da semana.
           </p>
           <ActivityWeekdayChart data={items} />
           <div className="overflow-x-auto">
@@ -498,13 +396,44 @@ function ReportPayload({
       <div className="space-y-6">
         <p className="text-sm text-muted-foreground">
           Visão consolidada em 7, 30 e 90 dias até a data de referência:{" "}
-          <strong className="text-foreground">
-            {new Date(referenceDate).toLocaleDateString("pt-BR")}
-          </strong>
+          <strong className="text-foreground">{new Date(referenceDate).toLocaleDateString("pt-BR")}</strong>
         </p>
-        <WindowCard title="Últimos 7 dias" data={last7 ?? { articles: 0, videos: 0, rss_vs_youtube: { rssPct: 0, youtubePct: 0 }, top_sources: [], top_games: [] }} />
-        <WindowCard title="Últimos 30 dias" data={last30 ?? { articles: 0, videos: 0, rss_vs_youtube: { rssPct: 0, youtubePct: 0 }, top_sources: [], top_games: [] }} />
-        <WindowCard title="Últimos 90 dias" data={last90 ?? { articles: 0, videos: 0, rss_vs_youtube: { rssPct: 0, youtubePct: 0 }, top_sources: [], top_games: [] }} />
+        <WindowCard
+          title="Últimos 7 dias"
+          data={
+            last7 ?? {
+              articles: 0,
+              videos: 0,
+              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
+              top_sources: [],
+              top_games: [],
+            }
+          }
+        />
+        <WindowCard
+          title="Últimos 30 dias"
+          data={
+            last30 ?? {
+              articles: 0,
+              videos: 0,
+              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
+              top_sources: [],
+              top_games: [],
+            }
+          }
+        />
+        <WindowCard
+          title="Últimos 90 dias"
+          data={
+            last90 ?? {
+              articles: 0,
+              videos: 0,
+              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
+              top_sources: [],
+              top_games: [],
+            }
+          }
+        />
       </div>
     );
   }
@@ -519,3 +448,4 @@ function ReportPayload({
     </Card>
   );
 }
+

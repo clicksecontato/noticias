@@ -13,6 +13,7 @@ import {
   Layers,
   Monitor,
   Sparkles,
+  BarChart3,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { path: "/admin/noticias", label: "Notícias", icon: Newspaper, showLabel: true },
   { path: "/admin/videos", label: "Vídeos", icon: Video, showLabel: true },
   { path: "/admin/fontes", label: "Fontes", icon: Rss, showLabel: true },
+  { path: "/admin/reports", label: "Relatórios", icon: BarChart3, showLabel: true },
   { path: "/admin/jogos", label: "Jogos", icon: Gamepad2, showLabel: true },
   { path: "/admin/tags", label: "Tags", icon: Tag, showLabel: true },
   { path: "/admin/generos", label: "Gêneros", icon: Layers, showLabel: true },

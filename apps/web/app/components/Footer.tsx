@@ -3,7 +3,6 @@ import Link from "next/link";
 const FOOTER_LINKS = [
   { href: "/", label: "Início" },
   { href: "/news", label: "Notícias" },
-  { href: "/reports", label: "Relatórios" },
   { href: "/roteiro", label: "Roteiro" },
 ];
 

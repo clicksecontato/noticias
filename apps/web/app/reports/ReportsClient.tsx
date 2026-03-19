@@ -125,7 +125,7 @@ export function ReportsClient() {
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
     if (typeFilter) params.set("type", typeFilter);
-    fetch(`/api/reports?${params.toString()}`)
+    fetch(`/api/admin/reports?${params.toString()}`)
       .then((res) => res.json())
       .then((data: { items: ReportListItem[]; total: number }) => {
         setItems(data.items ?? []);
@@ -184,7 +184,7 @@ export function ReportsClient() {
       };
     }
     try {
-      const res = await fetch("/api/reports/generate", {
+      const res = await fetch("/api/admin/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -208,7 +208,7 @@ export function ReportsClient() {
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/">← Início</PageBackLink>
+      <PageBackLink href="/admin">← Início</PageBackLink>
       <h2 className="text-2xl font-semibold">Relatórios</h2>
       <p className="text-muted-foreground">
         Dados sobre publicações (artigos e vídeos) dos principais canais de games no Brasil.
@@ -565,7 +565,7 @@ export function ReportsClient() {
                     className="flex flex-wrap items-center gap-2 border-b border-border py-3 last:border-0"
                   >
                     <Link
-                      href={`/reports/${r.id}`}
+                      href={`/admin/reports/${r.id}`}
                       className="font-semibold text-foreground hover:underline"
                     >
                       {REPORT_TYPE_LABELS[r.report_type] ?? r.report_type}

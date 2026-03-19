@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { href: "/", label: "Início" },
   { href: "/news", label: "Notícias" },
   { href: "/videos", label: "Vídeos" },
-  { href: "/reports", label: "Relatórios" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
