@@ -1,10 +1,12 @@
 import type { IContentFetcher } from "./content-fetcher.interface";
 import type { ContentSource, FetchedContentItem } from "../content-sources/types";
-import { fetchRssItemsBySource } from "../rss-fetcher";
+import { fetchRssItemsBySource, type FetchRssOptions } from "../rss-fetcher";
 import type { SourceInput, RawNewsItem } from "../ingestion-orchestrator";
 
 export interface RssFetcherDeps {
   fetch?: typeof globalThis.fetch;
+  /** Sobrescreve janela de pubDate / teto de itens (padrão: 7 dias, 500 itens). */
+  rssParse?: Pick<FetchRssOptions, "maxAgeDays" | "maxItems" | "now">;
 }
 
 /**
@@ -23,7 +25,7 @@ function toExternalId(sourceUrl: string): string {
  * Single Responsibility: apenas adaptar; a lógica de parse está em rss-fetcher.
  */
 export function createRssContentFetcher(deps: RssFetcherDeps = {}): IContentFetcher {
-  const { fetch: fetchFn } = deps;
+  const { fetch: fetchFn, rssParse } = deps;
 
   return {
     async fetch(source: ContentSource): Promise<FetchedContentItem[]> {
@@ -42,13 +44,14 @@ export function createRssContentFetcher(deps: RssFetcherDeps = {}): IContentFetc
       };
 
       const rawItems: RawNewsItem[] = await fetchRssItemsBySource(sourceInput, {
-        ...(fetchFn && { fetch: fetchFn })
+        ...(fetchFn && { fetch: fetchFn }),
+        ...rssParse
       });
 
       const items: FetchedContentItem[] = rawItems.map((item) => {
         const url = item.sourceUrl ?? "";
         const publishedAt =
-          (item as RawNewsItem & { publishedAt?: string }).publishedAt ??
+          item.publishedAt ??
           new Date().toISOString();
         return {
           externalId: toExternalId(url || item.title),

@@ -19,6 +19,9 @@ interface ContentWithSource {
   provider: "rss" | "youtube";
 }
 
+/** Mesma ordem usada em `cadence` (Dom=0 … Sáb=6, UTC). */
+const WEEKDAY_LABELS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
+
 export interface MonthPresentationPayload {
   summary: {
     period_start: string;
@@ -43,6 +46,14 @@ export interface MonthPresentationPayload {
   }>;
   top_clusters: Array<{ cluster: string; citacoes: number }>;
   cadence: Array<{ dia: string; rss: number; youtube: number }>;
+  /** Ritmo editorial: total de publicações por dia da semana (UTC) no período, por fonte (top N por volume). */
+  cadence_by_source: Array<{
+    source_id: string;
+    source_name: string;
+    provider: "rss" | "youtube";
+    total: number;
+    dias: Array<{ dia: string; conteudos: number }>;
+  }>;
   script: Array<{ title: string; text: string }>;
 }
 
@@ -70,6 +81,54 @@ function formatMonthLabel(dateYmd: string): string {
   const monthIdx = Number(m) - 1;
   const names = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
   return `${names[Math.max(0, Math.min(11, monthIdx))]}/${y.slice(2)}`;
+}
+
+const TOP_SOURCES_FOR_SOURCE_CADENCE = 15;
+
+function computeCadenceBySourceWeekday(
+  contentRows: ContentWithSource[],
+  sourcesById: Map<string, SourceRow>
+): Array<{
+  source_id: string;
+  source_name: string;
+  provider: "rss" | "youtube";
+  total: number;
+  dias: Array<{ dia: string; conteudos: number }>;
+}> {
+  const bySource = new Map<string, Map<number, number>>();
+  const totals = new Map<string, number>();
+
+  for (const row of contentRows) {
+    const sid = row.source_id;
+    const dow = new Date(row.published_at).getUTCDay();
+    if (!bySource.has(sid)) bySource.set(sid, new Map());
+    const dm = bySource.get(sid)!;
+    dm.set(dow, (dm.get(dow) ?? 0) + 1);
+    totals.set(sid, (totals.get(sid) ?? 0) + 1);
+  }
+
+  const sortedIds = Array.from(totals.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id)
+    .slice(0, TOP_SOURCES_FOR_SOURCE_CADENCE);
+
+  return sortedIds.map((sourceId) => {
+    const meta = sourcesById.get(sourceId);
+    const name = meta?.name?.trim() || sourceId;
+    const provider: "rss" | "youtube" = meta?.provider === "youtube" ? "youtube" : "rss";
+    const dm = bySource.get(sourceId) ?? new Map();
+    const dias = WEEKDAY_LABELS_PT.map((label, day) => ({
+      dia: label,
+      conteudos: dm.get(day) ?? 0,
+    }));
+    return {
+      source_id: sourceId,
+      source_name: name,
+      provider,
+      total: totals.get(sourceId) ?? 0,
+      dias,
+    };
+  });
 }
 
 function isRetryableFetchError(err: unknown): boolean {
@@ -392,7 +451,6 @@ export async function generateMonthPresentationReport(
 
   const topClusters = await getTopTagClusters(client, articleIds, videoIds);
 
-  const weekday = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const cadenceMap = new Map<number, { rss: number; youtube: number }>();
   for (let i = 0; i < 7; i += 1) cadenceMap.set(i, { rss: 0, youtube: 0 });
   for (const row of contentRows) {
@@ -402,11 +460,14 @@ export async function generateMonthPresentationReport(
     else current.youtube += 1;
     cadenceMap.set(day, current);
   }
-  const cadence = weekday.map((label, day) => ({
+  const cadence = WEEKDAY_LABELS_PT.map((label, day) => ({
     dia: label,
     rss: cadenceMap.get(day)?.rss ?? 0,
     youtube: cadenceMap.get(day)?.youtube ?? 0,
   }));
+
+  const cadenceBySource = computeCadenceBySourceWeekday(contentRows, sourcesById);
+  const topCadenceSource = cadenceBySource[0];
 
   return {
     summary: {
@@ -426,6 +487,7 @@ export async function generateMonthPresentationReport(
     link_quality: linkQuality,
     top_clusters: topClusters,
     cadence,
+    cadence_by_source: cadenceBySource,
     script: [
       {
         title: "Abertura",
@@ -439,6 +501,14 @@ export async function generateMonthPresentationReport(
         title: "Leitura para especialistas",
         text: `A densidade média de ${linksPerContent} vínculos por conteúdo indica maior maturidade taxonômica e melhor conectividade entre entidades.`,
       },
+      ...(topCadenceSource
+        ? [
+            {
+              title: "Cadência por fonte",
+              text: `A fonte com maior volume no período foi “${topCadenceSource.source_name}” (${topCadenceSource.total} conteúdos). No gráfico por dia da semana dá para ver em quais dias ela costuma publicar mais ao longo do mês.`,
+            },
+          ]
+        : []),
     ],
   };
 }

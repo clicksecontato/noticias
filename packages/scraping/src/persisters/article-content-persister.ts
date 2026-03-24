@@ -8,6 +8,8 @@ export interface SaveIngestedNewsItemsInput {
   content: string;
   sourceUrl?: string;
   imageUrl?: string;
+  /** ISO 8601 (ex.: pubDate do RSS). */
+  publishedAt?: string;
 }
 
 export interface SaveIngestedNewsItemsResult {
@@ -33,6 +35,7 @@ export function createArticleContentPersister(deps: ArticlePersisterDeps): ICont
         title: item.title,
         content: item.description,
         sourceUrl: item.url,
+        publishedAt: item.publishedAt,
         ...(item.imageUrl && { imageUrl: item.imageUrl })
       }));
 

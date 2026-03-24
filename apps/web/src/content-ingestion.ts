@@ -51,6 +51,7 @@ export async function executeContentIngestion(
               title: item.title,
               content: item.content,
               sourceUrl: item.sourceUrl,
+              ...(item.publishedAt && { publishedAt: item.publishedAt }),
               ...(item.imageUrl && { imageUrl: item.imageUrl })
             }))
           )

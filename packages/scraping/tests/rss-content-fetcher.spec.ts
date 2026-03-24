@@ -20,11 +20,13 @@ const rssXml = `<?xml version="1.0"?>
     <title>Noticia de teste</title>
     <description>Resumo do artigo para o hub.</description>
     <link>https://example.com/noticia-1</link>
+    <pubDate>Mon, 10 Mar 2026 12:00:00 GMT</pubDate>
   </item>
   <item>
     <title>Outra noticia</title>
     <description>Outro resumo.</description>
     <link>https://example.com/noticia-2</link>
+    <pubDate>Tue, 11 Mar 2026 12:00:00 GMT</pubDate>
   </item>
 </channel></rss>`;
 
@@ -49,7 +51,10 @@ describe("RSS Content Fetcher", () => {
 
   it("deve buscar feed e mapear para FetchedContentItem com contentType article", async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(new Response(rssXml, { status: 200 }));
-    const fetcher = createRssContentFetcher({ fetch: mockFetch });
+    const fetcher = createRssContentFetcher({
+      fetch: mockFetch,
+      rssParse: { maxAgeDays: false }
+    });
     const source = createRssSource();
 
     const items = await fetcher.fetch(source);
@@ -63,7 +68,8 @@ describe("RSS Content Fetcher", () => {
       contentType: "article"
     });
     expect(items[0].externalId).toBeTruthy();
-    expect(items[0].publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(items[0].publishedAt).toBe("2026-03-10T12:00:00.000Z");
+    expect(items[1].publishedAt).toBe("2026-03-11T12:00:00.000Z");
     expect(items[1].title).toBe("Outra noticia");
     expect(items[1].contentType).toBe("article");
   });
@@ -71,7 +77,10 @@ describe("RSS Content Fetcher", () => {
   it("deve retornar array vazio quando o feed não tem itens válidos", async () => {
     const emptyXml = `<?xml version="1.0"?><rss><channel></channel></rss>`;
     const mockFetch = vi.fn().mockResolvedValueOnce(new Response(emptyXml, { status: 200 }));
-    const fetcher = createRssContentFetcher({ fetch: mockFetch });
+    const fetcher = createRssContentFetcher({
+      fetch: mockFetch,
+      rssParse: { maxAgeDays: false }
+    });
     const source = createRssSource();
 
     const items = await fetcher.fetch(source);
@@ -81,7 +90,10 @@ describe("RSS Content Fetcher", () => {
 
   it("deve lançar quando o fetch do feed falha", async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(new Response("", { status: 404 }));
-    const fetcher = createRssContentFetcher({ fetch: mockFetch });
+    const fetcher = createRssContentFetcher({
+      fetch: mockFetch,
+      rssParse: { maxAgeDays: false }
+    });
     const source = createRssSource();
 
     await expect(fetcher.fetch(source)).rejects.toThrow(/404|failed|rss/i);

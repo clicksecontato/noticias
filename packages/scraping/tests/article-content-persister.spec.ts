@@ -33,7 +33,14 @@ const items: FetchedContentItem[] = [
 
 describe("Article Content Persister", () => {
   it("mapeia itens e chama saveIngestedNewsItems com formato esperado", async () => {
-    let captured: Array<{ sourceId: string; title: string; content: string; sourceUrl?: string; imageUrl?: string }> = [];
+    let captured: Array<{
+      sourceId: string;
+      title: string;
+      content: string;
+      sourceUrl?: string;
+      imageUrl?: string;
+      publishedAt?: string;
+    }> = [];
     const persister = createArticleContentPersister({
       saveIngestedNewsItems: async (input) => {
         captured = input;
@@ -49,8 +56,10 @@ describe("Article Content Persister", () => {
       title: "Noticia um",
       content: "Conteudo um",
       sourceUrl: "https://a.com/1",
+      publishedAt: "2026-03-10T12:00:00Z",
       imageUrl: "https://a.com/img1.jpg"
     });
+    expect(captured[1].publishedAt).toBe("2026-03-10T13:00:00Z");
     expect(captured[1].imageUrl).toBeUndefined();
     expect(result).toEqual({ created: 2, skipped: 0, skippedItems: [] });
   });

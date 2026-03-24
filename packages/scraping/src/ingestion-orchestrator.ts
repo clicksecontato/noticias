@@ -13,6 +13,8 @@ export interface RawNewsItem {
   sourceUrl?: string;
   /** Optional image URL (e.g. from RSS enclosure or media:content). */
   imageUrl?: string;
+  /** ISO 8601 quando derivado do campo pubDate do RSS. */
+  publishedAt?: string;
 }
 
 export interface SkippedArticle {

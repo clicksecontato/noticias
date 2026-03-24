@@ -103,6 +103,7 @@ export interface ContentRepository {
       content: string;
       sourceUrl?: string;
       imageUrl?: string;
+      publishedAt?: string;
     }>
   ): Promise<SaveIngestedResult>;
   /** Fontes ativas para ingestão (RSS + YouTube), com flag provider. */
@@ -337,6 +338,11 @@ function createMemoryContentRepository(): ContentRepository {
           continue;
         }
 
+        const publishedAtStored =
+          item.publishedAt && Number.isFinite(Date.parse(item.publishedAt))
+            ? new Date(item.publishedAt).toISOString()
+            : new Date().toISOString();
+
         NEWS_ARTICLES.unshift({
           slug,
           title: item.title,
@@ -349,7 +355,7 @@ function createMemoryContentRepository(): ContentRepository {
           qualityScore: computeQualityScore(item.title, item.content),
           sourceId: source.id,
           sourceName: source.name,
-          publishedAt: new Date().toISOString(),
+          publishedAt: publishedAtStored,
           sourceUrl: item.sourceUrl || "",
           ...(item.imageUrl && { imageUrl: item.imageUrl })
         });
@@ -921,6 +927,10 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         }
 
         const now = new Date().toISOString();
+        const publishedAtToStore =
+          item.publishedAt && Number.isFinite(Date.parse(item.publishedAt))
+            ? new Date(item.publishedAt).toISOString()
+            : now;
         const canonicalUrl = `https://noticias-gaming-platform.local/news/${slug}`;
         const sourceArticleHash = buildSourceArticleHash(item.title, item.content);
         const aiModel = "ingestion-rss-v1";
@@ -940,7 +950,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
               ai_model: aiModel,
               quality_score: qualityScore,
               status: "published",
-              published_at: now,
+              published_at: publishedAtToStore,
               image_url: item.imageUrl ?? null,
               is_news: true
             },

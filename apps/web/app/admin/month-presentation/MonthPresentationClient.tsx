@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -15,6 +16,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageBackLink } from "../../components/PageBackLink";
 import {
   ChartConfig,
@@ -49,6 +58,13 @@ interface MonthPresentationPayload {
   }>;
   top_clusters: Array<{ cluster: string; citacoes: number }>;
   cadence: Array<{ dia: string; rss: number; youtube: number }>;
+  cadence_by_source?: Array<{
+    source_id: string;
+    source_name: string;
+    provider: "rss" | "youtube";
+    total: number;
+    dias?: Array<{ dia: string; conteudos: number }>;
+  }>;
   script: Array<{ title: string; text: string }>;
 }
 
@@ -79,6 +95,18 @@ const cadenceConfig = {
   youtube: { label: "YouTube", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
+function peakDayLabel(dias: Array<{ dia: string; conteudos: number }>): { label: string; valor: number } {
+  let valor = 0;
+  let label = "—";
+  for (const d of dias) {
+    if (d.conteudos > valor) {
+      valor = d.conteudos;
+      label = d.dia;
+    }
+  }
+  return { label, valor };
+}
+
 export function MonthPresentationClient({
   reportId,
   reportPayload,
@@ -96,7 +124,43 @@ export function MonthPresentationClient({
   const linkQualityByType = payload?.link_quality ?? [];
   const topEntityClusters = payload?.top_clusters ?? [];
   const cadenceByWeekday = payload?.cadence ?? [];
+  const cadenceBySourceRaw = payload?.cadence_by_source ?? [];
   const scripts = payload?.script ?? [];
+
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+
+  /** Relatórios antigos sem o array `dias` (formato anterior) são ignorados até regenerar. */
+  const cadenceBySource = useMemo(() => {
+    return cadenceBySourceRaw
+      .map((row) => ({ ...row, dias: row.dias ?? [] }))
+      .filter((row) => row.dias.length === 7);
+  }, [cadenceBySourceRaw]);
+
+  useEffect(() => {
+    if (!cadenceBySource.length) {
+      setSelectedSourceId(null);
+      return;
+    }
+    if (!selectedSourceId || !cadenceBySource.some((s) => s.source_id === selectedSourceId)) {
+      setSelectedSourceId(cadenceBySource[0].source_id);
+    }
+  }, [cadenceBySource, selectedSourceId]);
+
+  const selectedCadenceSource =
+    cadenceBySource.find((s) => s.source_id === selectedSourceId) ?? cadenceBySource[0] ?? null;
+  const selectedSourcePeak = selectedCadenceSource
+    ? peakDayLabel(selectedCadenceSource.dias)
+    : null;
+
+  const sourceWeekdayChartConfig = useMemo(() => {
+    const isYt = selectedCadenceSource?.provider === "youtube";
+    return {
+      conteudos: {
+        label: isYt ? "YouTube" : "RSS",
+        color: isYt ? "hsl(var(--chart-2))" : "hsl(var(--chart-1))",
+      },
+    } satisfies ChartConfig;
+  }, [selectedCadenceSource?.provider]);
 
   const summary = payload?.summary ?? {
     period_start: periodStart ?? "",
@@ -342,7 +406,7 @@ export function MonthPresentationClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Cadência semanal de publicação (ritmo editorial)</CardTitle>
+          <CardTitle>Cadência por dia da semana (RSS x YouTube)</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pb-6">
           <div className="h-[260px] w-full shrink-0">
@@ -359,8 +423,120 @@ export function MonthPresentationClient({
             </ChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Ponto prático para o vídeo: identifique os dias com pico de pauta para organizar calendário editorial.
+            Visão agregada do período: útil para ver em quais dias da semana o agregador recebe mais RSS e mais YouTube.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cadência por dia da semana (por fonte)</CardTitle>
+          <p className="text-sm font-normal text-muted-foreground">
+            Até 15 fontes com mais conteúdos no período. Cada barra soma todas as publicações daquela fonte naquele dia da
+            semana (Dom–Sáb) ao longo do <span className="text-foreground">período do relatório</span>, no fuso UTC —
+            mesmo critério do gráfico “RSS x YouTube” acima.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pb-6">
+          {!cadenceBySource.length ? (
+            <p className="text-sm text-muted-foreground">
+              Gere novamente o relatório <strong className="text-foreground">Apresentação mensal</strong> para ver a
+              cadência por dia da semana por fonte.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div className="space-y-2 sm:max-w-md sm:flex-1">
+                  <Label htmlFor="cadence-source">Fonte</Label>
+                  <Select
+                    value={selectedCadenceSource?.source_id ?? ""}
+                    onValueChange={(v) => setSelectedSourceId(v ?? null)}
+                  >
+                    <SelectTrigger id="cadence-source" className="h-9 w-full sm:w-full">
+                      <SelectValue placeholder="Escolha uma fonte" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cadenceBySource.map((s) => (
+                        <SelectItem key={s.source_id} value={s.source_id}>
+                          {s.source_name}{" "}
+                          <span className="text-muted-foreground">
+                            ({s.provider === "youtube" ? "YouTube" : "RSS"} · {s.total})
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedSourcePeak ? (
+                  <Badge variant="outline" className="w-fit shrink-0">
+                    Dia de pico: {selectedSourcePeak.label} ({selectedSourcePeak.valor} publicações)
+                  </Badge>
+                ) : null}
+              </div>
+
+              {selectedCadenceSource ? (
+                <div className="h-[260px] w-full shrink-0">
+                  <ChartContainer
+                    config={sourceWeekdayChartConfig}
+                    className="aspect-auto h-full w-full min-h-0"
+                  >
+                    <BarChart data={selectedCadenceSource.dias}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="dia" />
+                      <YAxis allowDecimals={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar
+                        dataKey="conteudos"
+                        fill="var(--color-conteudos)"
+                        radius={[4, 4, 0, 0]}
+                        isAnimationActive
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              ) : null}
+
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[520px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="px-3 py-2 font-medium">Fonte</th>
+                      <th className="px-3 py-2 font-medium">Tipo</th>
+                      <th className="px-3 py-2 font-medium text-right">Total</th>
+                      <th className="px-3 py-2 font-medium">Dia de pico</th>
+                      <th className="px-3 py-2 font-medium text-right">No pico</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cadenceBySource.map((s) => {
+                      const peak = peakDayLabel(s.dias);
+                      return (
+                        <tr
+                          key={s.source_id}
+                          className={`border-b border-border last:border-0 ${
+                            s.source_id === selectedCadenceSource?.source_id ? "bg-muted/30" : ""
+                          }`}
+                        >
+                          <td className="px-3 py-2 font-medium">{s.source_name}</td>
+                          <td className="px-3 py-2 text-muted-foreground">
+                            {s.provider === "youtube" ? "YouTube" : "RSS"}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">{s.total}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{peak.label}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{peak.valor}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Use a tabela para comparar o dia de pico entre fontes; o gráfico repete o formato “por dia da semana”, só
+                que filtrado na fonte escolhida.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

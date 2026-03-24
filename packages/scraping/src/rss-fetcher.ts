@@ -1,11 +1,17 @@
 import type { RawNewsItem, SourceInput } from "./ingestion-orchestrator";
 
+const MS_PER_DAY = 86_400_000;
+const DEFAULT_RSS_MAX_AGE_DAYS = 7;
+const DEFAULT_RSS_MAX_ITEMS = 500;
+
 interface ParsedRssEntry {
   title: string;
   description: string;
   link: string;
   /** Optional image URL from enclosure, media:content or first img in description. */
   imageUrl?: string;
+  /** Epoch ms from &lt;pubDate&gt;, quando parseável. */
+  publishedMs?: number;
 }
 
 const DEFAULT_FETCH_OPTIONS: RequestInit = {
@@ -65,7 +71,9 @@ function extractItemLink(block: string): string {
   const rssStyle = block.match(/<link\s*>[\s\n]*(https?:\/\/[^\s<]+)[\s\n]*<\/link>/i);
   if (rssStyle) return rssStyle[1].trim();
   const anyLink = block.match(/<link\s*>([\s\S]*?)<\/link>/i);
-  if (anyLink) return anyLink[1].replace(/\s+/g, " ").trim();
+  if (anyLink) {
+    return cleanXmlValue(anyLink[1].replace(/\s+/g, " "));
+  }
   return extractTagValue(block, "link").trim();
 }
 
@@ -113,7 +121,59 @@ function extractImageUrl(block: string, descriptionHtml: string): string | undef
   return undefined;
 }
 
-function parseRssEntries(xml: string): ParsedRssEntry[] {
+/** Meses abreviados em feeds BR (RFC822 em português) → abreviação aceita por Date.parse. */
+function normalizePortugueseRssMonthTokens(s: string): string {
+  const map: Record<string, string> = {
+    jan: "Jan",
+    fev: "Feb",
+    abr: "Apr",
+    mai: "May",
+    jun: "Jun",
+    jul: "Jul",
+    ago: "Aug",
+    set: "Sep",
+    out: "Oct",
+    nov: "Nov",
+    dez: "Dec"
+  };
+  return s.replace(/\b(jan|fev|abr|mai|jun|jul|ago|set|out|nov|dez)\b/gi, (token) => {
+    const key = token.toLowerCase();
+    return map[key] ?? token;
+  });
+}
+
+/**
+ * Converte &lt;pubDate&gt; (RFC 822, às vezes com dia da semana em PT) para epoch ms.
+ */
+export function parseRssPubDateToMillis(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  let s = trimmed.replace(/^[A-Za-zÀ-ÿ\u00c0-\u024f]{2,12},\s*/u, "");
+  s = normalizePortugueseRssMonthTokens(s);
+  const ms = Date.parse(s);
+  return Number.isFinite(ms) ? ms : undefined;
+}
+
+function resolveRssWindowDays(options?: FetchRssOptions): number | null {
+  if (options?.maxAgeDays === false) return null;
+  const n = options?.maxAgeDays;
+  if (n === undefined) return DEFAULT_RSS_MAX_AGE_DAYS;
+  if (typeof n === "number" && Number.isFinite(n) && n > 0) return Math.floor(n);
+  return DEFAULT_RSS_MAX_AGE_DAYS;
+}
+
+function resolveRssMaxItems(options?: FetchRssOptions): number {
+  const n = options?.maxItems;
+  if (typeof n === "number" && Number.isFinite(n) && n > 0) return Math.min(Math.floor(n), 2000);
+  return DEFAULT_RSS_MAX_ITEMS;
+}
+
+function parseRssEntries(xml: string, options?: FetchRssOptions): ParsedRssEntry[] {
+  const nowMs = (options?.now ?? new Date()).getTime();
+  const windowDays = resolveRssWindowDays(options);
+  const maxItems = resolveRssMaxItems(options);
+  const cutoffMs = windowDays != null ? nowMs - windowDays * MS_PER_DAY : null;
+
   const itemRegex = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
   const entries: ParsedRssEntry[] = [];
   let itemMatch = itemRegex.exec(xml);
@@ -125,24 +185,41 @@ function parseRssEntries(xml: string): ParsedRssEntry[] {
     const description = htmlToText(descriptionRaw);
     const link = extractItemLink(block);
     const imageUrl = extractImageUrl(block, descriptionRaw);
+    const pubDateRaw = extractTagValue(block, "pubDate");
+    const publishedMs = parseRssPubDateToMillis(pubDateRaw);
 
     if (title) {
+      if (cutoffMs != null && publishedMs != null && publishedMs < cutoffMs) {
+        itemMatch = itemRegex.exec(xml);
+        continue;
+      }
+
       entries.push({
         title,
         description,
         link,
-        ...(imageUrl && { imageUrl })
+        ...(imageUrl && { imageUrl }),
+        ...(publishedMs != null && { publishedMs })
       });
     }
 
     itemMatch = itemRegex.exec(xml);
   }
 
-  return entries.slice(0, 6);
+  return entries.slice(0, maxItems);
 }
 
 export interface FetchRssOptions {
   fetch?: typeof globalThis.fetch;
+  /**
+   * Janela rolante: mantém itens com pubDate dentro dos últimos N dias.
+   * `false` desliga o filtro. Padrão: 7 dias.
+   */
+  maxAgeDays?: number | false;
+  /** Teto após filtrar (padrão 500, máximo absoluto 2000). */
+  maxItems?: number;
+  /** Relógio injetável (testes). */
+  now?: Date;
 }
 
 /**
@@ -162,7 +239,7 @@ export async function fetchRssItemsBySource(
     );
   }
   const xml = await response.text();
-  const entries = parseRssEntries(xml);
+  const entries = parseRssEntries(xml, options);
   const items: RawNewsItem[] = [];
 
   for (const entry of entries) {
@@ -175,7 +252,10 @@ export async function fetchRssItemsBySource(
       content,
       language: source.language,
       sourceUrl: entry.link,
-      ...(entry.imageUrl && { imageUrl: entry.imageUrl })
+      ...(entry.imageUrl && { imageUrl: entry.imageUrl }),
+      ...(entry.publishedMs != null && {
+        publishedAt: new Date(entry.publishedMs).toISOString()
+      })
     });
   }
 
