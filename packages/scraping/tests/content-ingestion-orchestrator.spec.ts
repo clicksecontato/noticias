@@ -23,7 +23,23 @@ const youtubeSource: ContentSource = {
 };
 
 function stubFetcher(items: FetchedContentItem[]): IContentFetcher {
-  return { fetch: async () => items };
+  return {
+    fetch: async (s): Promise<ContentFetchOutcome> => ({
+      items,
+      stats:
+        s.provider === "rss"
+          ? {
+              provider: "rss",
+              rssItemsDelivered: items.length,
+              rssItemsWithTitle: items.length
+            }
+          : {
+              provider: "youtube",
+              youtubeItemsDelivered: items.length,
+              youtubePlaylistItemsRaw: items.length
+            }
+    })
+  };
 }
 
 function stubPersister(created: number, skipped: number): IContentPersister {
@@ -39,12 +55,27 @@ function stubPersister(created: number, skipped: number): IContentPersister {
 describe("Content Ingestion Orchestrator", () => {
   it("processa uma fonte e agrega resultado", async () => {
     const result = await runContentIngestion([rssSource], {
-      getFetcher: () => stubFetcher([{ externalId: "1", title: "A", description: "d", url: "u", publishedAt: "2026-01-01", contentType: "article" }]),
+      getFetcher: () =>
+        stubFetcher([
+          {
+            externalId: "1",
+            title: "A",
+            description: "d",
+            url: "u",
+            publishedAt: "2026-01-01",
+            contentType: "article"
+          }
+        ]),
       getPersister: () => stubPersister(1, 0)
     });
 
     expect(result.processedSourceIds).toEqual(["s1"]);
-    expect(result.resultsBySource.s1).toEqual({ created: 1, skipped: 0, skippedItems: [] });
+    expect(result.resultsBySource.s1).toMatchObject({
+      created: 1,
+      skipped: 0,
+      skippedItems: []
+    });
+    expect(result.resultsBySource.s1.fetchStats?.rssItemsDelivered).toBe(1);
     expect(result.totalCreated).toBe(1);
     expect(result.totalSkipped).toBe(0);
     expect(Object.keys(result.failedSources)).toHaveLength(0);
@@ -58,15 +89,19 @@ describe("Content Ingestion Orchestrator", () => {
     });
 
     expect(result.processedSourceIds).toEqual(["s1", "yt1"]);
-    expect(result.resultsBySource.s1).toEqual({ created: 2, skipped: 1, skippedItems: [] });
-    expect(result.resultsBySource.yt1).toEqual({ created: 3, skipped: 0, skippedItems: [] });
+    expect(result.resultsBySource.s1).toMatchObject({ created: 2, skipped: 1, skippedItems: [] });
+    expect(result.resultsBySource.yt1).toMatchObject({ created: 3, skipped: 0, skippedItems: [] });
     expect(result.totalCreated).toBe(5);
     expect(result.totalSkipped).toBe(1);
   });
 
   it("registra falha em failedSources quando fetcher lança", async () => {
     const result = await runContentIngestion([rssSource], {
-      getFetcher: () => ({ fetch: async () => { throw new Error("RSS fetch failed"); } }),
+      getFetcher: () => ({
+        fetch: async () => {
+          throw new Error("RSS fetch failed");
+        }
+      }),
       getPersister: () => stubPersister(0, 0)
     });
 
@@ -80,7 +115,9 @@ describe("Content Ingestion Orchestrator", () => {
     const result = await runContentIngestion([rssSource], {
       getFetcher: () => stubFetcher([]),
       getPersister: () => ({
-        persist: async () => { throw new Error("DB error"); }
+        persist: async () => {
+          throw new Error("DB error");
+        }
       })
     });
 

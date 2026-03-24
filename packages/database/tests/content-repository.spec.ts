@@ -61,6 +61,61 @@ describe("Database Agent - content repository", () => {
     expect(saved?.qualityScore).toBeGreaterThan(0);
   });
 
+  it("deve gerar slugs distintos quando o titulo e igual mas a sourceUrl difere", async () => {
+    const repository = createContentRepository();
+    const title = "Mesmo titulo para teste de colisao de slug";
+    const first = await repository.saveIngestedNewsItems([
+      {
+        sourceId: "s1",
+        title,
+        content: "Primeiro conteudo com tamanho ok.",
+        sourceUrl: "https://fonte-a.com/editorial/primeiro-artigo.htm"
+      }
+    ]);
+    const second = await repository.saveIngestedNewsItems([
+      {
+        sourceId: "s1",
+        title,
+        content: "Segundo conteudo com tamanho ok.",
+        sourceUrl: "https://fonte-b.com/noticias/segundo-lancamento.htm"
+      }
+    ]);
+    expect(first.created).toBe(1);
+    expect(second.created).toBe(1);
+    const news = await repository.getNewsArticles();
+    const matches = news.filter((n) => n.title === title);
+    expect(matches.length).toBe(2);
+    expect(new Set(matches.map((m) => m.slug)).size).toBe(2);
+  });
+
+  it("deve sufixar slug com hash quando o ultimo segmento da URL ja existe em outro artigo", async () => {
+    const repository = createContentRepository();
+    const title = "Titulo generico para colisao por segmento";
+    await repository.saveIngestedNewsItems([
+      {
+        sourceId: "s1",
+        title,
+        content: "Conteudo inicial com tamanho ok.",
+        sourceUrl: "https://site-a.com/sec/foo.htm"
+      }
+    ]);
+    const second = await repository.saveIngestedNewsItems([
+      {
+        sourceId: "s1",
+        title,
+        content: "Outro conteudo com tamanho ok.",
+        sourceUrl: "https://site-b.com/outra/foo.htm"
+      }
+    ]);
+    expect(second.created).toBe(1);
+    const news = await repository.getNewsArticles();
+    const pair = news.filter((n) => n.title === title);
+    expect(pair.length).toBe(2);
+    const slugs = pair.map((p) => p.slug);
+    expect(slugs[0]).not.toBe(slugs[1]);
+    expect(slugs.some((s) => /-[a-f0-9]{8}$/.test(s))).toBe(true);
+  });
+
   it("deve ignorar item ja existente (mesmo sourceId + sourceUrl) e retornar em skippedItems", async () => {
     const repository = createContentRepository();
     const item = {

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { IngestionFetchStats } from "../../../../packages/scraping/src/content-sources/types";
 
 interface SourceItem {
   id: string;
@@ -34,6 +35,7 @@ interface ApiResult {
   skippedBySource?: Record<string, number>;
   skippedArticles?: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
   failedSources?: Record<string, string>;
+  fetchStatsBySource?: Record<string, IngestionFetchStats>;
 }
 
 export function AdminIngestionClient({
@@ -380,6 +382,43 @@ export function AdminIngestionClient({
                   .map(([id, n]) => `${id}: ${n}`)
                   .join(" · ")}
               </p>
+            ) : null}
+            {result.fetchStatsBySource &&
+            Object.keys(result.fetchStatsBySource).length > 0 ? (
+              <div className="space-y-2">
+                <strong className="text-sm">Observabilidade do fetch (por fonte)</strong>
+                <ul className="list-inside space-y-2 text-xs text-muted-foreground">
+                  {Object.entries(result.fetchStatsBySource).map(([id, st]) => (
+                    <li key={id}>
+                      <span className="font-medium text-foreground">{id}</span>
+                      {st.provider === "rss" ? (
+                        <span>
+                          {" "}
+                          · RSS: com título {st.rssItemsWithTitle ?? "—"} · filtrados
+                          (data) {st.rssItemsFilteredByDate ?? 0} · sem link{" "}
+                          {st.rssItemsDroppedNoLink ?? 0} · cortados (teto){" "}
+                          {st.rssItemsCappedByMaxItems ?? 0} · entregues{" "}
+                          {st.rssItemsDelivered ?? 0}
+                        </span>
+                      ) : (
+                        <span>
+                          {" "}
+                          · YouTube: API {st.youtubePlaylistItemsRaw ?? 0} · inválidos{" "}
+                          {st.youtubeItemsDroppedInvalid ?? 0} · entregues{" "}
+                          {st.youtubeItemsDelivered ?? 0}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Logs JSON também são emitidos no servidor (
+                  <code className="rounded bg-muted px-1">ingestion.rss.fetch</code>,{" "}
+                  <code className="rounded bg-muted px-1">ingestion.source.complete</code>
+                  , <code className="rounded bg-muted px-1">ingestion.source.failed</code>
+                  ).
+                </p>
+              </div>
             ) : null}
             {result.failedSources &&
             Object.keys(result.failedSources).length > 0 ? (

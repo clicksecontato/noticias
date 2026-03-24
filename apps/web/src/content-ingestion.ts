@@ -3,6 +3,7 @@ import { runContentIngestion } from "../../../packages/scraping/src/content-inge
 import { createContentFetcher } from "../../../packages/scraping/src/fetchers/content-fetcher-factory";
 import { createContentPersister } from "../../../packages/scraping/src/persisters/content-persister-factory";
 import type { ContentSource } from "../../../packages/scraping/src/content-sources/types";
+import type { IngestionFetchStats } from "../../../packages/scraping/src/content-sources/types";
 import type { AdminIngestResponseBody } from "./api/admin-ingest-handler";
 
 function mapToContentSource(
@@ -69,6 +70,7 @@ export async function executeContentIngestion(
 
   const createdBySource: Record<string, number> = {};
   const skippedBySource: Record<string, number> = {};
+  const fetchStatsBySource: Record<string, IngestionFetchStats> = {};
   const skippedArticles: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
   let createdArticles = 0;
   let createdVideos = 0;
@@ -76,6 +78,9 @@ export async function executeContentIngestion(
   for (const sourceId of result.processedSourceIds) {
     const r = result.resultsBySource[sourceId];
     if (!r) continue;
+    if (r.fetchStats) {
+      fetchStatsBySource[sourceId] = r.fetchStats;
+    }
     const source = sources.find((s) => s.id === sourceId);
     if (source?.provider === "youtube") {
       createdVideos += r.created;
@@ -102,6 +107,7 @@ export async function executeContentIngestion(
     createdBySource,
     skippedBySource,
     skippedArticles,
+    ...(Object.keys(fetchStatsBySource).length > 0 && { fetchStatsBySource }),
     ...(Object.keys(result.failedSources).length > 0 && {
       failedSources: result.failedSources
     })

@@ -51,7 +51,7 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(rssXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE, {
+    const { items } = await fetchRssItemsBySource(SOURCE, {
       now: fixedNow,
       maxAgeDays: 7,
       maxItems: 1
@@ -76,10 +76,12 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response(rssXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE);
+    const { items, stats } = await fetchRssItemsBySource(SOURCE);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(items).toHaveLength(1);
+    expect(stats.rssItemsWithTitle).toBe(1);
+    expect(stats.rssItemsDelivered).toBe(1);
     expect(items[0].title).toBe("Titulo da Noticia");
     expect(items[0].sourceUrl).toBe("https://flowgames.gg/noticia-1");
     expect(items[0].content).toContain("Resumo curto");
@@ -96,7 +98,7 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(rssXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE);
+    const { items } = await fetchRssItemsBySource(SOURCE);
 
     expect(items).toHaveLength(0);
   });
@@ -113,7 +115,7 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(rssXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE);
+    const { items } = await fetchRssItemsBySource(SOURCE);
 
     expect(items[0].content).toBe("Texto da descricao para exibir no agregador.");
   });
@@ -130,7 +132,7 @@ describe("Scraping Agent - rss fetcher (agregador)", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(uolStyleXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE);
+    const { items } = await fetchRssItemsBySource(SOURCE);
 
     expect(items).toHaveLength(1);
     expect(items[0].sourceUrl).toBe(
@@ -148,7 +150,7 @@ Oferta da Semana do Consumidor reduz o preço</description></item></channel></rs
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(ignStyleXml, { status: 200 }));
 
-    const items = await fetchRssItemsBySource(SOURCE);
+    const { items } = await fetchRssItemsBySource(SOURCE);
 
     expect(items).toHaveLength(1);
     expect(items[0].title).toContain("Galaxy S25");

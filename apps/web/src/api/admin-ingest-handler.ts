@@ -1,3 +1,5 @@
+import type { IngestionFetchStats } from "../../../packages/scraping/src/content-sources/types";
+
 export interface AdminIngestRequestBody {
   token?: string;
   sourceIds: string[];
@@ -15,6 +17,8 @@ export interface AdminIngestResponseBody {
   skippedArticles: Array<{ sourceId: string; title: string; sourceUrl?: string }>;
   /** Fontes que falharam ao buscar (RSS/YouTube). */
   failedSources?: Record<string, string>;
+  /** Métricas do fetch por fonte (RSS: itens no feed, filtrados por data, etc.). */
+  fetchStatsBySource?: Record<string, IngestionFetchStats>;
 }
 
 export interface AdminIngestResponse {

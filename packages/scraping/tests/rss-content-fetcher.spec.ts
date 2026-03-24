@@ -57,7 +57,7 @@ describe("RSS Content Fetcher", () => {
     });
     const source = createRssSource();
 
-    const items = await fetcher.fetch(source);
+    const { items } = await fetcher.fetch(source);
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(items).toHaveLength(2);
@@ -83,7 +83,7 @@ describe("RSS Content Fetcher", () => {
     });
     const source = createRssSource();
 
-    const items = await fetcher.fetch(source);
+    const { items } = await fetcher.fetch(source);
 
     expect(items).toEqual([]);
   });

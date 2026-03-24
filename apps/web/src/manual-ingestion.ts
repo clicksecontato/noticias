@@ -21,7 +21,10 @@ export async function executeManualNewsIngestion(selectedSourceIds: string[]) {
   return runManualNewsIngestion({
     availableSources: sources.map(mapSourceRecord),
     selectedSourceIds,
-    fetchNewsBySource: fetchRssItemsBySource,
+    fetchNewsBySource: async (source) => {
+      const { items } = await fetchRssItemsBySource(source);
+      return items;
+    },
     persistNewsItems: async (items) =>
       repository.saveIngestedNewsItems(
         items.map((item) => ({

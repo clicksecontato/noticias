@@ -1,5 +1,5 @@
 import type { IContentFetcher } from "./content-fetcher.interface";
-import type { ContentSource, FetchedContentItem } from "../content-sources/types";
+import type { ContentFetchOutcome, ContentSource, FetchedContentItem } from "../content-sources/types";
 
 export interface YoutubeFetcherDeps {
   apiKey: string;
@@ -46,7 +46,7 @@ export function createYoutubeContentFetcher(deps: YoutubeFetcherDeps): IContentF
   const { apiKey, fetch: fetchFn = fetch, maxResults = 15 } = deps;
 
   return {
-    async fetch(source: ContentSource): Promise<FetchedContentItem[]> {
+    async fetch(source: ContentSource): Promise<ContentFetchOutcome> {
       if (source.provider !== "youtube") {
         throw new Error("YouTube fetcher exige provider 'youtube'");
       }
@@ -69,8 +69,8 @@ export function createYoutubeContentFetcher(deps: YoutubeFetcherDeps): IContentF
         throw new Error(`YouTube API failed: ${msg}`);
       }
 
-      const items = data.items ?? [];
-      return items
+      const rawItems = data.items ?? [];
+      const items: FetchedContentItem[] = rawItems
         .filter((item): item is PlaylistItem & { snippet: PlaylistItemSnippet } => !!item.snippet?.resourceId?.videoId)
         .map((item) => {
           const s = item.snippet;
@@ -87,6 +87,15 @@ export function createYoutubeContentFetcher(deps: YoutubeFetcherDeps): IContentF
             contentType: "video" as const
           };
         });
+
+      const stats = {
+        provider: "youtube" as const,
+        youtubePlaylistItemsRaw: rawItems.length,
+        youtubeItemsDroppedInvalid: rawItems.length - items.length,
+        youtubeItemsDelivered: items.length
+      };
+
+      return { items, stats };
     }
   };
 }

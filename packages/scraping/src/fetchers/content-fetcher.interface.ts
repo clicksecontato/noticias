@@ -1,4 +1,4 @@
-import type { ContentSource, FetchedContentItem } from "../content-sources/types";
+import type { ContentFetchOutcome, ContentSource } from "../content-sources/types";
 
 /**
  * Interface para buscar itens de uma fonte (RSS, YouTube, etc.).
@@ -6,5 +6,5 @@ import type { ContentSource, FetchedContentItem } from "../content-sources/types
  */
 export interface IContentFetcher {
   /** Busca itens da fonte. Lança se a fonte não for do tipo suportado. */
-  fetch(source: ContentSource): Promise<FetchedContentItem[]>;
+  fetch(source: ContentSource): Promise<ContentFetchOutcome>;
 }

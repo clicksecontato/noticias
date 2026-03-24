@@ -1,5 +1,5 @@
 import type { IContentFetcher } from "./content-fetcher.interface";
-import type { ContentSource, FetchedContentItem } from "../content-sources/types";
+import type { ContentFetchOutcome, ContentSource, FetchedContentItem } from "../content-sources/types";
 import { fetchRssItemsBySource, type FetchRssOptions } from "../rss-fetcher";
 import type { SourceInput, RawNewsItem } from "../ingestion-orchestrator";
 
@@ -28,7 +28,7 @@ export function createRssContentFetcher(deps: RssFetcherDeps = {}): IContentFetc
   const { fetch: fetchFn, rssParse } = deps;
 
   return {
-    async fetch(source: ContentSource): Promise<FetchedContentItem[]> {
+    async fetch(source: ContentSource): Promise<ContentFetchOutcome> {
       if (source.provider !== "rss") {
         throw new Error("RSS fetcher exige provider 'rss'");
       }
@@ -43,7 +43,7 @@ export function createRssContentFetcher(deps: RssFetcherDeps = {}): IContentFetc
         rssUrl: source.rssUrl.trim()
       };
 
-      const rawItems: RawNewsItem[] = await fetchRssItemsBySource(sourceInput, {
+      const { items: rawItems, stats } = await fetchRssItemsBySource(sourceInput, {
         ...(fetchFn && { fetch: fetchFn }),
         ...rssParse
       });
@@ -64,7 +64,7 @@ export function createRssContentFetcher(deps: RssFetcherDeps = {}): IContentFetc
         };
       });
 
-      return items;
+      return { items, stats };
     }
   };
 }

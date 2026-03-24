@@ -73,9 +73,11 @@ describe("YouTube Content Fetcher", () => {
     const fetcher = createYoutubeContentFetcher({ apiKey: "fake-api-key", fetch: mockFetch });
     const source = createYoutubeSource({ channelId: "UCtest123" });
 
-    const items = await fetcher.fetch(source);
+    const { items, stats } = await fetcher.fetch(source);
 
     expect(items).toHaveLength(2);
+    expect(stats.youtubePlaylistItemsRaw).toBe(2);
+    expect(stats.youtubeItemsDelivered).toBe(2);
     expect(items[0]).toEqual({
       externalId: "abc123",
       title: "Novo trailer do jogo X",
@@ -100,7 +102,7 @@ describe("YouTube Content Fetcher", () => {
     const fetcher = createYoutubeContentFetcher({ apiKey: "key", fetch: mockFetch });
     const source = createYoutubeSource();
 
-    const items = await fetcher.fetch(source);
+    const { items } = await fetcher.fetch(source);
 
     expect(items).toEqual([]);
   });

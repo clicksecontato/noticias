@@ -1,4 +1,5 @@
 import type { RawNewsItem, SourceInput } from "./ingestion-orchestrator";
+import type { IngestionFetchStats } from "./content-sources/types";
 
 const MS_PER_DAY = 86_400_000;
 const DEFAULT_RSS_MAX_AGE_DAYS = 7;
@@ -168,12 +169,23 @@ function resolveRssMaxItems(options?: FetchRssOptions): number {
   return DEFAULT_RSS_MAX_ITEMS;
 }
 
-function parseRssEntries(xml: string, options?: FetchRssOptions): ParsedRssEntry[] {
+interface RssParseStats {
+  itemsWithTitle: number;
+  itemsFilteredByDate: number;
+  itemsCappedByMaxItems: number;
+}
+
+function parseRssEntries(xml: string, options?: FetchRssOptions): {
+  entries: ParsedRssEntry[];
+  stats: RssParseStats;
+} {
   const nowMs = (options?.now ?? new Date()).getTime();
   const windowDays = resolveRssWindowDays(options);
   const maxItems = resolveRssMaxItems(options);
   const cutoffMs = windowDays != null ? nowMs - windowDays * MS_PER_DAY : null;
 
+  let itemsWithTitle = 0;
+  let itemsFilteredByDate = 0;
   const itemRegex = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
   const entries: ParsedRssEntry[] = [];
   let itemMatch = itemRegex.exec(xml);
@@ -189,7 +201,9 @@ function parseRssEntries(xml: string, options?: FetchRssOptions): ParsedRssEntry
     const publishedMs = parseRssPubDateToMillis(pubDateRaw);
 
     if (title) {
+      itemsWithTitle += 1;
       if (cutoffMs != null && publishedMs != null && publishedMs < cutoffMs) {
+        itemsFilteredByDate += 1;
         itemMatch = itemRegex.exec(xml);
         continue;
       }
@@ -206,7 +220,19 @@ function parseRssEntries(xml: string, options?: FetchRssOptions): ParsedRssEntry
     itemMatch = itemRegex.exec(xml);
   }
 
-  return entries.slice(0, maxItems);
+  const beforeCap = entries.length;
+  const sliced = entries.slice(0, maxItems);
+  const itemsCappedByMaxItems = Math.max(0, beforeCap - sliced.length);
+
+  return {
+    entries: sliced,
+    stats: { itemsWithTitle, itemsFilteredByDate, itemsCappedByMaxItems }
+  };
+}
+
+export interface RssFetchResult {
+  items: RawNewsItem[];
+  stats: IngestionFetchStats;
 }
 
 export interface FetchRssOptions {
@@ -229,7 +255,7 @@ export interface FetchRssOptions {
 export async function fetchRssItemsBySource(
   source: SourceInput,
   options?: FetchRssOptions
-): Promise<RawNewsItem[]> {
+): Promise<RssFetchResult> {
   const fetchFn = options?.fetch ?? fetch;
   const feedUrl = normalizeRssUrl(source.rssUrl);
   const response = await fetchFn(feedUrl, DEFAULT_FETCH_OPTIONS);
@@ -239,11 +265,15 @@ export async function fetchRssItemsBySource(
     );
   }
   const xml = await response.text();
-  const entries = parseRssEntries(xml, options);
+  const { entries, stats: parseStats } = parseRssEntries(xml, options);
   const items: RawNewsItem[] = [];
+  let rssItemsDroppedNoLink = 0;
 
   for (const entry of entries) {
-    if (!entry.link) continue;
+    if (!entry.link) {
+      rssItemsDroppedNoLink += 1;
+      continue;
+    }
 
     const content = entry.description || entry.title;
     items.push({
@@ -259,5 +289,25 @@ export async function fetchRssItemsBySource(
     });
   }
 
-  return items;
+  const stats: IngestionFetchStats = {
+    provider: "rss",
+    rssItemsWithTitle: parseStats.itemsWithTitle,
+    rssItemsFilteredByDate: parseStats.itemsFilteredByDate,
+    rssItemsDroppedNoLink,
+    rssItemsCappedByMaxItems: parseStats.itemsCappedByMaxItems,
+    rssItemsDelivered: items.length
+  };
+
+  if (typeof process !== "undefined" && !process.env.VITEST) {
+    console.log(
+      JSON.stringify({
+        event: "ingestion.rss.fetch",
+        sourceId: source.id,
+        feedUrl,
+        ...stats
+      })
+    );
+  }
+
+  return { items, stats };
 }

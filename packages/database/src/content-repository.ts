@@ -200,6 +200,82 @@ function slugify(input: string): string {
     .replace(/-+/g, "-");
 }
 
+/** Último segmento útil da URL (estável por matéria), para slug quando o título colide. */
+function slugFromSourceUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const segments = u.pathname.split("/").filter(Boolean);
+    let last = segments[segments.length - 1] || "";
+    last = last.replace(/\.(htm|html|php|aspx|xml|json)$/i, "");
+    if (!last || /^index$/i.test(last)) {
+      last = segments.length > 1 ? segments[segments.length - 2] || "" : last;
+    }
+    const s = slugify(last.replace(/_/g, "-"));
+    if (s.length > 100) return s.slice(0, 100).replace(/-+$/g, "");
+    return s;
+  } catch {
+    return "";
+  }
+}
+
+function shortSlugSuffix(input: string): string {
+  return createHash("sha256").update(input, "utf8").digest("hex").slice(0, 8);
+}
+
+function allocateArticleSlugMemory(
+  item: { title: string; sourceUrl?: string },
+  existingSlugs: Set<string>
+): string | null {
+  const fromTitle = slugify(item.title);
+  const fromUrl = item.sourceUrl ? slugFromSourceUrl(item.sourceUrl) : "";
+  const base =
+    fromUrl.length >= 4 ? fromUrl : fromTitle.length > 0 ? fromTitle : "";
+  if (!base) return null;
+  const salt = (item.sourceUrl && item.sourceUrl.trim()) || item.title;
+  let candidate = base;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    if (!existingSlugs.has(candidate)) return candidate;
+    const suffix = shortSlugSuffix(`${salt}:${attempt}`);
+    candidate = `${base}-${suffix}`;
+    if (candidate.length > 200) {
+      candidate = `${fromTitle.slice(0, 24)}-${suffix}`;
+    }
+  }
+  return null;
+}
+
+async function allocateArticleSlugSupabase(
+  readClient: ReturnType<typeof createClient>,
+  title: string,
+  sourceUrl: string | null | undefined
+): Promise<string | null> {
+  const fromTitle = slugify(title);
+  const fromUrl = sourceUrl ? slugFromSourceUrl(sourceUrl) : "";
+  const base =
+    fromUrl.length >= 4 ? fromUrl : fromTitle.length > 0 ? fromTitle : "";
+  if (!base) return null;
+  const salt = (sourceUrl && sourceUrl.trim()) || title;
+  let candidate = base;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const { data, error } = await readClient
+      .from("articles")
+      .select("id")
+      .eq("slug", candidate)
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      throw new Error(`Slug lookup failed: ${error.message}`);
+    }
+    if (!data) return candidate;
+    const suffix = shortSlugSuffix(`${salt}:${attempt}`);
+    candidate = `${base}-${suffix}`;
+    if (candidate.length > 200) {
+      candidate = `${fromTitle.slice(0, 24)}-${suffix}`;
+    }
+  }
+  return null;
+}
+
 function toSimpleHtml(content: string): string {
   return `<p>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
 }
@@ -317,12 +393,14 @@ function createMemoryContentRepository(): ContentRepository {
     async saveIngestedNewsItems(items) {
       let created = 0;
       const skippedItems: Array<{ sourceId: string; title: string; sourceUrl?: string }> = [];
+      const slugSet = new Set(NEWS_ARTICLES.map((a) => a.slug));
       for (const item of items) {
         const source = SOURCES.find((entry) => entry.id === item.sourceId);
         if (!source) continue;
 
-        const slug = slugify(item.title);
+        const slug = allocateArticleSlugMemory(item, slugSet);
         if (!slug) continue;
+        slugSet.add(slug);
 
         const alreadyExists = NEWS_ARTICLES.some(
           (entry) =>
@@ -903,7 +981,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       const catalog = await this.getCatalogsForEnrichment();
 
       for (const item of items) {
-        const slug = slugify(item.title);
+        const slug = await allocateArticleSlugSupabase(readClient, item.title, item.sourceUrl);
         if (!slug) continue;
 
         const sourceUrlToStore = item.sourceUrl || null;

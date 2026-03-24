@@ -35,9 +35,38 @@ export interface FetchedContentItem {
   contentType: "article" | "video";
 }
 
+/** Métricas do fetch por fonte (observabilidade da ingestão). */
+export interface IngestionFetchStats {
+  provider: ContentSourceProvider;
+  /** RSS: itens com elemento title no feed. */
+  rssItemsWithTitle?: number;
+  /** RSS: descartados pela janela de pubDate. */
+  rssItemsFilteredByDate?: number;
+  /** RSS: com título mas sem link válido após parse. */
+  rssItemsDroppedNoLink?: number;
+  /** RSS: cortados pelo teto maxItems após filtros. */
+  rssItemsCappedByMaxItems?: number;
+  /** RSS: entregues ao persister. */
+  rssItemsDelivered?: number;
+  /** YouTube: linhas retornadas pela API playlistItems. */
+  youtubePlaylistItemsRaw?: number;
+  /** YouTube: sem snippet/videoId válido. */
+  youtubeItemsDroppedInvalid?: number;
+  /** YouTube: entregues ao persister. */
+  youtubeItemsDelivered?: number;
+}
+
+/** Resultado do fetcher: itens + estatísticas para logs e API admin. */
+export interface ContentFetchOutcome {
+  items: FetchedContentItem[];
+  stats: IngestionFetchStats;
+}
+
 /** Resultado da persistência por fonte (criados, ignorados, itens já existentes). */
 export interface PersistContentResult {
   created: number;
   skipped: number;
   skippedItems: Array<{ sourceId: string; title: string; url?: string }>;
+  /** Estatísticas do fetch da mesma rodada (quando disponível). */
+  fetchStats?: IngestionFetchStats;
 }
