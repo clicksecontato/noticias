@@ -16,7 +16,7 @@ export function SearchForm({
   action,
   query = "",
   hiddenFields = {},
-  placeholder = "Ex.: GTA, Elden Ring...",
+  placeholder = "Ex.: ChatGPT, Claude, Gemini...",
   label = "Buscar por termo",
   submitLabel = "Buscar",
   className,

@@ -98,11 +98,11 @@ export function AssuntoEditClient({ assunto }: { assunto: AssuntoEdit }) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Data de lançamento (YYYY-MM-DD)</Label>
+                <Label>Data de referência (YYYY-MM-DD)</Label>
                 <Input type="date" value={form.release_date} onChange={(e) => setForm((f) => ({ ...f, release_date: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Nota (0–10)</Label>
+                <Label>Nota opcional (0–10)</Label>
                 <Input type="number" min={0} max={10} step={0.1} value={form.rating} onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))} />
               </div>
             </div>

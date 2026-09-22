@@ -95,6 +95,10 @@ export interface RouteContentProvider {
   ): Promise<YoutubeVideoCard[]>;
   getYoutubeVideosTotal(sourceId?: string): Promise<number>;
   getYoutubeSourceFilters(): Promise<NewsSourceFilter[]>;
+  /** Notícias vinculadas ao assunto (por nome enriquecido ou match no título/resumo). */
+  getNewsCardsForSubjectSlug(slug: string, limit?: number): Promise<HomeCard[]>;
+  /** Vídeos vinculados ao assunto. */
+  getYoutubeVideosForSubjectSlug(slug: string, limit?: number): Promise<YoutubeVideoCard[]>;
 }
 
 function buildFilteredNews(
@@ -133,6 +137,20 @@ function mapEntityNames(item: {
     ...(item.tagNames?.length && { tagNames: item.tagNames }),
     ...(item.typeNames?.length && { typeNames: item.typeNames }),
   };
+}
+
+function matchesSubjectName(
+  item: { title: string; summary?: string; description?: string; subjectNames?: string[] },
+  subjectName: string,
+  subjectSlug: string
+): boolean {
+  if (item.subjectNames?.some((n) => n.toLowerCase() === subjectName.toLowerCase())) {
+    return true;
+  }
+  const hay = `${item.title} ${item.summary ?? ""} ${item.description ?? ""}`.toLowerCase();
+  const name = subjectName.toLowerCase();
+  const slugWords = subjectSlug.replace(/-/g, " ").toLowerCase();
+  return hay.includes(name) || (slugWords.length >= 3 && hay.includes(slugWords));
 }
 
 export function createRouteContentProvider(): RouteContentProvider {
@@ -299,6 +317,51 @@ export function createRouteContentProvider(): RouteContentProvider {
       const sources = await repository.getContentSourcesForIngestion();
       const youtubeSources = sources.filter((s) => s.provider === "youtube");
       return youtubeSources.map((s) => ({ id: s.id, name: s.name }));
+    },
+    async getNewsCardsForSubjectSlug(slug: string, limit = 12) {
+      const subjects = await repository.getSubjects();
+      const subject = subjects.find((item) => item.slug === slug);
+      if (!subject) return [];
+      const news = await repository.getNewsArticles();
+      const matched = news.filter((item) =>
+        matchesSubjectName(item, subject.name, subject.slug)
+      );
+      return matched.slice(0, Math.max(1, limit)).map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        summary: item.summary,
+        sourceId: item.sourceId,
+        sourceName: item.sourceName,
+        publishedAt: item.publishedAt,
+        sourceUrl: item.sourceUrl,
+        ...(item.imageUrl && { imageUrl: item.imageUrl }),
+        ...mapEntityNames(item),
+      }));
+    },
+    async getYoutubeVideosForSubjectSlug(slug: string, limit = 8) {
+      const subjects = await repository.getSubjects();
+      const subject = subjects.find((item) => item.slug === slug);
+      if (!subject) return [];
+      const videos = await repository.getYoutubeVideos({ limit: 100 });
+      const matched = videos.filter((item) =>
+        matchesSubjectName(
+          { title: item.title, description: item.description, subjectNames: item.subjectNames },
+          subject.name,
+          subject.slug
+        )
+      );
+      return matched.slice(0, Math.max(1, limit)).map((v) => ({
+        id: v.id,
+        sourceId: v.sourceId,
+        sourceName: v.sourceName,
+        videoId: v.videoId,
+        title: v.title,
+        description: v.description,
+        publishedAt: v.publishedAt,
+        thumbnailUrl: v.thumbnailUrl,
+        url: v.url,
+        ...mapEntityNames(v),
+      }));
     }
   };
 }

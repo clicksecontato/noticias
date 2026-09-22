@@ -225,7 +225,7 @@ export function AdminIngestionClient({
               id="sourceIds"
               value={sourceIds}
               onChange={(e) => setSourceIds(e.target.value)}
-              placeholder="Ex: s1, s2, yt-canal-games"
+              placeholder="Ex: s1, s2, yt-canal-ia"
             />
           </div>
 
@@ -288,7 +288,7 @@ export function AdminIngestionClient({
                         onChange={(e) =>
                           setNewSource((s) => ({ ...s, name: e.target.value }))
                         }
-                        placeholder="Ex: Canal Games"
+                        placeholder="Ex: Canal IA"
                       />
                     </div>
                     {newSource.provider === "rss" ? (

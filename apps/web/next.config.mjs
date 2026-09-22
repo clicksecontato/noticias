@@ -27,6 +27,36 @@ const nextConfig = {
         source: "/best/:genre/:platform",
         destination: "/best/:genre",
         permanent: true
+      },
+      {
+        source: "/admin/jogos",
+        destination: "/admin/assuntos",
+        permanent: true
+      },
+      {
+        source: "/admin/jogos/:path*",
+        destination: "/admin/assuntos/:path*",
+        permanent: true
+      },
+      {
+        source: "/admin/generos",
+        destination: "/admin/tipos",
+        permanent: true
+      },
+      {
+        source: "/admin/generos/:path*",
+        destination: "/admin/tipos/:path*",
+        permanent: true
+      },
+      {
+        source: "/admin/plataformas",
+        destination: "/admin/assuntos",
+        permanent: true
+      },
+      {
+        source: "/admin/plataformas/:path*",
+        destination: "/admin/assuntos",
+        permanent: true
       }
     ];
   }

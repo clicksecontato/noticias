@@ -24,7 +24,7 @@ function buildVideosPath(page: number, sourceId: string, basePath = "/videos") {
 export const metadata = {
   title: "Vídeos",
   description:
-    "Vídeos de games dos nossos canais parceiros no YouTube. Gameplay, trailers e análises.",
+    "Vídeos sobre inteligência artificial dos nossos canais parceiros no YouTube.",
 };
 
 export default async function VideosPage({
@@ -54,7 +54,7 @@ export default async function VideosPage({
   return (
     <section className="space-y-6">
       <PageBackLink href="/">← Início</PageBackLink>
-      <h2 className="text-2xl font-semibold">Vídeos de Games</h2>
+      <h2 className="text-2xl font-semibold">Vídeos de IA</h2>
       <p className="text-muted-foreground">
         Vídeos dos nossos canais parceiros no YouTube.
       </p>

@@ -199,7 +199,7 @@ export function VideoEditClient({
                 className="h-4 w-4 rounded border-input"
               />
               <Label htmlFor="is_news" className="cursor-pointer font-normal">
-                Considerar como conteúdo (exibir no site e contabilizar nos relatórios). Desmarque para gameplays/off-topic.
+                Considerar como conteúdo (exibir no site e contabilizar nos relatórios). Desmarque para off-topic.
               </Label>
             </div>
           </CardContent>

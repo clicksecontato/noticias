@@ -791,7 +791,7 @@ export async function generateMonthPresentationReport(
         text: leigosText,
       },
       {
-        title: "Relevância: games vs genérico (is_news)",
+        title: "Relevância: assuntos vs genérico (is_news)",
         text: relevanceScriptText,
       },
       {

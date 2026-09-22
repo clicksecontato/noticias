@@ -131,6 +131,19 @@ describe("Web Application Agent - content provider", () => {
     ).toBe(true);
   });
 
+  it("deve listar noticias relacionadas a um assunto por slug", async () => {
+    const provider = createRouteContentProvider();
+    const cards = await provider.getNewsCardsForSubjectSlug("chatgpt", 5);
+    expect(cards.length).toBeGreaterThan(0);
+    expect(
+      cards.some(
+        (item) =>
+          item.title.toLowerCase().includes("chatgpt") ||
+          item.summary.toLowerCase().includes("chatgpt")
+      )
+    ).toBe(true);
+  });
+
   it("deve ordenar noticias por data asc e desc", async () => {
     const provider = createRouteContentProvider();
     const desc = await provider.getPaginatedNewsCards(1, 10, undefined, "", "published_desc");

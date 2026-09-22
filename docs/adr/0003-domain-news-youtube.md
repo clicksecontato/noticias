@@ -68,3 +68,9 @@ Após a migração estrutural (022):
 3. Manter filtro de ingestão em `pt-BR`/`pt` (fontes EN ficam inativas ou fora da lista operacional).
 
 Artefatos: migration `023_clear_games_content_seed_ai_catalog.sql`, `scripts/sources-list.js`.
+
+## Decisão adicional (Fase 4 — UX produto)
+
+1. Copy pública/admin sem “Games” (nav, listagens, placeholders).
+2. Redirects admin legados (`/admin/jogos` → `/admin/assuntos`, etc.).
+3. Páginas `/subjects/[slug]`, `/subjects-like`, `/best/[type]` com listagens (não só stub).

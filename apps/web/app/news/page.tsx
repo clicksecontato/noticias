@@ -48,7 +48,7 @@ export default async function NewsListingPage({
   return (
     <section className="space-y-6">
       <PageBackLink href="/">← Início</PageBackLink>
-      <h2 className="text-2xl font-semibold">Notícias de Games</h2>
+      <h2 className="text-2xl font-semibold">Notícias de IA</h2>
       <p className="text-muted-foreground">
         Listagem com paginação, busca por termo e filtro por fonte.
       </p>

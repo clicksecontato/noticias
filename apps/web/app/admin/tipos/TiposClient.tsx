@@ -99,7 +99,7 @@ export function TiposClient() {
                 </div>
                 <div className="space-y-2">
                   <Label>Nome</Label>
-                  <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="RPG" required />
+                  <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="LLM" required />
                 </div>
               </div>
               <div className="space-y-2">

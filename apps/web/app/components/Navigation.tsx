@@ -58,7 +58,7 @@ export function Navigation() {
             className="text-lg font-semibold tracking-tight text-foreground no-underline hover:no-underline"
             onClick={() => setMobileOpen(false)}
           >
-            Notícias <span className="text-primary">Games</span>
+            Notícias <span className="text-primary">IA</span>
           </Link>
 
           <ul className="hidden gap-6 md:flex">
