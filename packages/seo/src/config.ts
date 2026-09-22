@@ -6,7 +6,7 @@ export interface SeoConfig {
 
 const DEFAULT_BASE_URL = "https://www.noticiasgames.com";
 const DEFAULT_METADATA_SUFFIX =
-  "Descubra analises, recomendacoes e atualizacoes recentes com foco em gameplay, plataformas e tendencias da comunidade gamer.";
+  "Descubra analises, recomendacoes e atualizacoes recentes com foco em inteligencia artificial, assuntos e tendencias da cobertura editorial.";
 const DEFAULT_MAX_URLS_PER_SITEMAP = 5000;
 
 export function getSeoConfig(

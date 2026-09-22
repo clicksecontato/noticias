@@ -13,7 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 export const metadata = {
   title: "Notícias",
   description:
-    "Listagem de notícias de games em português brasileiro. Paginação, busca por termo e filtro por fonte.",
+    "Listagem de notícias de inteligência artificial em português brasileiro. Paginação, busca por termo e filtro por fonte.",
 };
 
 export default async function NewsListingPage({

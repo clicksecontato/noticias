@@ -11,11 +11,10 @@ export interface HomeCard {
   sourceUrl: string;
   /** Optional thumbnail image URL (e.g. from RSS). */
   imageUrl?: string;
-  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
-  gameNames?: string[];
+  /** Assuntos, tags e tipos vinculados (enriquecimento). */
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
 }
 
 export interface NewsSourceFilter {
@@ -34,11 +33,10 @@ export interface YoutubeVideoCard {
   publishedAt: string;
   thumbnailUrl: string | null;
   url: string;
-  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
-  gameNames?: string[];
+  /** Assuntos, tags e tipos vinculados (enriquecimento). */
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
 }
 
 /** Artigo para exibição em /news/[slug] (agregador: título + resumo + link para fonte) */
@@ -54,30 +52,27 @@ export interface NewsArticleFull {
   sourceUrl: string;
   /** Optional cover/thumbnail image URL. */
   imageUrl?: string;
-  /** Jogos, tags, gêneros e plataformas vinculados (enriquecimento). */
-  gameNames?: string[];
+  /** Assuntos, tags e tipos vinculados (enriquecimento). */
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
 }
 
 export type NewsSortMode = "published_desc" | "published_asc";
 
 export interface RouteContentProvider {
   getNewsSlugs(): Promise<string[]>;
-  getGameSlugs(): Promise<string[]>;
-  getBestGenres(): Promise<string[]>;
-  getBestGenrePlatformPairs(): Promise<Array<{ genre: string; platform: string }>>;
-  getHardwareProfiles(): Promise<string[]>;
+  getSubjectSlugs(): Promise<string[]>;
+  getBestTypes(): Promise<string[]>;
   getNewsArticleBySlug(slug: string): Promise<NewsArticleFull | null>;
   getNewsMetadataBySlug(
     slug: string
   ): Promise<{ titleBase: string; descriptionBase: string }>;
-  getGameMetadataBySlug(
+  getSubjectMetadataBySlug(
     slug: string
   ): Promise<{ titleBase: string; descriptionBase: string }>;
   getHomeNewsCards(limit?: number): Promise<HomeCard[]>;
-  getHomeGameCards(limit?: number): Promise<HomeCard[]>;
+  getHomeSubjectCards(limit?: number): Promise<HomeCard[]>;
   getPaginatedNewsCards(
     page: number,
     pageSize: number,
@@ -128,6 +123,18 @@ function buildFilteredNews(
   return filtered;
 }
 
+function mapEntityNames(item: {
+  subjectNames?: string[];
+  tagNames?: string[];
+  typeNames?: string[];
+}) {
+  return {
+    ...(item.subjectNames?.length && { subjectNames: item.subjectNames }),
+    ...(item.tagNames?.length && { tagNames: item.tagNames }),
+    ...(item.typeNames?.length && { typeNames: item.typeNames }),
+  };
+}
+
 export function createRouteContentProvider(): RouteContentProvider {
   const repository = createContentRepository();
 
@@ -136,18 +143,12 @@ export function createRouteContentProvider(): RouteContentProvider {
       const news = await repository.getNewsArticles();
       return news.map((item) => item.slug);
     },
-    async getGameSlugs() {
-      const games = await repository.getGames();
-      return games.map((item) => item.slug);
+    async getSubjectSlugs() {
+      const subjects = await repository.getSubjects();
+      return subjects.map((item) => item.slug);
     },
-    async getBestGenres() {
-      return repository.getBestGenres();
-    },
-    async getBestGenrePlatformPairs() {
-      return repository.getBestGenrePlatformPairs();
-    },
-    async getHardwareProfiles() {
-      return repository.getHardwareProfiles();
+    async getBestTypes() {
+      return repository.getBestTypes();
     },
     async getNewsArticleBySlug(slug: string) {
       const news = await repository.getNewsArticles();
@@ -163,10 +164,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: article.publishedAt,
         sourceUrl: article.sourceUrl,
         ...(article.imageUrl && { imageUrl: article.imageUrl }),
-        ...(article.gameNames?.length && { gameNames: article.gameNames }),
-        ...(article.tagNames?.length && { tagNames: article.tagNames }),
-        ...(article.genreNames?.length && { genreNames: article.genreNames }),
-        ...(article.platformNames?.length && { platformNames: article.platformNames })
+        ...mapEntityNames(article),
       };
     },
     async getNewsMetadataBySlug(slug: string) {
@@ -179,15 +177,15 @@ export function createRouteContentProvider(): RouteContentProvider {
         descriptionBase: article.summary
       };
     },
-    async getGameMetadataBySlug(slug: string) {
-      const games = await repository.getGames();
-      const game = games.find((item) => item.slug === slug);
-      if (!game) {
-        throw new Error(`Game content not found for slug: ${slug}`);
+    async getSubjectMetadataBySlug(slug: string) {
+      const subjects = await repository.getSubjects();
+      const subject = subjects.find((item) => item.slug === slug);
+      if (!subject) {
+        throw new Error(`Subject content not found for slug: ${slug}`);
       }
       return {
-        titleBase: game.name,
-        descriptionBase: game.summary
+        titleBase: subject.name,
+        descriptionBase: subject.summary
       };
     },
     async getHomeNewsCards(limit = 6) {
@@ -201,20 +199,17 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
         ...(item.imageUrl && { imageUrl: item.imageUrl }),
-        ...(item.gameNames?.length && { gameNames: item.gameNames }),
-        ...(item.tagNames?.length && { tagNames: item.tagNames }),
-        ...(item.genreNames?.length && { genreNames: item.genreNames }),
-        ...(item.platformNames?.length && { platformNames: item.platformNames })
+        ...mapEntityNames(item),
       }));
     },
-    async getHomeGameCards(limit = 6) {
-      const games = await repository.getGames();
-      return games.slice(0, limit).map((item) => ({
+    async getHomeSubjectCards(limit = 6) {
+      const subjects = await repository.getSubjects();
+      return subjects.slice(0, limit).map((item) => ({
         slug: item.slug,
         title: item.name,
         summary: item.summary,
-        sourceId: "games-catalog",
-        sourceName: "Catalogo de jogos",
+        sourceId: "subjects-catalog",
+        sourceName: "Catálogo de assuntos",
         publishedAt: new Date().toISOString(),
         sourceUrl: ""
       }));
@@ -241,10 +236,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
         ...(item.imageUrl && { imageUrl: item.imageUrl }),
-        ...(item.gameNames?.length && { gameNames: item.gameNames }),
-        ...(item.tagNames?.length && { tagNames: item.tagNames }),
-        ...(item.genreNames?.length && { genreNames: item.genreNames }),
-        ...(item.platformNames?.length && { platformNames: item.platformNames })
+        ...mapEntityNames(item),
       }));
     },
     async getNewsCardsTotal(sourceId?: string, query?: string) {
@@ -268,10 +260,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: item.publishedAt,
         sourceUrl: item.sourceUrl,
         ...(item.imageUrl && { imageUrl: item.imageUrl }),
-        ...(item.gameNames?.length && { gameNames: item.gameNames }),
-        ...(item.tagNames?.length && { tagNames: item.tagNames }),
-        ...(item.genreNames?.length && { genreNames: item.genreNames }),
-        ...(item.platformNames?.length && { platformNames: item.platformNames })
+        ...mapEntityNames(item),
       }));
     },
     async getNewsSourceFilters() {
@@ -300,10 +289,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: v.publishedAt,
         thumbnailUrl: v.thumbnailUrl,
         url: v.url,
-        ...(v.gameNames?.length && { gameNames: v.gameNames }),
-        ...(v.tagNames?.length && { tagNames: v.tagNames }),
-        ...(v.genreNames?.length && { genreNames: v.genreNames }),
-        ...(v.platformNames?.length && { platformNames: v.platformNames })
+        ...mapEntityNames(v),
       }));
     },
     async getYoutubeVideosTotal(sourceId?: string) {

@@ -20,19 +20,19 @@ const ROTEIRO = {
       tempo: "0:10 – O que é o canal",
       titulo: "O que é o canal",
       texto:
-        "Este canal fala de games com foco no que está acontecendo no mercado brasileiro: notícias, lançamentos, tendências e o que os principais portais e canais do Brasil estão publicando sobre jogos. A ideia é dar uma visão clara e organizada desse cenário — em texto e em vídeo — para quem quer acompanhar a conversa sem se perder no meio do caminho.",
+        "Este canal fala de notícias com foco no que está acontecendo no mercado brasileiro: coberturas, lançamentos, tendências e o que os principais portais e canais do Brasil estão publicando. A ideia é dar uma visão clara e organizada desse cenário — em texto e em vídeo — para quem quer acompanhar a conversa sem se perder no meio do caminho.",
     },
     {
       tempo: "0:25 – O que você vai encontrar aqui",
       titulo: "O que você vai encontrar aqui",
       texto:
-        "Aqui você vai encontrar resumos periódicos do que moveu o mercado: volume de publicações, quem mais produziu conteúdo, quais jogos dominaram a pauta e um resumo executivo dos últimos 7, 30 e 90 dias. Tudo com base em dados reais das fontes que cobrem games no Brasil, agregados em um só lugar.",
+        "Aqui você vai encontrar resumos periódicos do que moveu o mercado: volume de publicações, quem mais produziu conteúdo, quais assuntos dominaram a pauta e um resumo executivo dos últimos 7, 30 e 90 dias. Tudo com base em dados reais das fontes que cobrimos no Brasil, agregados em um só lugar.",
     },
     {
       tempo: "0:40 – Convite",
       titulo: "Convite",
       texto:
-        "Se você curte games, trabalha com mídia, marketing ou só quer ficar por dentro do que está em alta, inscreva-se e ative o sininho para não perder os próximos vídeos. Nos vemos no próximo episódio.",
+        "Se você curte notícias, trabalha com mídia, marketing ou só quer ficar por dentro do que está em alta, inscreva-se e ative o sininho para não perder os próximos vídeos. Nos vemos no próximo episódio.",
     },
   ],
 };
@@ -61,7 +61,7 @@ export interface DadosSemana {
   videosTotal: number;
   total: number;
   topSources: Array<{ source_name: string; total: number }>;
-  topGames: Array<{ game_name: string; total: number }>;
+  topSubjects: Array<{ subject_name: string; total: number }>;
   topTags: Array<{ tag_name: string; count: number }>;
 }
 
@@ -70,11 +70,11 @@ async function getDadosSemana(): Promise<DadosSemana | null> {
     const repo = createReportRepository();
     const { periodStart, periodEnd } = getUltimosSeteDias();
 
-    const [articles, videos, sourceNames, gameCounts, tagCounts] = await Promise.all([
+    const [articles, videos, sourceNames, subjectCounts, tagCounts] = await Promise.all([
       repo.getArticlesForReports(periodStart, periodEnd),
       repo.getVideosForReports(periodStart, periodEnd),
       repo.getSourceIdToName(),
-      repo.getGameCountsForReports(periodStart, periodEnd),
+      repo.getSubjectCountsForReports(periodStart, periodEnd),
       repo.getTagCountsForReports(periodStart, periodEnd),
     ]);
 
@@ -92,7 +92,7 @@ async function getDadosSemana(): Promise<DadosSemana | null> {
       videosTotal: videos.length,
       total: articles.length + videos.length,
       topSources: topSourcesPayload.items.map((s) => ({ source_name: s.source_name, total: s.total })),
-      topGames: (gameCounts ?? []).slice(0, 5).map((g) => ({ game_name: g.game_name, total: g.total })),
+      topSubjects: (subjectCounts ?? []).slice(0, 5).map((g) => ({ subject_name: g.subject_name, total: g.total })),
       topTags: (tagCounts ?? []).slice(0, 5).map((t) => ({ tag_name: t.tag_name, count: t.count })),
     };
   } catch {
@@ -106,9 +106,9 @@ function montarBlocosRoteiroSemana(dados: DadosSemana) {
     dados.topSources.length > 0
       ? dados.topSources.map((s) => s.source_name).join(", ")
       : "—";
-  const listaJogos =
-    dados.topGames.length > 0
-      ? dados.topGames.map((g) => g.game_name).join(", ")
+  const listaAssuntos =
+    dados.topSubjects.length > 0
+      ? dados.topSubjects.map((g) => g.subject_name).join(", ")
       : "—";
   const listaTags =
     dados.topTags.length > 0
@@ -119,7 +119,7 @@ function montarBlocosRoteiroSemana(dados: DadosSemana) {
     {
       tempo: "Números da semana",
       titulo: "Volume",
-      texto: `Na última semana (de ${formatarData(dados.periodStart)} a ${formatarData(dados.periodEnd)}) foram publicados ${dados.articlesTotal} artigos e ${dados.videosTotal} vídeos sobre games no Brasil — um total de ${dados.total} publicações nas fontes que acompanhamos.`,
+      texto: `Na última semana (de ${formatarData(dados.periodStart)} a ${formatarData(dados.periodEnd)}) foram publicados ${dados.articlesTotal} artigos e ${dados.videosTotal} vídeos nas fontes brasileiras que acompanhamos — um total de ${dados.total} publicações.`,
     },
     {
       tempo: "Quem mais publicou",
@@ -127,9 +127,9 @@ function montarBlocosRoteiroSemana(dados: DadosSemana) {
       texto: `As fontes que mais produziram conteúdo no período foram: ${listaFontes}.`,
     },
     {
-      tempo: "Jogos em destaque",
-      titulo: "Top jogos na pauta",
-      texto: `Os jogos que mais apareceram na cobertura foram: ${listaJogos}.`,
+      tempo: "Assuntos em destaque",
+      titulo: "Top assuntos na pauta",
+      texto: `Os assuntos que mais apareceram na cobertura foram: ${listaAssuntos}.`,
     },
     {
       tempo: "Temas em alta",

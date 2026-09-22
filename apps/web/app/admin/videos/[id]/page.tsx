@@ -12,20 +12,18 @@ export default async function AdminVideoEditPage({
   const video = await videosRepository.getVideoById(id);
   if (!video) notFound();
 
-  const [games, tags, genres, platforms] = await Promise.all([
-    catalogRepository.listGames(),
+  const [subjects, tags, types] = await Promise.all([
+    catalogRepository.listSubjects(),
     catalogRepository.listTags(),
-    catalogRepository.listGenres(),
-    catalogRepository.listPlatforms(),
+    catalogRepository.listTypes(),
   ]);
 
   return (
     <VideoEditClient
       video={video}
-      games={games.map((g) => ({ id: g.id, name: g.name }))}
+      subjects={subjects.map((s) => ({ id: s.id, name: s.name }))}
       tags={tags.map((t) => ({ id: t.id, name: t.name }))}
-      genres={genres.map((g) => ({ id: g.id, name: g.name }))}
-      platforms={platforms.map((p) => ({ id: p.id, name: p.name }))}
+      types={types.map((t) => ({ id: t.id, name: t.name }))}
     />
   );
 }

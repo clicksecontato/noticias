@@ -1,4 +1,4 @@
-import type { IngestionFetchStats } from "../../../packages/scraping/src/content-sources/types";
+import type { IngestionFetchStats } from "../../../../packages/scraping/src/content-sources/types";
 
 export interface AdminIngestRequestBody {
   token?: string;

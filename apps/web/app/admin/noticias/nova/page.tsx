@@ -96,7 +96,7 @@ export default function NovaNoticiaPage() {
       </div>
       <h1 className="text-2xl font-semibold">Nova notícia</h1>
       <p className="text-muted-foreground">
-        Crie uma notícia manualmente. Depois você pode editar e vincular jogos, tags, gêneros e plataformas.
+        Crie uma notícia manualmente. Depois você pode editar e vincular assuntos, tags e tipos.
       </p>
 
       <Card>

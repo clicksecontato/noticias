@@ -71,10 +71,9 @@ export default async function NewsPage({
           {formatPublishedAt(article.publishedAt)}
         </p>
         <EntityChips
-          gameNames={article.gameNames}
+          subjectNames={article.subjectNames}
           tagNames={article.tagNames}
-          genreNames={article.genreNames}
-          platformNames={article.platformNames}
+          typeNames={article.typeNames}
         />
       </header>
 

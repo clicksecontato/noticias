@@ -9,7 +9,7 @@ function getClient() {
   return createClient(url, key);
 }
 
-export interface GameRow {
+export interface SubjectRow {
   id: string;
   slug: string;
   name: string;
@@ -26,51 +26,44 @@ export interface TagRow {
   name: string;
 }
 
-export interface GenreRow {
+export interface TypeRow {
   id: string;
   slug: string;
   name: string;
   description: string | null;
 }
 
-export interface PlatformRow {
-  id: string;
-  slug: string;
-  name: string;
-  vendor: string | null;
-}
-
 export const catalogRepository = {
-  async listGames(limit = 500): Promise<GameRow[]> {
+  async listSubjects(limit = 500): Promise<SubjectRow[]> {
     const { data, error } = await getClient()
-      .from("games")
+      .from("subjects")
       .select("id,slug,name,summary,release_date,rating,status,cover_url")
       .order("name")
       .limit(limit);
     if (error) throw new Error(error.message);
-    return (data ?? []) as GameRow[];
+    return (data ?? []) as SubjectRow[];
   },
 
-  async getGameById(id: string): Promise<GameRow | null> {
+  async getSubjectById(id: string): Promise<SubjectRow | null> {
     const { data, error } = await getClient()
-      .from("games")
+      .from("subjects")
       .select("id,slug,name,summary,release_date,rating,status,cover_url")
       .eq("id", id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return data as GameRow | null;
+    return data as SubjectRow | null;
   },
 
-  async createGame(row: {
+  async createSubject(row: {
     slug: string;
     name: string;
     summary?: string | null;
     release_date?: string | null;
     rating?: number | null;
     status?: string;
-  }): Promise<GameRow> {
+  }): Promise<SubjectRow> {
     const { data, error } = await getClient()
-      .from("games")
+      .from("subjects")
       .insert({
         slug: row.slug.trim(),
         name: row.name.trim(),
@@ -82,13 +75,13 @@ export const catalogRepository = {
       .select("id,slug,name,summary,release_date,rating,status,cover_url")
       .single();
     if (error) throw new Error(error.message);
-    return data as GameRow;
+    return data as SubjectRow;
   },
 
-  async updateGame(
+  async updateSubject(
     id: string,
     updates: Partial<{ slug: string; name: string; summary: string | null; release_date: string | null; rating: number | null; status: string }>
-  ): Promise<GameRow> {
+  ): Promise<SubjectRow> {
     const body: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (updates.slug !== undefined) body.slug = updates.slug.trim();
     if (updates.name !== undefined) body.name = updates.name.trim();
@@ -97,17 +90,17 @@ export const catalogRepository = {
     if (updates.rating !== undefined) body.rating = updates.rating;
     if (updates.status !== undefined) body.status = updates.status;
     const { data, error } = await getClient()
-      .from("games")
+      .from("subjects")
       .update(body)
       .eq("id", id)
       .select("id,slug,name,summary,release_date,rating,status,cover_url")
       .single();
     if (error) throw new Error(error.message);
-    return data as GameRow;
+    return data as SubjectRow;
   },
 
-  async deleteGame(id: string): Promise<void> {
-    const { error } = await getClient().from("games").delete().eq("id", id);
+  async deleteSubject(id: string): Promise<void> {
+    const { error } = await getClient().from("subjects").delete().eq("id", id);
     if (error) throw new Error(error.message);
   },
 
@@ -150,19 +143,19 @@ export const catalogRepository = {
     if (error) throw new Error(error.message);
   },
 
-  async listGenres(limit = 500): Promise<GenreRow[]> {
+  async listTypes(limit = 500): Promise<TypeRow[]> {
     const { data, error } = await getClient()
-      .from("genres")
+      .from("types")
       .select("id,slug,name,description")
       .order("name")
       .limit(limit);
     if (error) throw new Error(error.message);
-    return (data ?? []) as GenreRow[];
+    return (data ?? []) as TypeRow[];
   },
 
-  async createGenre(row: { slug: string; name: string; description?: string | null }): Promise<GenreRow> {
+  async createType(row: { slug: string; name: string; description?: string | null }): Promise<TypeRow> {
     const { data, error } = await getClient()
-      .from("genres")
+      .from("types")
       .insert({
         slug: row.slug.trim(),
         name: row.name.trim(),
@@ -171,70 +164,26 @@ export const catalogRepository = {
       .select("id,slug,name,description")
       .single();
     if (error) throw new Error(error.message);
-    return data as GenreRow;
+    return data as TypeRow;
   },
 
-  async updateGenre(id: string, updates: Partial<{ slug: string; name: string; description: string | null }>): Promise<GenreRow> {
+  async updateType(id: string, updates: Partial<{ slug: string; name: string; description: string | null }>): Promise<TypeRow> {
     const body: Record<string, unknown> = {};
     if (updates.slug !== undefined) body.slug = updates.slug.trim();
     if (updates.name !== undefined) body.name = updates.name.trim();
     if (updates.description !== undefined) body.description = updates.description?.trim() || null;
     const { data, error } = await getClient()
-      .from("genres")
+      .from("types")
       .update(body)
       .eq("id", id)
       .select("id,slug,name,description")
       .single();
     if (error) throw new Error(error.message);
-    return data as GenreRow;
+    return data as TypeRow;
   },
 
-  async deleteGenre(id: string): Promise<void> {
-    const { error } = await getClient().from("genres").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-  },
-
-  async listPlatforms(limit = 500): Promise<PlatformRow[]> {
-    const { data, error } = await getClient()
-      .from("platforms")
-      .select("id,slug,name,vendor")
-      .order("name")
-      .limit(limit);
-    if (error) throw new Error(error.message);
-    return (data ?? []) as PlatformRow[];
-  },
-
-  async createPlatform(row: { slug: string; name: string; vendor?: string | null }): Promise<PlatformRow> {
-    const { data, error } = await getClient()
-      .from("platforms")
-      .insert({
-        slug: row.slug.trim(),
-        name: row.name.trim(),
-        vendor: row.vendor?.trim() || null,
-      })
-      .select("id,slug,name,vendor")
-      .single();
-    if (error) throw new Error(error.message);
-    return data as PlatformRow;
-  },
-
-  async updatePlatform(id: string, updates: Partial<{ slug: string; name: string; vendor: string | null }>): Promise<PlatformRow> {
-    const body: Record<string, unknown> = {};
-    if (updates.slug !== undefined) body.slug = updates.slug.trim();
-    if (updates.name !== undefined) body.name = updates.name.trim();
-    if (updates.vendor !== undefined) body.vendor = updates.vendor?.trim() || null;
-    const { data, error } = await getClient()
-      .from("platforms")
-      .update(body)
-      .eq("id", id)
-      .select("id,slug,name,vendor")
-      .single();
-    if (error) throw new Error(error.message);
-    return data as PlatformRow;
-  },
-
-  async deletePlatform(id: string): Promise<void> {
-    const { error } = await getClient().from("platforms").delete().eq("id", id);
+  async deleteType(id: string): Promise<void> {
+    const { error } = await getClient().from("types").delete().eq("id", id);
     if (error) throw new Error(error.message);
   },
 };

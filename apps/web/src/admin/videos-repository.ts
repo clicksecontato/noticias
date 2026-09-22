@@ -24,10 +24,9 @@ export interface VideoListRow {
   sourceId: string;
   sourceName: string;
   url: string;
-  gameNames: string[];
+  subjectNames: string[];
   tagNames: string[];
-  genreNames: string[];
-  platformNames: string[];
+  typeNames: string[];
 }
 
 export interface VideoEditRow {
@@ -39,10 +38,9 @@ export interface VideoEditRow {
   sourceId: string;
   sourceName: string;
   is_news: boolean;
-  gameIds: string[];
+  subjectIds: string[];
   tagIds: string[];
-  genreIds: string[];
-  platformIds: string[];
+  typeIds: string[];
 }
 
 export interface SourceOption {
@@ -115,12 +113,11 @@ export const videosRepository = {
     if (videos.length === 0) return [];
 
     const ids = videos.map((v) => v.id);
-    const [sourcesRows, yvg, yvt, yvgen, yvp] = await Promise.all([
+    const [sourcesRows, yvs, yvt, yvtype] = await Promise.all([
       client.from("sources").select("id,name"),
-      client.from("youtube_video_games").select("youtube_video_id, games(name)").in("youtube_video_id", ids),
+      client.from("youtube_video_subjects").select("youtube_video_id, subjects(name)").in("youtube_video_id", ids),
       client.from("youtube_video_tags").select("youtube_video_id, tags(name)").in("youtube_video_id", ids),
-      client.from("youtube_video_genres").select("youtube_video_id, genres(name)").in("youtube_video_id", ids),
-      client.from("youtube_video_platforms").select("youtube_video_id, platforms(name)").in("youtube_video_id", ids),
+      client.from("youtube_video_types").select("youtube_video_id, types(name)").in("youtube_video_id", ids),
     ]);
 
     const sourceNameById = new Map(
@@ -129,9 +126,8 @@ export const videosRepository = {
       )
     );
     const addNames = (
-      list: Array<{ youtube_video_id: string; games?: { name: string }; tags?: { name: string }; genres?: { name: string }; platforms?: { name: string } }>,
-      key: "gameNames" | "tagNames" | "genreNames" | "platformNames",
-      sub: "games" | "tags" | "genres" | "platforms"
+      list: Array<{ youtube_video_id: string; subjects?: { name: string }; tags?: { name: string }; types?: { name: string } }>,
+      sub: "subjects" | "tags" | "types"
     ) => {
       const byVideo = new Map<string, string[]>();
       for (const r of list ?? []) {
@@ -144,10 +140,9 @@ export const videosRepository = {
       return byVideo;
     };
 
-    const gameNamesByVideo = addNames((yvg.data ?? []) as never[], "gameNames", "games");
-    const tagNamesByVideo = addNames((yvt.data ?? []) as never[], "tagNames", "tags");
-    const genreNamesByVideo = addNames((yvgen.data ?? []) as never[], "genreNames", "genres");
-    const platformNamesByVideo = addNames((yvp.data ?? []) as never[], "platformNames", "platforms");
+    const subjectNamesByVideo = addNames((yvs.data ?? []) as never[], "subjects");
+    const tagNamesByVideo = addNames((yvt.data ?? []) as never[], "tags");
+    const typeNamesByVideo = addNames((yvtype.data ?? []) as never[], "types");
 
     return videos.map((v) => ({
       id: v.id,
@@ -158,10 +153,9 @@ export const videosRepository = {
       sourceId: v.source_id,
       sourceName: sourceNameById.get(v.source_id) ?? "",
       url: v.url,
-      gameNames: gameNamesByVideo.get(v.id) ?? [],
+      subjectNames: subjectNamesByVideo.get(v.id) ?? [],
       tagNames: tagNamesByVideo.get(v.id) ?? [],
-      genreNames: genreNamesByVideo.get(v.id) ?? [],
-      platformNames: platformNamesByVideo.get(v.id) ?? [],
+      typeNames: typeNamesByVideo.get(v.id) ?? [],
     }));
   },
 
@@ -175,14 +169,13 @@ export const videosRepository = {
     if (error) throw new Error(error.message);
     if (!video) return null;
 
-    const [sourceRow, games, tags, genres, platforms] = await Promise.all([
+    const [sourceRow, subjects, tags, types] = await Promise.all([
       video.source_id
         ? client.from("sources").select("name").eq("id", video.source_id).maybeSingle()
         : Promise.resolve({ data: null }),
-      client.from("youtube_video_games").select("game_id").eq("youtube_video_id", id),
+      client.from("youtube_video_subjects").select("subject_id").eq("youtube_video_id", id),
       client.from("youtube_video_tags").select("tag_id").eq("youtube_video_id", id),
-      client.from("youtube_video_genres").select("genre_id").eq("youtube_video_id", id),
-      client.from("youtube_video_platforms").select("platform_id").eq("youtube_video_id", id),
+      client.from("youtube_video_types").select("type_id").eq("youtube_video_id", id),
     ]);
 
     return {
@@ -194,10 +187,9 @@ export const videosRepository = {
       sourceId: video.source_id ?? "",
       sourceName: (sourceRow.data as { name?: string } | null)?.name ?? "",
       is_news: video.is_news ?? true,
-      gameIds: (games.data ?? []).map((r: { game_id: string }) => r.game_id),
+      subjectIds: (subjects.data ?? []).map((r: { subject_id: string }) => r.subject_id),
       tagIds: (tags.data ?? []).map((r: { tag_id: string }) => r.tag_id),
-      genreIds: (genres.data ?? []).map((r: { genre_id: string }) => r.genre_id),
-      platformIds: (platforms.data ?? []).map((r: { platform_id: string }) => r.platform_id),
+      typeIds: (types.data ?? []).map((r: { type_id: string }) => r.type_id),
     };
   },
 
@@ -230,24 +222,20 @@ export const videosRepository = {
 
   async setVideoEntities(
     videoId: string,
-    ids: { gameIds: string[]; tagIds: string[]; genreIds: string[]; platformIds: string[] }
+    ids: { subjectIds: string[]; tagIds: string[]; typeIds: string[] }
   ): Promise<void> {
     const client = getClient();
-    await client.from("youtube_video_games").delete().eq("youtube_video_id", videoId);
+    await client.from("youtube_video_subjects").delete().eq("youtube_video_id", videoId);
     await client.from("youtube_video_tags").delete().eq("youtube_video_id", videoId);
-    await client.from("youtube_video_genres").delete().eq("youtube_video_id", videoId);
-    await client.from("youtube_video_platforms").delete().eq("youtube_video_id", videoId);
-    for (const gameId of ids.gameIds) {
-      await client.from("youtube_video_games").upsert({ youtube_video_id: videoId, game_id: gameId }, { onConflict: "youtube_video_id,game_id" });
+    await client.from("youtube_video_types").delete().eq("youtube_video_id", videoId);
+    for (const subjectId of ids.subjectIds) {
+      await client.from("youtube_video_subjects").upsert({ youtube_video_id: videoId, subject_id: subjectId }, { onConflict: "youtube_video_id,subject_id" });
     }
     for (const tagId of ids.tagIds) {
       await client.from("youtube_video_tags").upsert({ youtube_video_id: videoId, tag_id: tagId }, { onConflict: "youtube_video_id,tag_id" });
     }
-    for (const genreId of ids.genreIds) {
-      await client.from("youtube_video_genres").upsert({ youtube_video_id: videoId, genre_id: genreId }, { onConflict: "youtube_video_id,genre_id" });
-    }
-    for (const platformId of ids.platformIds) {
-      await client.from("youtube_video_platforms").upsert({ youtube_video_id: videoId, platform_id: platformId }, { onConflict: "youtube_video_id,platform_id" });
+    for (const typeId of ids.typeIds) {
+      await client.from("youtube_video_types").upsert({ youtube_video_id: videoId, type_id: typeId }, { onConflict: "youtube_video_id,type_id" });
     }
   },
 };

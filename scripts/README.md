@@ -2,7 +2,7 @@
 
 ## add-sources.js
 
-Adiciona na base (via API) a lista de portais brasileiros de notícias de games para RSS/scraping.
+Adiciona na base (via API) a lista de portais de notícias de **tech/IA** (pt-BR) para RSS/scraping.
 
 ### Pré-requisitos
 
@@ -33,9 +33,10 @@ node scripts/add-sources.js
 
 ### Lista de fontes
 
-A lista está em **sources-list.js**. Cada item tem: `id`, `name`, `base_url`, `rss_url`.  
-Se algum feed não funcionar (404 ou formato inválido), ajuste o `rss_url` em `sources-list.js` e rode de novo, ou altere depois pelo admin/API.
+A lista está em **sources-list.js**. Cada item tem: `id`, `name`, `base_url`, `rss_url`, `language`.  
+A ingestão atual só processa fontes `pt-BR`/`pt`.  
+Se algum feed não funcionar (404 ou formato inválido), ajuste o `rss_url` e rode de novo, ou altere pelo admin/API.
 
 ### Observação
 
-Alguns portais podem não expor RSS ou usar URLs diferentes. Após rodar o script, vale testar a ingestão pelo painel admin e, se necessário, corrigir as URLs das fontes que falharem.
+Após a migration `023`, o catálogo e as fontes de IA já podem estar no banco. O script serve para reaplicar/atualizar a lista via API.

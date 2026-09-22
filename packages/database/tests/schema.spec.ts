@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 import { getCoreTableDefinitions } from "../src/schema-contract";
 
 const REQUIRED_TABLES = [
-  "games",
-  "genres",
-  "platforms",
+  "subjects",
+  "types",
   "tags",
-  "game_tags",
+  "subject_tags",
   "articles",
   "sources",
   "article_sources",
@@ -20,19 +19,22 @@ describe("Database Agent - core schema contracts", () => {
     for (const requiredTable of REQUIRED_TABLES) {
       expect(tables).toContain(requiredTable);
     }
+    expect(tables).not.toContain("platforms");
+    expect(tables).not.toContain("games");
+    expect(tables).not.toContain("genres");
   });
 
-  it("deve exigir colunas essenciais para tabela games", () => {
-    const gameTable = getCoreTableDefinitions().find(
-      (entry) => entry.table === "games"
+  it("deve exigir colunas essenciais para tabela subjects", () => {
+    const subjectTable = getCoreTableDefinitions().find(
+      (entry) => entry.table === "subjects"
     );
 
-    expect(gameTable).toBeDefined();
-    expect(gameTable?.requiredColumns).toEqual(
+    expect(subjectTable).toBeDefined();
+    expect(subjectTable?.requiredColumns).toEqual(
       expect.arrayContaining(["id", "slug", "name", "release_date"])
     );
-    expect(gameTable?.requiredIndexes).toEqual(
-      expect.arrayContaining(["games_slug_unique_idx"])
+    expect(subjectTable?.requiredIndexes).toEqual(
+      expect.arrayContaining(["subjects_slug_unique_idx"])
     );
   });
 

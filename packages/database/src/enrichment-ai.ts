@@ -1,13 +1,12 @@
 /**
- * Extração de entidades (jogos, tags, gêneros, plataformas) a partir de texto
+ * Extração de entidades (assuntos, tags, tipos) a partir de texto
  * usando a API Gemini. Usado no enriquecimento automático na ingestão.
  */
 
 export interface ExtractEntitiesResult {
-  games: string[];
+  subjects: string[];
   tags: string[];
-  genres: string[];
-  platforms: string[];
+  types: string[];
 }
 
 const MAX_ITEMS_PER_CATEGORY = 10;
@@ -45,14 +44,13 @@ export function isEnrichmentAiEnabled(env?: Record<string, string | undefined>):
 
 function clampToArrays(obj: unknown): ExtractEntitiesResult {
   const result: ExtractEntitiesResult = {
-    games: [],
+    subjects: [],
     tags: [],
-    genres: [],
-    platforms: []
+    types: []
   };
   if (!obj || typeof obj !== "object") return result;
   const o = obj as Record<string, unknown>;
-  for (const key of ["games", "tags", "genres", "platforms"] as const) {
+  for (const key of ["subjects", "tags", "types"] as const) {
     const val = o[key];
     if (Array.isArray(val)) {
       result[key] = val
@@ -65,7 +63,7 @@ function clampToArrays(obj: unknown): ExtractEntitiesResult {
 }
 
 /**
- * Chama a API Gemini para extrair jogos, tags, gêneros e plataformas do texto.
+ * Chama a API Gemini para extrair assuntos, tags e tipos do texto.
  * Retorna listas de nomes (não IDs). Em caso de erro ou resposta inválida, retorna listas vazias.
  */
 export async function extractEntitiesWithGemini(
@@ -75,19 +73,20 @@ export async function extractEntitiesWithGemini(
 ): Promise<ExtractEntitiesResult> {
   const { provider, apiKey } = getEnv(env);
   if (provider !== "gemini" || !apiKey) {
-    return { games: [], tags: [], genres: [], platforms: [] };
+    return { subjects: [], tags: [], types: [] };
   }
   if (Date.now() < quotaExceededUntil) {
-    return { games: [], tags: [], genres: [], platforms: [] };
+    return { subjects: [], tags: [], types: [] };
   }
   const model = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
 
   const text = `${title}\n\n${description}`.slice(0, 2000);
-  const prompt = `Analise o texto abaixo (título e resumo de uma notícia de jogos) e extraia entidades.
+  const prompt = `Analise o texto abaixo (título e resumo de uma notícia genérica) e extraia entidades.
 Retorne APENAS um JSON válido, sem markdown, sem \`\`\`json, no formato:
-{"games":["Nome do Jogo 1"],"tags":["tag1"],"genres":["gênero1"],"platforms":["plataforma1"]}
+{"subjects":["Assunto 1"],"tags":["tag1"],"types":["tipo1"]}
 Use listas vazias [] para categorias sem itens. Nomes em português quando fizer sentido.
 Máximo ${MAX_ITEMS_PER_CATEGORY} itens por categoria. Apenas entidades realmente mencionadas ou fortemente sugeridas no texto.
+subjects = assuntos/temas principais; types = categorias/taxonomia; tags = etiquetas livres.
 
 Texto:
 ---
@@ -128,7 +127,7 @@ ${text}
       } else {
         console.warn("[enrichment-ai] Gemini API error:", res.status, errText);
       }
-      return { games: [], tags: [], genres: [], platforms: [] };
+      return { subjects: [], tags: [], types: [] };
     }
 
     interface GeminiCandidate {
@@ -137,7 +136,7 @@ ${text}
     const data = (await res.json()) as { candidates?: GeminiCandidate[] };
     const textPart = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textPart || typeof textPart !== "string") {
-      return { games: [], tags: [], genres: [], platforms: [] };
+      return { subjects: [], tags: [], types: [] };
     }
 
     const firstBrace = textPart.indexOf("{");
@@ -152,6 +151,6 @@ ${text}
     } else {
       console.warn("[enrichment-ai] Gemini request failed:", (e as Error).message);
     }
-    return { games: [], tags: [], genres: [], platforms: [] };
+    return { subjects: [], tags: [], types: [] };
   }
 }

@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = {
   description:
-    "Portal de notícias de games. Cobertura das principais fontes, com busca e filtro por fonte.",
+    "Portal de notícias de inteligência artificial. Cobertura das principais fontes, com busca e filtro por fonte.",
 };
 
 export default async function HomePage({
@@ -47,8 +47,8 @@ export default async function HomePage({
   return (
     <section className="space-y-8">
       <HeroSection
-        title="Notícias Games"
-        description="Cobertura de jogos: notícias recentes das principais fontes, com busca e filtro por fonte."
+        title="Notícias IA"
+        description="Cobertura de notícias recentes sobre inteligência artificial, com busca e filtro por fonte."
         ctaHref="/news"
         ctaLabel="Ver todas as notícias"
       />

@@ -28,10 +28,9 @@ type PatchBody = Partial<{
   contentHtml: string | null;
   status: string;
   is_news: boolean;
-  gameIds: string[];
+  subjectIds: string[];
   tagIds: string[];
-  genreIds: string[];
-  platformIds: string[];
+  typeIds: string[];
 }>;
 
 export async function PATCH(
@@ -61,16 +60,14 @@ export async function PATCH(
     }
 
     if (
-      body.gameIds !== undefined ||
+      body.subjectIds !== undefined ||
       body.tagIds !== undefined ||
-      body.genreIds !== undefined ||
-      body.platformIds !== undefined
+      body.typeIds !== undefined
     ) {
       await newsRepository.setArticleEntities(id, {
-        gameIds: body.gameIds ?? article.gameIds,
+        subjectIds: body.subjectIds ?? article.subjectIds,
         tagIds: body.tagIds ?? article.tagIds,
-        genreIds: body.genreIds ?? article.genreIds,
-        platformIds: body.platformIds ?? article.platformIds,
+        typeIds: body.typeIds ?? article.typeIds,
       });
     }
     return NextResponse.json({ ok: true });

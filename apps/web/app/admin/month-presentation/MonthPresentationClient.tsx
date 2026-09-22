@@ -51,10 +51,9 @@ interface MonthPresentationPayload {
   monthly_evolution: Array<{ mes: string; conteudos: number; vinculos: number }>;
   link_quality: Array<{
     tipo: "Notícia RSS" | "Vídeo YouTube";
-    jogos: number;
+    assuntos: number;
     tags: number;
-    generos: number;
-    plataformas: number;
+    tipos: number;
   }>;
   top_clusters: Array<{ cluster: string; citacoes: number }>;
   cadence: Array<{ dia: string; rss: number; youtube: number }>;
@@ -65,6 +64,20 @@ interface MonthPresentationPayload {
     total: number;
     dias?: Array<{ dia: string; conteudos: number }>;
   }>;
+  news_relevance?: {
+    articles: { total: number; subjects_context: number; generic: number; pct_subjects: number };
+    videos: { total: number; subjects_context: number; generic: number; pct_subjects: number };
+    combined: { total: number; subjects_context: number; generic: number; pct_subjects: number };
+    by_source: Array<{
+      source_id: string;
+      source_name: string;
+      provider: "rss" | "youtube";
+      total: number;
+      subjects_context: number;
+      generic: number;
+      pct_subjects: number;
+    }>;
+  };
   script: Array<{ title: string; text: string }>;
 }
 
@@ -84,15 +97,19 @@ const monthlyEvolutionConfig = {
 } satisfies ChartConfig;
 
 const linkQualityConfig = {
-  jogos: { label: "Jogos", color: "hsl(var(--chart-1))" },
+  assuntos: { label: "Assuntos", color: "hsl(var(--chart-1))" },
   tags: { label: "Tags", color: "hsl(var(--chart-2))" },
-  generos: { label: "Gêneros", color: "hsl(var(--chart-3))" },
-  plataformas: { label: "Plataformas", color: "hsl(var(--chart-4))" },
+  tipos: { label: "Tipos", color: "hsl(var(--chart-3))" },
 } satisfies ChartConfig;
 
 const cadenceConfig = {
   rss: { label: "RSS", color: "hsl(var(--chart-1))" },
   youtube: { label: "YouTube", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig;
+
+const newsRelevanceStackConfig = {
+  relevantes: { label: "Relevantes (is_news)", color: "hsl(var(--chart-1))" },
+  genericos: { label: "Genéricos / off-topic", color: "hsl(var(--chart-3))" },
 } satisfies ChartConfig;
 
 function peakDayLabel(dias: Array<{ dia: string; conteudos: number }>): { label: string; valor: number } {
@@ -118,14 +135,63 @@ export function MonthPresentationClient({
   periodStart: string | null;
   periodEnd: string | null;
 }) {
-  const payload = (reportPayload as MonthPresentationPayload | null) ?? null;
+  const basePayload = useMemo(
+    () => (reportPayload as MonthPresentationPayload | null) ?? null,
+    [reportPayload]
+  );
+  const [filteredPayload, setFilteredPayload] = useState<MonthPresentationPayload | null>(null);
+  const [filterProvider, setFilterProvider] = useState<"all" | "rss" | "youtube">("all");
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [adminSources, setAdminSources] = useState<
+    Array<{ id: string; name: string; provider: string }>
+  >([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFilteredPayload(null);
+    setFilterError(null);
+  }, [reportId, reportPayload]);
+
+  useEffect(() => {
+    fetch("/api/admin/sources")
+      .then((r) => r.json())
+      .then((d: { sources?: Array<{ id: string; name: string; provider: string }> }) => {
+        if (Array.isArray(d.sources)) setAdminSources(d.sources);
+      })
+      .catch(() => {});
+  }, []);
+
+  const payload = filteredPayload ?? basePayload;
   const sourceMix = payload?.source_mix ?? [];
   const monthlyEvolution = payload?.monthly_evolution ?? [];
   const linkQualityByType = payload?.link_quality ?? [];
   const topEntityClusters = payload?.top_clusters ?? [];
   const cadenceByWeekday = payload?.cadence ?? [];
   const cadenceBySourceRaw = payload?.cadence_by_source ?? [];
+  const newsRelevance = payload?.news_relevance ?? null;
   const scripts = payload?.script ?? [];
+
+  const newsRelevanceBarData = useMemo(() => {
+    if (!newsRelevance) return [];
+    return [
+      {
+        canal: "RSS",
+        relevantes: newsRelevance.articles.subjects_context,
+        genericos: newsRelevance.articles.generic,
+      },
+      {
+        canal: "YouTube",
+        relevantes: newsRelevance.videos.subjects_context,
+        genericos: newsRelevance.videos.generic,
+      },
+      {
+        canal: "Combinado",
+        relevantes: newsRelevance.combined.subjects_context,
+        genericos: newsRelevance.combined.generic,
+      },
+    ];
+  }, [newsRelevance]);
 
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
 
@@ -175,6 +241,54 @@ export function MonthPresentationClient({
     links_per_content: 0,
   };
 
+  async function applyPresentationFilters() {
+    if (!basePayload?.summary?.period_start || !basePayload?.summary?.period_end) {
+      setFilterError("Período do relatório indisponível.");
+      return;
+    }
+    setFilterLoading(true);
+    setFilterError(null);
+    try {
+      const res = await fetch("/api/admin/month-presentation/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          periodStart: basePayload.summary.period_start,
+          periodEnd: basePayload.summary.period_end,
+          filters: {
+            ...(filterProvider !== "all" ? { provider: filterProvider } : {}),
+            ...(selectedSourceIds.length > 0 ? { sourceIds: selectedSourceIds } : {}),
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFilterError(typeof data.error === "string" ? data.error : "Falha ao aplicar filtros.");
+        return;
+      }
+      if (data.payload) {
+        setFilteredPayload(data.payload as MonthPresentationPayload);
+      }
+    } catch {
+      setFilterError("Erro de rede ao aplicar filtros.");
+    } finally {
+      setFilterLoading(false);
+    }
+  }
+
+  function resetPresentationFilters() {
+    setFilteredPayload(null);
+    setFilterProvider("all");
+    setSelectedSourceIds([]);
+    setFilterError(null);
+  }
+
+  function toggleSourceFilter(id: string) {
+    setSelectedSourceIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
   const headlineKpis = [
     {
       label: "Fontes ativas analisadas",
@@ -189,7 +303,7 @@ export function MonthPresentationClient({
     {
       label: "Vínculos gerados",
       value: String(summary.links_total),
-      note: "jogos, tags, gêneros e plataformas",
+      note: "assuntos, tags e tipos",
     },
     {
       label: "Densidade de contexto",
@@ -215,13 +329,123 @@ export function MonthPresentationClient({
             </p>
           ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Badge variant={reportId ? "default" : "secondary"}>
             {reportId ? "Dados reais gerados" : "Sem relatório gerado"}
           </Badge>
+          {filteredPayload ? (
+            <Badge variant="outline">Visão filtrada (preview)</Badge>
+          ) : null}
           <Button size="sm">Exportar roteiro</Button>
         </div>
       </div>
+
+      {basePayload ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Filtros da apresentação</CardTitle>
+            <p className="text-sm font-normal text-muted-foreground">
+              Recalcula KPIs e gráficos no servidor para o mesmo período do relatório. Nenhuma fonte
+              selecionada = todas as fontes. Combine provedor (RSS/YouTube) e subconjunto de fontes.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+              <div className="space-y-2 sm:w-48">
+                <Label htmlFor="mp-provider">Provedor</Label>
+                <Select
+                  value={filterProvider}
+                  onValueChange={(v) => setFilterProvider(v as "all" | "rss" | "youtube")}
+                >
+                  <SelectTrigger id="mp-provider" className="h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos (RSS + YouTube)</SelectItem>
+                    <SelectItem value="rss">Somente RSS</SelectItem>
+                    <SelectItem value="youtube">Somente YouTube</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={filterLoading}
+                  onClick={() => void applyPresentationFilters()}
+                >
+                  {filterLoading ? "Aplicando…" : "Aplicar filtros"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={filterLoading}
+                  onClick={resetPresentationFilters}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>Fontes (opcional)</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setSelectedSourceIds(adminSources.map((s) => s.id))}
+                  >
+                    Marcar todas
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setSelectedSourceIds([])}
+                  >
+                    Limpar fontes
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-md border border-border p-2 space-y-1">
+                {adminSources.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Carregando lista de fontes…</p>
+                ) : (
+                  adminSources.map((s) => {
+                    const on = selectedSourceIds.includes(s.id);
+                    return (
+                      <Button
+                        key={s.id}
+                        type="button"
+                        variant={on ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-auto w-full justify-start py-1.5 text-left font-normal"
+                        onClick={() => toggleSourceFilter(s.id)}
+                      >
+                        <span className="truncate">
+                          {on ? "✓ " : ""}
+                          {s.name}
+                          <span className="text-muted-foreground">
+                            {" "}
+                            ({s.provider === "youtube" ? "YouTube" : "RSS"})
+                          </span>
+                        </span>
+                      </Button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            {filterError ? (
+              <p className="text-sm text-destructive">{filterError}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {!payload ? (
         <Card>
@@ -259,10 +483,12 @@ export function MonthPresentationClient({
         </CardHeader>
         <CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">
           <p>
-            Em março, acompanhamos <strong className="text-foreground">132 fontes ativas</strong> e
-            classificamos <strong className="text-foreground">5.940 conteúdos</strong>. O volume cresceu
-            sobre fevereiro, mas o destaque real foi a profundidade: batemos
-            <strong className="text-foreground"> 18.412 vínculos editoriais</strong>, com média de 3,1 vínculos por peça.
+            No período, acompanhamos{" "}
+            <strong className="text-foreground">{summary.sources_total} fontes</strong> e classificamos{" "}
+            <strong className="text-foreground">{summary.contents_total} conteúdos</strong>. O destaque é a
+            profundidade: <strong className="text-foreground">{summary.links_total} vínculos editoriais</strong>,
+            com média de <strong className="text-foreground">{summary.links_per_content}</strong> vínculos por
+            peça.
           </p>
           <p>
             Para quem é leigo: isso significa conteúdo mais organizado e fácil de entender. Para quem é do mercado:
@@ -391,16 +617,121 @@ export function MonthPresentationClient({
                 <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="jogos" fill="var(--color-jogos)" isAnimationActive />
+                <Bar dataKey="assuntos" fill="var(--color-assuntos)" isAnimationActive />
                 <Bar dataKey="tags" fill="var(--color-tags)" isAnimationActive />
-                <Bar dataKey="generos" fill="var(--color-generos)" isAnimationActive />
-                <Bar dataKey="plataformas" fill="var(--color-plataformas)" isAnimationActive />
+                <Bar dataKey="tipos" fill="var(--color-tipos)" isAnimationActive />
               </BarChart>
             </ChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Explicação para vídeo: compare densidade por tipo para mostrar o equilíbrio entre volume e profundidade.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Relevância: assuntos vs genérico (is_news)</CardTitle>
+          <p className="text-sm font-normal text-muted-foreground">
+            Conta todos os itens recebidos no período (RSS e YouTube), não só os publicados no site.
+            <span className="text-foreground"> is_news = true</span> indica relevante para o hub;
+            <span className="text-foreground"> false</span> indica genérico ou off-topic. Os filtros desta página
+            recalculam estes números no preview.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pb-6">
+          {!newsRelevance ? (
+            <p className="text-sm text-muted-foreground">
+              Gere novamente o relatório <strong className="text-foreground">Apresentação mensal</strong> para ver
+              estatísticas de relevância por fonte.
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs font-medium text-muted-foreground">RSS (todos os itens)</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.articles.total}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {newsRelevance.articles.subjects_context} relevantes · {newsRelevance.articles.generic} genéricos ·{" "}
+                    {newsRelevance.articles.pct_subjects}% relevantes
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs font-medium text-muted-foreground">YouTube (todos os itens)</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.videos.total}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {newsRelevance.videos.subjects_context} relevantes · {newsRelevance.videos.generic} genéricos ·{" "}
+                    {newsRelevance.videos.pct_subjects}% relevantes
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3 bg-muted/20">
+                  <p className="text-xs font-medium text-muted-foreground">Combinado</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.combined.total}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {newsRelevance.combined.subjects_context} relevantes · {newsRelevance.combined.generic} genéricos ·{" "}
+                    {newsRelevance.combined.pct_subjects}% relevantes
+                  </p>
+                </div>
+              </div>
+              <div className="h-[220px] w-full shrink-0">
+                <ChartContainer config={newsRelevanceStackConfig} className="aspect-auto h-full w-full min-h-0">
+                  <BarChart data={newsRelevanceBarData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="canal" />
+                    <YAxis allowDecimals={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar
+                      dataKey="relevantes"
+                      stackId="a"
+                      fill="var(--color-relevantes)"
+                      radius={[0, 0, 0, 0]}
+                      isAnimationActive
+                    />
+                    <Bar
+                      dataKey="genericos"
+                      stackId="a"
+                      fill="var(--color-genericos)"
+                      radius={[4, 4, 0, 0]}
+                      isAnimationActive
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="px-3 py-2 font-medium">Fonte</th>
+                      <th className="px-3 py-2 font-medium">Tipo</th>
+                      <th className="px-3 py-2 font-medium text-right">Total</th>
+                      <th className="px-3 py-2 font-medium text-right">Relevantes</th>
+                      <th className="px-3 py-2 font-medium text-right">Genéricos</th>
+                      <th className="px-3 py-2 font-medium text-right">% relevantes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {newsRelevance.by_source.map((row) => (
+                      <tr key={row.source_id} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{row.source_name}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {row.provider === "youtube" ? "YouTube" : "RSS"}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.total}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.subjects_context}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.generic}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{row.pct_subjects}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Até 50 fontes por volume no período; artigos sem vínculo em <code className="text-foreground">article_sources</code>{" "}
+                aparecem na linha agregada “sem fonte vinculada”.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

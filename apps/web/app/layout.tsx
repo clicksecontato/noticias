@@ -10,10 +10,10 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata = {
   title: {
-    default: "Notícias Games",
-    template: "%s | Notícias Games"
+    default: "Notícias IA",
+    template: "%s | Notícias IA"
   },
-  description: "Portal de notícias de games. Cobertura das principais fontes."
+  description: "Portal de notícias de inteligência artificial. Cobertura das principais fontes."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

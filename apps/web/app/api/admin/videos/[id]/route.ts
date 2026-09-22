@@ -21,10 +21,9 @@ type PatchBody = Partial<{
   description: string | null;
   published_at: string;
   is_news: boolean;
-  gameIds: string[];
+  subjectIds: string[];
   tagIds: string[];
-  genreIds: string[];
-  platformIds: string[];
+  typeIds: string[];
 }>;
 
 export async function PATCH(
@@ -47,16 +46,14 @@ export async function PATCH(
     }
 
     if (
-      body.gameIds !== undefined ||
+      body.subjectIds !== undefined ||
       body.tagIds !== undefined ||
-      body.genreIds !== undefined ||
-      body.platformIds !== undefined
+      body.typeIds !== undefined
     ) {
       await videosRepository.setVideoEntities(id, {
-        gameIds: body.gameIds ?? video.gameIds,
+        subjectIds: body.subjectIds ?? video.subjectIds,
         tagIds: body.tagIds ?? video.tagIds,
-        genreIds: body.genreIds ?? video.genreIds,
-        platformIds: body.platformIds ?? video.platformIds,
+        typeIds: body.typeIds ?? video.typeIds,
       });
     }
     return NextResponse.json({ ok: true });

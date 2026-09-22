@@ -11,7 +11,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   by_tags: "Por tags",
   by_source_detail: "Detalhe por fonte",
   activity_by_weekday: "Atividade por dia da semana",
-  top_games: "Top jogos por período",
+  top_subjects: "Top assuntos por período",
   executive_summary: "Resumo executivo",
   month_presentation: "Apresentação mensal",
 };

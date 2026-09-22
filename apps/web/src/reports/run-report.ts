@@ -4,7 +4,7 @@ import { generateVolumeReport } from "./generators/volume";
 import { generateTopSourcesReport } from "./generators/top-sources";
 import { generateByTagsReport } from "./generators/by-tags";
 import { generateActivityByWeekdayReport } from "./generators/activity-by-weekday";
-import { generateTopGamesReport } from "./generators/top-games";
+import { generateTopSubjectsReport } from "./generators/top-subjects";
 
 export interface ReportDataInput {
   articles: ArticleRow[];
@@ -12,14 +12,14 @@ export interface ReportDataInput {
   sourceNames: Map<string, string>;
   tagCounts?: Array<{ tag_id: string; tag_name: string; count: number }>;
   sourceId?: string;
-  gameCounts?: Array<{ game_id: string; game_name: string; articles: number; videos: number; total: number }>;
+  subjectCounts?: Array<{ subject_id: string; subject_name: string; articles: number; videos: number; total: number }>;
 }
 
 export interface GenerateReportOptions {
   group_by?: "day" | "week" | "month";
   limit_sources?: number;
   limit_tags?: number;
-  limit_games?: number;
+  limit_subjects?: number;
 }
 
 /**
@@ -30,7 +30,7 @@ export function generateReportPayload(
   data: ReportDataInput,
   options: GenerateReportOptions = {}
 ): Record<string, unknown> {
-  const { articles, videos, sourceNames, tagCounts, sourceId, gameCounts } = data;
+  const { articles, videos, sourceNames, tagCounts, sourceId, subjectCounts } = data;
   switch (reportType) {
     case "volume":
       return generateVolumeReport(articles, videos, {
@@ -65,10 +65,10 @@ export function generateReportPayload(
         tags,
       } as Record<string, unknown>;
     }
-    case "top_games": {
-      const counts = gameCounts ?? [];
-      return generateTopGamesReport(counts, {
-        limit: options.limit_games ?? 20,
+    case "top_subjects": {
+      const counts = subjectCounts ?? [];
+      return generateTopSubjectsReport(counts, {
+        limit: options.limit_subjects ?? 20,
       }) as unknown as Record<string, unknown>;
     }
     default:
@@ -82,7 +82,7 @@ export const SUPPORTED_REPORT_TYPES: ReportType[] = [
   "by_tags",
   "activity_by_weekday",
   "by_source_detail",
-  "top_games",
+  "top_subjects",
   "executive_summary",
   "month_presentation",
 ];

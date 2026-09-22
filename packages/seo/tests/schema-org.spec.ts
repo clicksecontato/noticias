@@ -1,25 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   buildBreadcrumbSchema,
-  buildGameSchema,
-  buildNewsSchema
+  buildNewsSchema,
+  buildSubjectSchema
 } from "../src/schema";
 
 describe("SEO Agent - schema.org generation", () => {
-  it("deve gerar schema VideoGame valido", () => {
-    const schema = buildGameSchema({
-      name: "Elden Ring",
-      description: "RPG de acao em mundo aberto.",
-      genre: "RPG",
-      platform: "PC",
-      url: "https://site.com/games/elden-ring"
+  it("deve gerar schema Thing valido para assunto", () => {
+    const schema = buildSubjectSchema({
+      name: "ChatGPT",
+      description: "Assistente conversacional de IA.",
+      url: "https://site.com/subjects/chatgpt"
     });
 
     expect(schema["@context"]).toBe("https://schema.org");
-    expect(schema["@type"]).toBe("VideoGame");
-    expect(schema.name).toBe("Elden Ring");
-    expect(schema.genre).toBe("RPG");
-    expect(schema.url).toBe("https://site.com/games/elden-ring");
+    expect(schema["@type"]).toBe("Thing");
+    expect(schema.name).toBe("ChatGPT");
+    expect(schema.url).toBe("https://site.com/subjects/chatgpt");
   });
 
   it("deve gerar schema NewsArticle valido", () => {
@@ -28,7 +25,7 @@ describe("SEO Agent - schema.org generation", () => {
       description: "Confira os principais detalhes revelados.",
       datePublished: "2026-03-10T12:00:00.000Z",
       authorName: "Redacao",
-      url: "https://site.com/news/novo-trailer-de-gta-6"
+      url: "https://site.com/news/openai-lanca-atualizacao-chatgpt"
     });
 
     expect(schema["@context"]).toBe("https://schema.org");
@@ -45,8 +42,8 @@ describe("SEO Agent - schema.org generation", () => {
   it("deve gerar breadcrumb list com posicoes ordenadas", () => {
     const schema = buildBreadcrumbSchema([
       { name: "Home", item: "https://site.com" },
-      { name: "Games", item: "https://site.com/games" },
-      { name: "Elden Ring", item: "https://site.com/games/elden-ring" }
+      { name: "Assuntos", item: "https://site.com/subjects" },
+      { name: "ChatGPT", item: "https://site.com/subjects/chatgpt" }
     ]);
 
     expect(schema["@type"]).toBe("BreadcrumbList");

@@ -12,7 +12,7 @@ function normalizeForMatch(text: string): string {
 
 /**
  * Verifica se um termo (name ou slug) aparece no texto normalizado.
- * Usa substring para capturar "Elden Ring" no título; evita match de 1-2 chars sozinhos.
+ * Usa substring para capturar termos no título; evita match de 1-2 chars sozinhos.
  */
 function textContainsTerm(normalizedText: string, term: string): boolean {
   const normalizedTerm = normalizeForMatch(term);
@@ -22,8 +22,8 @@ function textContainsTerm(normalizedText: string, term: string): boolean {
 
 /**
  * A partir de título + descrição (ex.: excerpt ou content slice), encontra ids de
- * games, tags, genres e platforms que aparecem no texto (match por name ou slug).
- * Só retorna entidades existentes no catálogo; ordem: games primeiro (mais específicos), depois tags, genres, platforms.
+ * subjects, tags e types que aparecem no texto (match por name ou slug).
+ * Só retorna entidades existentes no catálogo; ordem: subjects primeiro (mais específicos), depois tags, types.
  */
 export function extractEntityIdsFromText(
   title: string,
@@ -33,14 +33,13 @@ export function extractEntityIdsFromText(
   const combined = `${title} ${description}`.slice(0, 2000);
   const normalized = normalizeForMatch(combined);
 
-  const gameIds: string[] = [];
+  const subjectIds: string[] = [];
   const tagIds: string[] = [];
-  const genreIds: string[] = [];
-  const platformIds: string[] = [];
+  const typeIds: string[] = [];
 
-  for (const g of catalog.games) {
-    if (textContainsTerm(normalized, g.name) || textContainsTerm(normalized, g.slug)) {
-      gameIds.push(g.id);
+  for (const s of catalog.subjects) {
+    if (textContainsTerm(normalized, s.name) || textContainsTerm(normalized, s.slug)) {
+      subjectIds.push(s.id);
     }
   }
   for (const t of catalog.tags) {
@@ -48,16 +47,11 @@ export function extractEntityIdsFromText(
       tagIds.push(t.id);
     }
   }
-  for (const g of catalog.genres) {
-    if (textContainsTerm(normalized, g.name) || textContainsTerm(normalized, g.slug)) {
-      genreIds.push(g.id);
-    }
-  }
-  for (const p of catalog.platforms) {
-    if (textContainsTerm(normalized, p.name) || textContainsTerm(normalized, p.slug)) {
-      platformIds.push(p.id);
+  for (const typ of catalog.types) {
+    if (textContainsTerm(normalized, typ.name) || textContainsTerm(normalized, typ.slug)) {
+      typeIds.push(typ.id);
     }
   }
 
-  return { gameIds, tagIds, genreIds, platformIds };
+  return { subjectIds, tagIds, typeIds };
 }

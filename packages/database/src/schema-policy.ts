@@ -8,26 +8,20 @@ export interface TablePolicy {
 export function getSchemaPolicies(): TablePolicy[] {
   return [
     {
-      table: "games",
+      table: "subjects",
       requiredColumns: ["id", "slug", "name", "release_date"],
       requiredIndexes: [
-        "games_slug_unique_idx",
-        "games_release_date_idx",
-        "games_search_vector_idx"
+        "subjects_slug_unique_idx",
+        "subjects_release_date_idx",
+        "subjects_search_vector_idx"
       ],
-      requiredConstraints: ["games_pk", "games_slug_unique"]
+      requiredConstraints: ["subjects_pk", "subjects_slug_unique"]
     },
     {
-      table: "genres",
+      table: "types",
       requiredColumns: ["id", "slug", "name"],
-      requiredIndexes: ["genres_slug_unique_idx"],
-      requiredConstraints: ["genres_pk", "genres_slug_unique"]
-    },
-    {
-      table: "platforms",
-      requiredColumns: ["id", "slug", "name"],
-      requiredIndexes: ["platforms_slug_unique_idx"],
-      requiredConstraints: ["platforms_pk", "platforms_slug_unique"]
+      requiredIndexes: ["types_slug_unique_idx"],
+      requiredConstraints: ["types_pk", "types_slug_unique"]
     },
     {
       table: "tags",
@@ -36,10 +30,10 @@ export function getSchemaPolicies(): TablePolicy[] {
       requiredConstraints: ["tags_pk", "tags_slug_unique"]
     },
     {
-      table: "game_tags",
-      requiredColumns: ["game_id", "tag_id"],
-      requiredIndexes: ["game_tags_pk_idx"],
-      requiredConstraints: ["game_tags_pk"]
+      table: "subject_tags",
+      requiredColumns: ["subject_id", "tag_id"],
+      requiredIndexes: ["subject_tags_pk_idx"],
+      requiredConstraints: ["subject_tags_pk"]
     },
     {
       table: "articles",

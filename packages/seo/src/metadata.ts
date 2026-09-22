@@ -1,11 +1,11 @@
 import { getSeoConfig } from "./config";
 import { getSeoStrategy } from "./strategy";
+import type { SeoPageType } from "./strategy";
 
 export interface MetadataInput {
-  pageType: "game" | "news" | "genre";
+  pageType: SeoPageType;
   entityName: string;
-  genre?: string;
-  platform?: string;
+  type?: string;
 }
 
 export interface MetadataOutput {
@@ -44,20 +44,19 @@ function clampDescription(text: string): string {
 
 export function buildMetadata(input: MetadataInput): MetadataOutput {
   const strategy = getSeoStrategy(input.pageType);
-  const title = strategy.titleTemplate(input.entityName, input.platform);
+  const title = strategy.titleTemplate(input.entityName);
   let description = "";
 
-  if (input.pageType === "game") {
-    description = `Veja tudo sobre ${input.entityName}: novidades, gameplay, plataformas suportadas e dicas para aproveitar melhor a experiencia no jogo.`;
+  if (input.pageType === "subject") {
+    description = `Veja tudo sobre ${input.entityName}: noticias, atualizacoes, contexto e analises para acompanhar o assunto com profundidade.`;
   }
 
   if (input.pageType === "news") {
-    description = `Acompanhe ${input.entityName} com cobertura rapida, contexto completo e atualizacoes relevantes do mercado de games em tempo real.`;
+    description = `Acompanhe ${input.entityName} com cobertura rapida, contexto completo e atualizacoes relevantes do mundo das noticias em tempo real.`;
   }
 
-  if (input.pageType === "genre") {
-    const platformPart = input.platform ? ` para ${input.platform}` : "";
-    description = `Encontre os melhores jogos de ${input.entityName}${platformPart}, com listas atualizadas, comparativos e recomendacoes para diferentes perfis de jogadores.`;
+  if (input.pageType === "type") {
+    description = `Encontre os melhores assuntos de ${input.entityName}, com listas atualizadas, comparativos e recomendacoes para diferentes interesses.`;
   }
 
   return {

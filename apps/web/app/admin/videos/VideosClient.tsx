@@ -24,10 +24,9 @@ interface VideoRow {
   sourceId: string;
   sourceName: string;
   url: string;
-  gameNames: string[];
+  subjectNames: string[];
   tagNames: string[];
-  genreNames: string[];
-  platformNames: string[];
+  typeNames: string[];
 }
 
 interface SourceOption {
@@ -268,7 +267,7 @@ export function VideosClient() {
                       <th className="p-2 text-left">Conteúdo</th>
                       <th className="p-2 text-left">Canal</th>
                       <th className="p-2 text-left">Data</th>
-                      <th className="p-2 text-left">Jogos / Tags</th>
+                      <th className="p-2 text-left">Assuntos / Tags</th>
                       <th className="p-2 text-right">Ações</th>
                     </tr>
                   </thead>
@@ -300,13 +299,13 @@ export function VideosClient() {
                         <td className="p-2 text-muted-foreground">{formatDate(v.published_at)}</td>
                         <td className="p-2">
                           <div className="flex flex-wrap gap-1">
-                            {v.gameNames.slice(0, 2).map((n) => (
+                            {v.subjectNames.slice(0, 2).map((n) => (
                               <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
                             ))}
                             {v.tagNames.slice(0, 2).map((n) => (
                               <Badge key={n} variant="outline" className="text-xs">{n}</Badge>
                             ))}
-                            {(v.gameNames.length + v.tagNames.length + v.genreNames.length + v.platformNames.length) > 4 ? (
+                            {(v.subjectNames.length + v.tagNames.length + v.typeNames.length) > 4 ? (
                               <span className="text-muted-foreground text-xs">+mais</span>
                             ) : null}
                           </div>

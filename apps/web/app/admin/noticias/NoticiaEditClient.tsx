@@ -83,7 +83,7 @@ function EntityChipRow({ title, selectedIds, options, onAdd, onRemove }: EntityC
         ) : null}
       </div>
       {selected.length === 0 && available.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Nenhum item no catálogo. Cadastre em Jogos/Tags/Gêneros/Plataformas.</p>
+        <p className="text-xs text-muted-foreground">Nenhum item no catálogo. Cadastre em Assuntos/Tags/Tipos.</p>
       ) : null}
     </div>
   );
@@ -92,17 +92,15 @@ function EntityChipRow({ title, selectedIds, options, onAdd, onRemove }: EntityC
 export function NoticiaEditClient({
   article,
   sources,
-  games,
+  subjects,
   tags,
-  genres,
-  platforms,
+  types,
 }: {
   article: ArticleEditRow;
   sources: SourceOption[];
-  games: NameOption[];
+  subjects: NameOption[];
   tags: NameOption[];
-  genres: NameOption[];
-  platforms: NameOption[];
+  types: NameOption[];
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -117,10 +115,9 @@ export function NoticiaEditClient({
     publishedAt: article.published_at.slice(0, 16),
     is_news: article.is_news ?? true,
   });
-  const [gameIds, setGameIds] = useState<string[]>(article.gameIds);
+  const [subjectIds, setSubjectIds] = useState<string[]>(article.subjectIds);
   const [tagIds, setTagIds] = useState<string[]>(article.tagIds);
-  const [genreIds, setGenreIds] = useState<string[]>(article.genreIds);
-  const [platformIds, setPlatformIds] = useState<string[]>(article.platformIds);
+  const [typeIds, setTypeIds] = useState<string[]>(article.typeIds);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -139,10 +136,9 @@ export function NoticiaEditClient({
           imageUrl: form.imageUrl.trim() || null,
           publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : article.published_at,
           is_news: form.is_news,
-          gameIds,
+          subjectIds,
           tagIds,
-          genreIds,
-          platformIds,
+          typeIds,
         }),
       });
       if (!res.ok) {
@@ -166,7 +162,7 @@ export function NoticiaEditClient({
       </Link>
       <h1 className="text-2xl font-semibold">Editar notícia</h1>
       <p className="text-muted-foreground">
-        Altere os dados e vincule jogos, tags, gêneros e plataformas. Use &quot;+ Adicionar&quot; para vincular e o X para remover.
+        Altere os dados e vincule assuntos, tags e tipos. Use &quot;+ Adicionar&quot; para vincular e o X para remover.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-6">
@@ -221,7 +217,7 @@ export function NoticiaEditClient({
                 className="h-4 w-4 rounded border-input"
               />
               <Label htmlFor="is_news" className="cursor-pointer font-normal">
-                Considerar como notícia (exibir no site e contabilizar nos relatórios). Desmarque para gameplays/assuntos off-topic.
+                Considerar como notícia (exibir no site e contabilizar nos relatórios). Desmarque para assuntos off-topic.
               </Label>
             </div>
             <div className="space-y-2">
@@ -266,16 +262,16 @@ export function NoticiaEditClient({
           <CardHeader>
             <CardTitle className="text-lg">Vínculos</CardTitle>
             <p className="text-sm font-normal text-muted-foreground">
-              Adicione ou remova jogos, tags, gêneros e plataformas desta notícia.
+              Adicione ou remova assuntos, tags e tipos desta notícia.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <EntityChipRow
-              title="Jogos"
-              selectedIds={gameIds}
-              options={games}
-              onAdd={(id) => setGameIds((prev) => [...prev, id])}
-              onRemove={(id) => setGameIds((prev) => prev.filter((x) => x !== id))}
+              title="Assuntos"
+              selectedIds={subjectIds}
+              options={subjects}
+              onAdd={(id) => setSubjectIds((prev) => [...prev, id])}
+              onRemove={(id) => setSubjectIds((prev) => prev.filter((x) => x !== id))}
             />
             <EntityChipRow
               title="Tags"
@@ -285,18 +281,11 @@ export function NoticiaEditClient({
               onRemove={(id) => setTagIds((prev) => prev.filter((x) => x !== id))}
             />
             <EntityChipRow
-              title="Gêneros"
-              selectedIds={genreIds}
-              options={genres}
-              onAdd={(id) => setGenreIds((prev) => [...prev, id])}
-              onRemove={(id) => setGenreIds((prev) => prev.filter((x) => x !== id))}
-            />
-            <EntityChipRow
-              title="Plataformas"
-              selectedIds={platformIds}
-              options={platforms}
-              onAdd={(id) => setPlatformIds((prev) => [...prev, id])}
-              onRemove={(id) => setPlatformIds((prev) => prev.filter((x) => x !== id))}
+              title="Tipos"
+              selectedIds={typeIds}
+              options={types}
+              onAdd={(id) => setTypeIds((prev) => [...prev, id])}
+              onRemove={(id) => setTypeIds((prev) => prev.filter((x) => x !== id))}
             />
           </CardContent>
         </Card>

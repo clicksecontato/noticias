@@ -24,10 +24,9 @@ interface ArticleRow {
   is_news: boolean;
   sourceId: string;
   sourceName: string;
-  gameNames: string[];
+  subjectNames: string[];
   tagNames: string[];
-  genreNames: string[];
-  platformNames: string[];
+  typeNames: string[];
 }
 
 interface SourceOption {
@@ -269,7 +268,7 @@ export function NoticiasClient() {
                       <th className="p-2 text-left">Notícia</th>
                       <th className="p-2 text-left">Fonte</th>
                       <th className="p-2 text-left">Data</th>
-                      <th className="p-2 text-left">Jogos / Tags</th>
+                      <th className="p-2 text-left">Assuntos / Tags</th>
                       <th className="p-2 text-right">Ações</th>
                     </tr>
                   </thead>
@@ -298,13 +297,13 @@ export function NoticiasClient() {
                         <td className="p-2 text-muted-foreground">{formatDate(a.published_at)}</td>
                         <td className="p-2">
                           <div className="flex flex-wrap gap-1">
-                            {a.gameNames.slice(0, 2).map((n) => (
+                            {a.subjectNames.slice(0, 2).map((n) => (
                               <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
                             ))}
                             {a.tagNames.slice(0, 2).map((n) => (
                               <Badge key={n} variant="outline" className="text-xs">{n}</Badge>
                             ))}
-                            {(a.gameNames.length + a.tagNames.length + a.genreNames.length + a.platformNames.length) > 4 ? (
+                            {(a.subjectNames.length + a.tagNames.length + a.typeNames.length) > 4 ? (
                               <span className="text-muted-foreground text-xs">+mais</span>
                             ) : null}
                           </div>

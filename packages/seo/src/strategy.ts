@@ -1,29 +1,26 @@
-export type SeoPageType = "game" | "news" | "genre";
+export type SeoPageType = "subject" | "news" | "type";
 
 export interface SeoStrategy {
   pageType: SeoPageType;
   openGraphType: "article" | "website";
-  titleTemplate: (entityName: string, platform?: string) => string;
+  titleTemplate: (entityName: string) => string;
 }
 
 const STRATEGIES: Record<SeoPageType, SeoStrategy> = {
-  game: {
-    pageType: "game",
+  subject: {
+    pageType: "subject",
     openGraphType: "website",
     titleTemplate: (entityName) => `${entityName}: guia, noticias e analise`
   },
   news: {
     pageType: "news",
     openGraphType: "article",
-    titleTemplate: (entityName) => `${entityName} | noticias de games`
+    titleTemplate: (entityName) => `${entityName} | noticias`
   },
-  genre: {
-    pageType: "genre",
+  type: {
+    pageType: "type",
     openGraphType: "website",
-    titleTemplate: (entityName, platform) => {
-      const platformPart = platform ? ` para ${platform}` : "";
-      return `Melhores jogos de ${entityName}${platformPart}`;
-    }
+    titleTemplate: (entityName) => `Melhores assuntos de ${entityName}`
   }
 };
 

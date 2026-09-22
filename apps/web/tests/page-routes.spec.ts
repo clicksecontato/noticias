@@ -1,93 +1,66 @@
 import { describe, expect, it } from "vitest";
 import {
-  generateMetadata as generateGameMetadata,
-  generateStaticParams as generateGameStaticParams,
-  revalidate as gameRevalidate
-} from "../app/games/[slug]/page";
+  generateMetadata as generateSubjectMetadata,
+  generateStaticParams as generateSubjectStaticParams,
+  revalidate as subjectRevalidate
+} from "../app/subjects/[slug]/page";
 import {
   generateMetadata as generateNewsMetadata,
   generateStaticParams as generateNewsStaticParams,
   revalidate as newsRevalidate
 } from "../app/news/[slug]/page";
 import {
-  generateMetadata as generateGamesLikeMetadata,
-  generateStaticParams as generateGamesLikeStaticParams,
-  revalidate as gamesLikeRevalidate
-} from "../app/games-like/[slug]/page";
+  generateMetadata as generateSubjectsLikeMetadata,
+  generateStaticParams as generateSubjectsLikeStaticParams,
+  revalidate as subjectsLikeRevalidate
+} from "../app/subjects-like/[slug]/page";
 import {
-  generateMetadata as generateBestGenreMetadata,
-  generateStaticParams as generateBestGenreStaticParams,
-  revalidate as bestGenreRevalidate
-} from "../app/best/[genre]/page";
-import {
-  generateMetadata as generateBestGenrePlatformMetadata,
-  generateStaticParams as generateBestGenrePlatformStaticParams,
-  revalidate as bestGenrePlatformRevalidate
-} from "../app/best/[genre]/[platform]/page";
-import {
-  generateMetadata as generateHardwareMetadata,
-  generateStaticParams as generateHardwareStaticParams,
-  revalidate as hardwareRevalidate
-} from "../app/hardware/[ram]/page";
+  generateMetadata as generateBestTypeMetadata,
+  generateStaticParams as generateBestTypeStaticParams,
+  revalidate as bestTypeRevalidate
+} from "../app/best/[type]/page";
 
 describe("Web Application Agent - route modules", () => {
   it("deve expor revalidate por tipo de pagina", () => {
     expect(newsRevalidate).toBe(900);
-    expect(gameRevalidate).toBe(86400);
-    expect(gamesLikeRevalidate).toBe(86400);
-    expect(bestGenreRevalidate).toBe(43200);
-    expect(bestGenrePlatformRevalidate).toBe(43200);
-    expect(hardwareRevalidate).toBe(43200);
+    expect(subjectRevalidate).toBe(86400);
+    expect(subjectsLikeRevalidate).toBe(86400);
+    expect(bestTypeRevalidate).toBe(43200);
   });
 
   it("deve expor generateStaticParams para todas as rotas", async () => {
     const newsParams = await generateNewsStaticParams();
-    const gameParams = await generateGameStaticParams();
-    const gamesLikeParams = await generateGamesLikeStaticParams();
-    const bestGenreParams = await generateBestGenreStaticParams();
-    const bestGenrePlatformParams = await generateBestGenrePlatformStaticParams();
-    const hardwareParams = await generateHardwareStaticParams();
+    const subjectParams = await generateSubjectStaticParams();
+    const subjectsLikeParams = await generateSubjectsLikeStaticParams();
+    const bestTypeParams = await generateBestTypeStaticParams();
 
     expect(newsParams.length).toBeGreaterThan(0);
-    expect(gameParams.length).toBeGreaterThan(0);
-    expect(gamesLikeParams.length).toBeGreaterThan(0);
-    expect(bestGenreParams.length).toBeGreaterThan(0);
-    expect(bestGenrePlatformParams.length).toBeGreaterThan(0);
-    expect(hardwareParams.length).toBeGreaterThan(0);
+    expect(subjectParams.length).toBeGreaterThan(0);
+    expect(subjectsLikeParams.length).toBeGreaterThan(0);
+    expect(bestTypeParams.length).toBeGreaterThan(0);
     expect(newsParams[0]).toHaveProperty("slug");
-    expect(gameParams[0]).toHaveProperty("slug");
-    expect(gamesLikeParams[0]).toHaveProperty("slug");
-    expect(bestGenreParams[0]).toHaveProperty("genre");
-    expect(bestGenrePlatformParams[0]).toHaveProperty("genre");
-    expect(bestGenrePlatformParams[0]).toHaveProperty("platform");
-    expect(hardwareParams[0]).toHaveProperty("ram");
+    expect(subjectParams[0]).toHaveProperty("slug");
+    expect(subjectsLikeParams[0]).toHaveProperty("slug");
+    expect(bestTypeParams[0]).toHaveProperty("type");
   });
 
   it("deve gerar metadata com canonical coerente por rota", async () => {
     const news = await generateNewsMetadata({
-      params: Promise.resolve({ slug: "novo-trailer-de-gta-6" })
+      params: Promise.resolve({ slug: "openai-lanca-atualizacao-chatgpt" })
     });
-    const game = await generateGameMetadata({
-      params: Promise.resolve({ slug: "elden-ring" })
+    const subject = await generateSubjectMetadata({
+      params: Promise.resolve({ slug: "chatgpt" })
     });
-    const gamesLike = await generateGamesLikeMetadata({
-      params: Promise.resolve({ slug: "elden-ring" })
+    const subjectsLike = await generateSubjectsLikeMetadata({
+      params: Promise.resolve({ slug: "chatgpt" })
     });
-    const bestGenre = await generateBestGenreMetadata({
-      params: Promise.resolve({ genre: "rpg" })
-    });
-    const bestGenrePlatform = await generateBestGenrePlatformMetadata({
-      params: Promise.resolve({ genre: "rpg", platform: "pc" })
-    });
-    const hardware = await generateHardwareMetadata({
-      params: Promise.resolve({ ram: "8gb" })
+    const bestType = await generateBestTypeMetadata({
+      params: Promise.resolve({ type: "llm" })
     });
 
-    expect(news.alternates.canonical).toContain("/news/novo-trailer-de-gta-6");
-    expect(game.alternates.canonical).toContain("/games/elden-ring");
-    expect(gamesLike.alternates.canonical).toContain("/games-like/elden-ring");
-    expect(bestGenre.alternates.canonical).toContain("/best/rpg");
-    expect(bestGenrePlatform.alternates.canonical).toContain("/best/rpg/pc");
-    expect(hardware.alternates.canonical).toContain("/hardware/8gb");
+    expect(news.alternates.canonical).toContain("/news/openai-lanca-atualizacao-chatgpt");
+    expect(subject.alternates.canonical).toContain("/subjects/chatgpt");
+    expect(subjectsLike.alternates.canonical).toContain("/subjects-like/chatgpt");
+    expect(bestType.alternates.canonical).toContain("/best/llm");
   });
 });

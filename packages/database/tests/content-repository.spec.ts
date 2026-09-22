@@ -5,29 +5,27 @@ import {
 } from "../src/content-repository";
 
 describe("Database Agent - content repository", () => {
-  it("deve retornar noticias e jogos com slug unico", async () => {
+  it("deve retornar noticias e assuntos com slug unico", async () => {
     const repository = createContentRepository();
     const news = await repository.getNewsArticles();
-    const games = await repository.getGames();
+    const subjects = await repository.getSubjects();
 
     expect(news.length).toBeGreaterThan(0);
-    expect(games.length).toBeGreaterThan(0);
+    expect(subjects.length).toBeGreaterThan(0);
 
     const uniqueNewsSlugs = new Set(news.map((item) => item.slug));
-    const uniqueGameSlugs = new Set(games.map((item) => item.slug));
+    const uniqueSubjectSlugs = new Set(subjects.map((item) => item.slug));
 
     expect(uniqueNewsSlugs.size).toBe(news.length);
-    expect(uniqueGameSlugs.size).toBe(games.length);
+    expect(uniqueSubjectSlugs.size).toBe(subjects.length);
   });
 
-  it("deve retornar dados para paginas best e hardware", async () => {
+  it("deve retornar dados para paginas best por tipo", async () => {
     const repository = createContentRepository();
 
-    expect((await repository.getBestGenres()).length).toBeGreaterThan(0);
-    expect((await repository.getBestGenrePlatformPairs()).length).toBeGreaterThan(0);
-    expect(await repository.getHardwareProfiles()).toEqual(
-      expect.arrayContaining(["8gb", "16gb"])
-    );
+    expect((await repository.getBestTypes()).length).toBeGreaterThan(0);
+    expect(repository).not.toHaveProperty("getBestGenrePlatformPairs");
+    expect(repository).not.toHaveProperty("getHardwareProfiles");
   });
 
   it("deve resolver source conforme configuracao", () => {

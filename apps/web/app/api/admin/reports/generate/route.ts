@@ -12,14 +12,18 @@ type GenerateBody = {
     group_by?: "day" | "week" | "month";
     limit_sources?: number;
     limit_tags?: number;
-    limit_games?: number;
+    limit_subjects?: number;
   };
   filters?: {
-    gameId?: string;
+    subjectId?: string;
     tagId?: string;
-    genreId?: string;
-    platformId?: string;
+    typeId?: string;
     sourceId?: string;
+    /** Apenas para reportType month_presentation */
+    monthPresentation?: {
+      provider?: "all" | "rss" | "youtube";
+      sourceIds?: string[];
+    };
   };
 };
 
@@ -78,10 +82,9 @@ export async function POST(request: Request): Promise<Response> {
   const repo = createReportRepository();
   const reportFilters = filters
     ? {
-        ...(filters.gameId && { gameId: filters.gameId }),
+        ...(filters.subjectId && { subjectId: filters.subjectId }),
         ...(filters.tagId && { tagId: filters.tagId }),
-        ...(filters.genreId && { genreId: filters.genreId }),
-        ...(filters.platformId && { platformId: filters.platformId }),
+        ...(filters.typeId && { typeId: filters.typeId }),
         ...(filters.sourceId && { sourceId: filters.sourceId }),
       }
     : undefined;
@@ -108,12 +111,12 @@ export async function POST(request: Request): Promise<Response> {
         { limit_tags: options.limit_tags }
       );
       await repo.saveReportResult(reportId, payload);
-    } else if (reportType === "top_games") {
-      const gameCounts = await repo.getGameCountsForReports(periodStartFinal, periodEndFinal, reportFilters);
+    } else if (reportType === "top_subjects") {
+      const subjectCounts = await repo.getSubjectCountsForReports(periodStartFinal, periodEndFinal, reportFilters);
       const payload = generateReportPayload(
         reportType,
-        { articles: [], videos: [], sourceNames: new Map(), gameCounts },
-        { limit_games: options.limit_games }
+        { articles: [], videos: [], sourceNames: new Map(), subjectCounts },
+        { limit_subjects: options.limit_subjects }
       );
       await repo.saveReportResult(reportId, payload);
     } else if (reportType === "executive_summary") {
@@ -126,29 +129,33 @@ export async function POST(request: Request): Promise<Response> {
       const start90 = new Date(refDate);
       start90.setUTCDate(start90.getUTCDate() - 89);
 
-      const [sourceNames, articles7, videos7, gameCounts7, articles30, videos30, gameCounts30, articles90, videos90, gameCounts90] =
+      const [sourceNames, articles7, videos7, subjectCounts7, articles30, videos30, subjectCounts30, articles90, videos90, subjectCounts90] =
         await Promise.all([
           repo.getSourceIdToName(),
           repo.getArticlesForReports(toIso(start7), periodEndFinal, reportFilters),
           repo.getVideosForReports(toIso(start7), periodEndFinal, reportFilters),
-          repo.getGameCountsForReports(toIso(start7), periodEndFinal, reportFilters),
+          repo.getSubjectCountsForReports(toIso(start7), periodEndFinal, reportFilters),
           repo.getArticlesForReports(toIso(start30), periodEndFinal, reportFilters),
           repo.getVideosForReports(toIso(start30), periodEndFinal, reportFilters),
-          repo.getGameCountsForReports(toIso(start30), periodEndFinal, reportFilters),
+          repo.getSubjectCountsForReports(toIso(start30), periodEndFinal, reportFilters),
           repo.getArticlesForReports(toIso(start90), periodEndFinal, reportFilters),
           repo.getVideosForReports(toIso(start90), periodEndFinal, reportFilters),
-          repo.getGameCountsForReports(toIso(start90), periodEndFinal, reportFilters),
+          repo.getSubjectCountsForReports(toIso(start90), periodEndFinal, reportFilters),
         ]);
 
       const payload = generateExecutiveSummaryReport(
         periodEndFinal,
-        { articles: articles7, videos: videos7, sourceNames, gameCounts: gameCounts7 },
-        { articles: articles30, videos: videos30, sourceNames, gameCounts: gameCounts30 },
-        { articles: articles90, videos: videos90, sourceNames, gameCounts: gameCounts90 }
+        { articles: articles7, videos: videos7, sourceNames, subjectCounts: subjectCounts7 },
+        { articles: articles30, videos: videos30, sourceNames, subjectCounts: subjectCounts30 },
+        { articles: articles90, videos: videos90, sourceNames, subjectCounts: subjectCounts90 }
       );
       await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
     } else if (isMonthPresentation) {
-      const payload = await generateMonthPresentationReport(periodStartFinal, periodEndFinal);
+      const mp = filters?.monthPresentation;
+      const payload = await generateMonthPresentationReport(periodStartFinal, periodEndFinal, {
+        ...(mp?.provider && mp.provider !== "all" ? { provider: mp.provider } : {}),
+        ...(mp?.sourceIds?.length ? { sourceIds: mp.sourceIds } : {}),
+      });
       await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
     } else {
       const [articles, videos, sourceNames] = await Promise.all([
@@ -179,7 +186,7 @@ export async function POST(request: Request): Promise<Response> {
           group_by: options.group_by,
           limit_sources: options.limit_sources,
           limit_tags: options.limit_tags,
-          limit_games: options.limit_games,
+          limit_subjects: options.limit_subjects,
         }
       );
       await repo.saveReportResult(reportId, payload);

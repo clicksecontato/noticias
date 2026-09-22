@@ -32,24 +32,24 @@ describe("SEO Agent - sitemap generation", () => {
 
   it("deve gerar xml de sitemap com urlset e urls", () => {
     const xml = buildSitemapXml([
-      { loc: "https://site.com/games/elden-ring", changefreq: "daily" },
+      { loc: "https://site.com/subjects/chatgpt", changefreq: "daily" },
       { loc: "https://site.com/news/novo-trailer", priority: 0.8 }
     ]);
 
     expect(xml).toContain("<urlset");
-    expect(xml).toContain("<loc>https://site.com/games/elden-ring</loc>");
+    expect(xml).toContain("<loc>https://site.com/subjects/chatgpt</loc>");
     expect(xml).toContain("<loc>https://site.com/news/novo-trailer</loc>");
     expect(xml).toContain("</urlset>");
   });
 
   it("deve gerar sitemap index com multiplos arquivos", () => {
     const xml = buildSitemapIndexXml([
-      "https://site.com/sitemaps/sitemap-games-1.xml",
+      "https://site.com/sitemaps/sitemap-subjects-1.xml",
       "https://site.com/sitemaps/sitemap-news-1.xml"
     ]);
 
     expect(xml).toContain("<sitemapindex");
-    expect(xml).toContain("<loc>https://site.com/sitemaps/sitemap-games-1.xml</loc>");
+    expect(xml).toContain("<loc>https://site.com/sitemaps/sitemap-subjects-1.xml</loc>");
     expect(xml).toContain("<loc>https://site.com/sitemaps/sitemap-news-1.xml</loc>");
     expect(xml).toContain("</sitemapindex>");
   });

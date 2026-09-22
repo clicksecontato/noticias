@@ -62,10 +62,9 @@ export async function POST(request: Request): Promise<Response> {
           ids = await repo.resolveOrCreateEntityIds(suggested);
           const fromText = extractEntityIdsFromText(article.title, article.excerpt.slice(0, 500), catalog);
           ids = {
-            gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+            subjectIds: [...new Set([...ids.subjectIds, ...fromText.subjectIds])],
             tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
-            genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
-            platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+            typeIds: [...new Set([...ids.typeIds, ...fromText.typeIds])]
           };
         } catch {
           ids = extractEntityIdsFromText(article.title, article.excerpt.slice(0, 500), catalog);
@@ -85,10 +84,9 @@ export async function POST(request: Request): Promise<Response> {
           ids = await repo.resolveOrCreateEntityIds(suggested);
           const fromText = extractEntityIdsFromText(video.title, video.description.slice(0, 2000), catalog);
           ids = {
-            gameIds: [...new Set([...ids.gameIds, ...fromText.gameIds])],
+            subjectIds: [...new Set([...ids.subjectIds, ...fromText.subjectIds])],
             tagIds: [...new Set([...ids.tagIds, ...fromText.tagIds])],
-            genreIds: [...new Set([...ids.genreIds, ...fromText.genreIds])],
-            platformIds: [...new Set([...ids.platformIds, ...fromText.platformIds])]
+            typeIds: [...new Set([...ids.typeIds, ...fromText.typeIds])]
           };
         } catch {
           ids = extractEntityIdsFromText(video.title, video.description.slice(0, 2000), catalog);

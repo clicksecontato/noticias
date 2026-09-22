@@ -12,22 +12,20 @@ export default async function AdminNoticiaEditPage({
   const article = await newsRepository.getArticleById(id);
   if (!article) notFound();
 
-  const [sources, games, tags, genres, platforms] = await Promise.all([
+  const [sources, subjects, tags, types] = await Promise.all([
     newsRepository.listSources(),
-    catalogRepository.listGames(),
+    catalogRepository.listSubjects(),
     catalogRepository.listTags(),
-    catalogRepository.listGenres(),
-    catalogRepository.listPlatforms(),
+    catalogRepository.listTypes(),
   ]);
 
   return (
     <NoticiaEditClient
       article={article}
       sources={sources}
-      games={games.map((g) => ({ id: g.id, name: g.name }))}
+      subjects={subjects.map((s) => ({ id: s.id, name: s.name }))}
       tags={tags.map((t) => ({ id: t.id, name: t.name }))}
-      genres={genres.map((g) => ({ id: g.id, name: g.name }))}
-      platforms={platforms.map((p) => ({ id: p.id, name: p.name }))}
+      types={types.map((t) => ({ id: t.id, name: t.name }))}
     />
   );
 }

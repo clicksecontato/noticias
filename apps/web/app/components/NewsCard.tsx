@@ -17,10 +17,9 @@ export interface NewsCardData {
   sourceName: string;
   publishedAt: string;
   imageUrl?: string | null;
-  gameNames?: string[];
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
 }
 
 interface NewsCardProps {
@@ -93,10 +92,9 @@ export function NewsCard({
             Publicado em: {formatDate(card.publishedAt)}
           </p>
           <EntityChips
-            gameNames={card.gameNames}
+            subjectNames={card.subjectNames}
             tagNames={card.tagNames}
-            genreNames={card.genreNames}
-            platformNames={card.platformNames}
+            typeNames={card.typeNames}
           />
         </CardContent>
       </Card>

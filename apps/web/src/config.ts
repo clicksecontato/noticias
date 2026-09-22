@@ -5,7 +5,7 @@ export interface WebConfig {
 
 const DEFAULT_SITE_URL = "https://www.noticiasgames.com";
 const DEFAULT_DESCRIPTION_SUFFIX =
-  "Conteudo atualizado com contexto, comparativos e recomendacoes praticas para facilitar sua descoberta de jogos.";
+  "Conteudo atualizado com contexto, comparativos e recomendacoes praticas sobre inteligencia artificial.";
 
 export function getWebConfig(
   env: Record<string, string | undefined> = process.env

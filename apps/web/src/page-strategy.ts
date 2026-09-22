@@ -1,4 +1,4 @@
-export type PublishingPageType = "news" | "game" | "games-like" | "best" | "hardware";
+export type PublishingPageType = "news" | "subject" | "subjects-like" | "best";
 
 export interface PageStrategy {
   pageType: PublishingPageType;
@@ -12,23 +12,18 @@ const STRATEGIES: Record<PublishingPageType, PageStrategy> = {
     revalidateSeconds: 900,
     openGraphType: "article"
   },
-  game: {
-    pageType: "game",
+  subject: {
+    pageType: "subject",
     revalidateSeconds: 86400,
     openGraphType: "website"
   },
-  "games-like": {
-    pageType: "games-like",
+  "subjects-like": {
+    pageType: "subjects-like",
     revalidateSeconds: 86400,
     openGraphType: "website"
   },
   best: {
     pageType: "best",
-    revalidateSeconds: 43200,
-    openGraphType: "website"
-  },
-  hardware: {
-    pageType: "hardware",
     revalidateSeconds: 43200,
     openGraphType: "website"
   }

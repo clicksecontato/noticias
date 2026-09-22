@@ -4,11 +4,9 @@ import {
 } from "./publishing";
 
 export interface PublicationEvent {
-  entity: "news" | "game" | "genre-page" | "hardware-page";
+  entity: "news" | "subject" | "type-page";
   slug?: string;
-  genre?: string;
-  platform?: string;
-  ram?: string;
+  type?: string;
 }
 
 export interface RevalidationPlan {
@@ -21,15 +19,11 @@ function toTagInput(event: PublicationEvent): RevalidateTagInput {
     return { pageType: "news", slug: event.slug };
   }
 
-  if (event.entity === "game") {
-    return { pageType: "game", slug: event.slug, genre: event.genre };
+  if (event.entity === "subject") {
+    return { pageType: "subject", slug: event.slug, type: event.type };
   }
 
-  if (event.entity === "genre-page") {
-    return { pageType: "best", genre: event.genre, platform: event.platform };
-  }
-
-  return { pageType: "hardware", ram: event.ram };
+  return { pageType: "best", type: event.type };
 }
 
 function getPathList(event: PublicationEvent): string[] {
@@ -37,16 +31,12 @@ function getPathList(event: PublicationEvent): string[] {
     return [`/news/${event.slug}`];
   }
 
-  if (event.entity === "game" && event.slug) {
-    return [`/games/${event.slug}`, `/games-like/${event.slug}`];
+  if (event.entity === "subject" && event.slug) {
+    return [`/subjects/${event.slug}`, `/subjects-like/${event.slug}`];
   }
 
-  if (event.entity === "genre-page" && event.genre && event.platform) {
-    return [`/best/${event.genre}`, `/best/${event.genre}/${event.platform}`];
-  }
-
-  if (event.entity === "hardware-page" && event.ram) {
-    return [`/hardware/${event.ram}`];
+  if (event.entity === "type-page" && event.type) {
+    return [`/best/${event.type}`];
   }
 
   return [];

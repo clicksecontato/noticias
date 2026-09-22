@@ -43,7 +43,7 @@ export function EnriquecimentoClient() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Enriquecimento</h1>
       <p className="text-muted-foreground">
-        Reaplica o vínculo de artigos e vídeos com jogos, tags, gêneros e plataformas (catálogo atual).
+        Reaplica o vínculo de artigos e vídeos com assuntos, tags e tipos (catálogo atual).
         Use após adicionar novos itens ao catálogo.
       </p>
       <Card>

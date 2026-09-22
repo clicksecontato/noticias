@@ -2,32 +2,29 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export interface EntityChipsProps {
-  gameNames?: string[];
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
   className?: string;
 }
 
 export function EntityChips({
-  gameNames,
+  subjectNames,
   tagNames,
-  genreNames,
-  platformNames,
+  typeNames,
   className,
 }: EntityChipsProps) {
   const all = [
-    ...(gameNames ?? []),
+    ...(subjectNames ?? []),
     ...(tagNames ?? []),
-    ...(genreNames ?? []),
-    ...(platformNames ?? []),
+    ...(typeNames ?? []),
   ];
   if (all.length === 0) return null;
 
   return (
     <div
       className={cn("mt-2 flex flex-wrap gap-1.5", className)}
-      aria-label="Jogos, tags, gêneros e plataformas"
+      aria-label="Assuntos, tags e tipos"
     >
       {all.map((name) => (
         <Badge key={name} variant="secondary" className="text-xs font-normal">

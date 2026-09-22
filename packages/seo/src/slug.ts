@@ -1,4 +1,4 @@
-export function generateGameSlug(name: string): string {
+export function generateSubjectSlug(name: string): string {
   const normalized = name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -8,7 +8,7 @@ export function generateGameSlug(name: string): string {
     .replace(/-+/g, "-");
 
   if (!normalized) {
-    throw new Error("Game name cannot generate an empty slug");
+    throw new Error("Subject name cannot generate an empty slug");
   }
 
   return normalized;

@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O monorepo nasceu orientado a **games/jogos** (tabelas, rotas SEO, Schema.org `VideoGame`, brand). O produto deve passar a ser um portal de **notícias genéricas** com **vídeos YouTube**, reutilizando ingestão, admin, enrichment e SEO programático — sem acoplamento semântico a jogos.
+O monorepo nasceu orientado a **games/jogos**. O produto é um portal de **notícias de inteligência artificial** com **vídeos YouTube**, reutilizando ingestão, admin, enrichment e SEO programático — sem acoplamento semântico a jogos.
 
 ## Decisão
 
@@ -29,7 +29,7 @@ Relatório `top_games` → `top_subjects`. Similaridade `games-like` → assunto
 - Rota composta `/best/[genre]/[platform]`.
 - Schema.org **VideoGame** / `gamePlatform`.
 - Copy e prompts centrados em gameplay, gamer, trailer-as-default.
-- Brand “Notícias Games” / domínio `noticiasgames.com` como **modelo canônico** (troca de brand/env fica em fase de produto; não usar como destino em novos artefatos).
+- Brand de produto: **Notícias IA**. Default de URL permanece `https://www.noticiasgames.com` (uso local / legado); override via `WEB_SITE_URL` / `SEO_BASE_URL` quando houver domínio próprio.
 
 ### Rotas alvo (SEO / app)
 
@@ -59,8 +59,12 @@ Custos:
 - migração DB/código (Fase 1+) com remoção de `platforms` e rotas hardware;
 - redirects SEO e limpeza de seeds/fontes games em fases posteriores.
 
-## Guardrails
+## Decisão adicional (Fase 2 — dados)
 
-- Novos artefatos (código, docs de destino, skills) usam o glossário desta ADR.
-- Menções a games só em deprecation, migration playbook ou histórico.
-- Harness: `.cursor/rules/domain-glossary.mdc`, `deprecation-games-domain.mdc`, skill `domain-migrate-games-to-subjects`.
+Após a migração estrutural (022):
+
+1. Limpar conteúdo editorial e catálogo legado de games.
+2. Semear tipos/tags/assuntos de IA e fontes RSS **pt-BR** de tech/IA.
+3. Manter filtro de ingestão em `pt-BR`/`pt` (fontes EN ficam inativas ou fora da lista operacional).
+
+Artefatos: migration `023_clear_games_content_seed_ai_catalog.sql`, `scripts/sources-list.js`.

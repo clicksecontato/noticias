@@ -83,16 +83,14 @@ function EntityChipRow({ title, selectedIds, options, onAdd, onRemove }: EntityC
 
 export function VideoEditClient({
   video,
-  games,
+  subjects,
   tags,
-  genres,
-  platforms,
+  types,
 }: {
   video: VideoEditRow;
-  games: NameOption[];
+  subjects: NameOption[];
   tags: NameOption[];
-  genres: NameOption[];
-  platforms: NameOption[];
+  types: NameOption[];
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -103,10 +101,9 @@ export function VideoEditClient({
     publishedAt: video.published_at.slice(0, 16),
     is_news: video.is_news ?? true,
   });
-  const [gameIds, setGameIds] = useState<string[]>(video.gameIds);
+  const [subjectIds, setSubjectIds] = useState<string[]>(video.subjectIds);
   const [tagIds, setTagIds] = useState<string[]>(video.tagIds);
-  const [genreIds, setGenreIds] = useState<string[]>(video.genreIds);
-  const [platformIds, setPlatformIds] = useState<string[]>(video.platformIds);
+  const [typeIds, setTypeIds] = useState<string[]>(video.typeIds);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,10 +118,9 @@ export function VideoEditClient({
           description: form.description.trim() || null,
           published_at: form.publishedAt ? new Date(form.publishedAt).toISOString() : video.published_at,
           is_news: form.is_news,
-          gameIds,
+          subjectIds,
           tagIds,
-          genreIds,
-          platformIds,
+          typeIds
         }),
       });
       if (!res.ok) {
@@ -148,7 +144,7 @@ export function VideoEditClient({
       </Link>
       <h1 className="text-2xl font-semibold">Editar vídeo</h1>
       <p className="text-muted-foreground">
-        Altere título, descrição e vínculos. Use &quot;+ Adicionar&quot; para vincular jogos, tags, gêneros e plataformas.
+        Altere título, descrição e vínculos. Use &quot;+ Adicionar&quot; para vincular assuntos, tags e tipos.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-6">
@@ -213,16 +209,16 @@ export function VideoEditClient({
           <CardHeader>
             <CardTitle className="text-lg">Vínculos</CardTitle>
             <p className="text-sm font-normal text-muted-foreground">
-              Jogos, tags, gêneros e plataformas vinculados a este vídeo.
+              Assuntos, tags e tipos vinculados a este vídeo.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <EntityChipRow
-              title="Jogos"
-              selectedIds={gameIds}
-              options={games}
-              onAdd={(id) => setGameIds((prev) => [...prev, id])}
-              onRemove={(id) => setGameIds((prev) => prev.filter((x) => x !== id))}
+              title="Assuntos"
+              selectedIds={subjectIds}
+              options={subjects}
+              onAdd={(id) => setSubjectIds((prev) => [...prev, id])}
+              onRemove={(id) => setSubjectIds((prev) => prev.filter((x) => x !== id))}
             />
             <EntityChipRow
               title="Tags"
@@ -232,18 +228,11 @@ export function VideoEditClient({
               onRemove={(id) => setTagIds((prev) => prev.filter((x) => x !== id))}
             />
             <EntityChipRow
-              title="Gêneros"
-              selectedIds={genreIds}
-              options={genres}
-              onAdd={(id) => setGenreIds((prev) => [...prev, id])}
-              onRemove={(id) => setGenreIds((prev) => prev.filter((x) => x !== id))}
-            />
-            <EntityChipRow
-              title="Plataformas"
-              selectedIds={platformIds}
-              options={platforms}
-              onAdd={(id) => setPlatformIds((prev) => [...prev, id])}
-              onRemove={(id) => setPlatformIds((prev) => prev.filter((x) => x !== id))}
+              title="Tipos"
+              selectedIds={typeIds}
+              options={types}
+              onAdd={(id) => setTypeIds((prev) => [...prev, id])}
+              onRemove={(id) => setTypeIds((prev) => prev.filter((x) => x !== id))}
             />
           </CardContent>
         </Card>

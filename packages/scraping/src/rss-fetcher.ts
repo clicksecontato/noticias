@@ -18,7 +18,7 @@ interface ParsedRssEntry {
 const DEFAULT_FETCH_OPTIONS: RequestInit = {
   headers: {
     "User-Agent":
-      "Mozilla/5.0 (compatible; NoticiasGamingBot/1.0; +https://github.com/noticias-gaming)",
+      "Mozilla/5.0 (compatible; NoticiasIABot/1.0; +https://github.com/noticias-ia)",
     Accept: "application/rss+xml, application/xml, text/xml, */*"
   }
 };

@@ -16,10 +16,9 @@ export interface VideoCardData {
   thumbnailUrl?: string | null;
   sourceName: string;
   publishedAt: string;
-  gameNames?: string[];
+  subjectNames?: string[];
   tagNames?: string[];
-  genreNames?: string[];
-  platformNames?: string[];
+  typeNames?: string[];
 }
 
 interface VideoCardProps {
@@ -81,10 +80,9 @@ export function VideoCard({ video, className }: VideoCardProps) {
         <p className="text-xs text-muted-foreground">{video.sourceName}</p>
         <p className="text-xs text-muted-foreground/80">{dateStr}</p>
         <EntityChips
-          gameNames={video.gameNames}
+          subjectNames={video.subjectNames}
           tagNames={video.tagNames}
-          genreNames={video.genreNames}
-          platformNames={video.platformNames}
+          typeNames={video.typeNames}
         />
       </CardContent>
     </Card>

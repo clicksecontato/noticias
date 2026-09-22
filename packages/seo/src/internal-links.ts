@@ -1,8 +1,7 @@
 export interface InternalLinkCandidate {
   slugPath: string;
-  pageType: "game" | "genre" | "platform" | "news" | "collection";
-  genres?: string[];
-  platforms?: string[];
+  pageType: "subject" | "type" | "news" | "collection";
+  types?: string[];
   tags?: string[];
 }
 
@@ -10,7 +9,7 @@ export interface InternalLink {
   from: string;
   to: string;
   score: number;
-  reason: "shared_genre" | "shared_platform" | "shared_tag" | "same_cluster";
+  reason: "shared_type" | "shared_tag" | "same_cluster";
 }
 
 function intersectionCount(left: string[] = [], right: string[] = []): number {
@@ -26,17 +25,14 @@ export function suggestInternalLinks(
   const scored = candidates
     .filter((candidate) => candidate.slugPath !== origin.slugPath)
     .map((candidate) => {
-      const sharedGenres = intersectionCount(origin.genres, candidate.genres);
-      const sharedPlatforms = intersectionCount(origin.platforms, candidate.platforms);
+      const sharedTypes = intersectionCount(origin.types, candidate.types);
       const sharedTags = intersectionCount(origin.tags, candidate.tags);
 
-      const score = sharedGenres * 10 + sharedPlatforms * 5 + sharedTags * 3;
+      const score = sharedTypes * 10 + sharedTags * 3;
       let reason: InternalLink["reason"] = "same_cluster";
 
-      if (sharedGenres > 0) {
-        reason = "shared_genre";
-      } else if (sharedPlatforms > 0) {
-        reason = "shared_platform";
+      if (sharedTypes > 0) {
+        reason = "shared_type";
       } else if (sharedTags > 0) {
         reason = "shared_tag";
       }

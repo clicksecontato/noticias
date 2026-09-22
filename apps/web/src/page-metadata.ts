@@ -2,7 +2,7 @@ import { getWebConfig } from "./config";
 import { getPageStrategy } from "./page-strategy";
 
 export interface WebMetadataInput {
-  pageType: "news" | "game" | "games-like" | "best" | "hardware";
+  pageType: "news" | "subject" | "subjects-like" | "best";
   titleBase: string;
   descriptionBase: string;
   canonicalPath: string;

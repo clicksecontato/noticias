@@ -6,21 +6,19 @@ describe("Web Application Agent - content provider", () => {
     const provider = createRouteContentProvider();
 
     expect((await provider.getNewsSlugs()).length).toBeGreaterThan(0);
-    expect((await provider.getGameSlugs()).length).toBeGreaterThan(0);
-    expect((await provider.getBestGenres()).length).toBeGreaterThan(0);
-    expect((await provider.getBestGenrePlatformPairs()).length).toBeGreaterThan(0);
-    expect((await provider.getHardwareProfiles()).length).toBeGreaterThan(0);
+    expect((await provider.getSubjectSlugs()).length).toBeGreaterThan(0);
+    expect((await provider.getBestTypes()).length).toBeGreaterThan(0);
   });
 
   it("deve prover artigo por slug com sourceUrl (agregador)", async () => {
     const provider = createRouteContentProvider();
 
-    const article = await provider.getNewsArticleBySlug("novo-trailer-de-gta-6");
+    const article = await provider.getNewsArticleBySlug("openai-lanca-atualizacao-chatgpt");
     expect(article).not.toBeNull();
-    expect(article!.title.toLowerCase()).toContain("gta");
+    expect(article!.title.toLowerCase()).toContain("chatgpt");
     expect(article!.summary.length).toBeGreaterThan(20);
     expect(article!.sourceUrl).toBeDefined();
-    expect(article!.sourceUrl).toContain("theenemy");
+    expect(article!.sourceUrl).toContain("tecnoblog");
     expect(article!.sourceName).toBeDefined();
     expect(article!.publishedAt).toBeDefined();
   });
@@ -33,22 +31,22 @@ describe("Web Application Agent - content provider", () => {
   it("deve prover metadata base por slug", async () => {
     const provider = createRouteContentProvider();
 
-    const newsMetadata = await provider.getNewsMetadataBySlug("novo-trailer-de-gta-6");
-    const gameMetadata = await provider.getGameMetadataBySlug("elden-ring");
+    const newsMetadata = await provider.getNewsMetadataBySlug("openai-lanca-atualizacao-chatgpt");
+    const subjectMetadata = await provider.getSubjectMetadataBySlug("chatgpt");
 
-    expect(newsMetadata.titleBase.toLowerCase()).toContain("gta");
+    expect(newsMetadata.titleBase.toLowerCase()).toContain("chatgpt");
     expect(newsMetadata.descriptionBase.length).toBeGreaterThan(20);
-    expect(gameMetadata.titleBase.toLowerCase()).toContain("elden");
-    expect(gameMetadata.descriptionBase.length).toBeGreaterThan(20);
+    expect(subjectMetadata.titleBase.toLowerCase()).toContain("chatgpt");
+    expect(subjectMetadata.descriptionBase.length).toBeGreaterThan(20);
   });
 
   it("deve prover cards para home com dados de titulo e resumo", async () => {
     const provider = createRouteContentProvider();
     const newsCards = await provider.getHomeNewsCards(3);
-    const gameCards = await provider.getHomeGameCards(3);
+    const subjectCards = await provider.getHomeSubjectCards(3);
 
     expect(newsCards.length).toBeGreaterThan(0);
-    expect(gameCards.length).toBeGreaterThan(0);
+    expect(subjectCards.length).toBeGreaterThan(0);
 
     expect(newsCards[0]).toEqual(
       expect.objectContaining({
@@ -58,7 +56,7 @@ describe("Web Application Agent - content provider", () => {
       })
     );
 
-    expect(gameCards[0]).toEqual(
+    expect(subjectCards[0]).toEqual(
       expect.objectContaining({
         slug: expect.any(String),
         title: expect.any(String),
@@ -121,13 +119,14 @@ describe("Web Application Agent - content provider", () => {
 
   it("deve buscar noticias por termo no titulo ou resumo", async () => {
     const provider = createRouteContentProvider();
-    const results = await provider.getPaginatedNewsCards(1, 10, undefined, "gta");
+    const results = await provider.getPaginatedNewsCards(1, 10, undefined, "chatgpt");
 
     expect(results.length).toBeGreaterThan(0);
     expect(
       results.some(
         (item) =>
-          item.title.toLowerCase().includes("gta") || item.summary.toLowerCase().includes("gta")
+          item.title.toLowerCase().includes("chatgpt") ||
+          item.summary.toLowerCase().includes("chatgpt")
       )
     ).toBe(true);
   });

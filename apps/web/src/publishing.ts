@@ -6,9 +6,7 @@ export type { PublishingPageType } from "./page-strategy";
 export interface RevalidateTagInput {
   pageType: PublishingPageType;
   slug?: string;
-  genre?: string;
-  platform?: string;
-  ram?: string;
+  type?: string;
 }
 
 export interface RouteMetadataOutput {
@@ -36,16 +34,8 @@ export function buildRevalidateTags(input: RevalidateTagInput): string[] {
     tags.push(`${input.pageType}:${input.slug}`);
   }
 
-  if (input.ram) {
-    tags.push(`hardware:${input.ram}`);
-  }
-
-  if (input.genre) {
-    tags.push(`genre:${input.genre}`);
-  }
-
-  if (input.platform) {
-    tags.push(`platform:${input.platform}`);
+  if (input.type) {
+    tags.push(`type:${input.type}`);
   }
 
   return tags;

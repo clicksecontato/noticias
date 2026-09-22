@@ -1,6 +1,5 @@
-#!/usr/bin/env node
 /**
- * Adiciona as fontes de notícias de games na base via API admin.
+ * Adiciona fontes de notícias de tech/IA na base via API admin.
  *
  * Uso:
  *   BASE_URL=http://localhost:3000 ADMIN_INGEST_TOKEN=seu_token node scripts/add-sources.js
@@ -35,7 +34,7 @@ async function addSource(source) {
       id: source.id,
       name: source.name,
       rss_url: source.rss_url,
-      language: "pt-BR",
+      language: source.language || "pt-BR",
       base_url: source.base_url,
       is_active: true,
       trust_score: 70,

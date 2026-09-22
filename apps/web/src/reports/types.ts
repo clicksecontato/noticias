@@ -52,11 +52,11 @@ export interface ActivityByWeekdayPayload {
   }>;
 }
 
-/** Item do relatório top jogos: quantidade de artigos e vídeos por jogo no período. */
-export interface TopGamesPayload {
+/** Item do relatório top assuntos: quantidade de artigos e vídeos por assunto no período. */
+export interface TopSubjectsPayload {
   items: Array<{
-    game_id: string;
-    game_name: string;
+    subject_id: string;
+    subject_name: string;
     articles: number;
     videos: number;
     total: number;
@@ -69,7 +69,7 @@ export interface ExecutiveSummaryWindow {
   videos: number;
   rss_vs_youtube: { rssPct: number; youtubePct: number };
   top_sources: TopSourcesPayload["items"];
-  top_games: TopGamesPayload["items"];
+  top_subjects: TopSubjectsPayload["items"];
 }
 
 /** Resumo executivo: 3 janelas fixas (7, 30, 90 dias). */

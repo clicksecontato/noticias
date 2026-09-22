@@ -42,10 +42,9 @@ interface CatalogItem {
 }
 
 interface Catalogs {
-  games: CatalogItem[];
+  subjects: CatalogItem[];
   tags: CatalogItem[];
-  genres: CatalogItem[];
-  platforms: CatalogItem[];
+  types: CatalogItem[];
 }
 
 interface SourceItem {
@@ -62,7 +61,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   by_tags: "Por tags",
   activity_by_weekday: "Atividade por dia da semana",
   by_source_detail: "Detalhe por fonte",
-  top_games: "Top jogos por período",
+  top_subjects: "Top assuntos por período",
   executive_summary: "Resumo executivo",
   month_presentation: "Apresentação mensal",
 };
@@ -112,11 +111,11 @@ export function ReportsClient() {
     groupBy: "day",
     limitSources: 20,
     limitTags: 100,
-    limitGames: 20,
-    filterGameId: "",
+    limitSubjects: 20,
+    filterSubjectId: "",
     filterTagId: "",
-    filterGenreId: "",
-    filterPlatformId: "",
+    filterTypeId: "",
+
     sourceId: "",
   });
 
@@ -129,7 +128,7 @@ export function ReportsClient() {
     fetch("/api/catalogs")
       .then((res) => res.json())
       .then((data: Catalogs) => setCatalogs(data))
-      .catch(() => setCatalogs({ games: [], tags: [], genres: [], platforms: [] }));
+      .catch(() => setCatalogs({ subjects: [], tags: [], types: [] }));
   }, []);
 
   useEffect(() => {
@@ -225,21 +224,20 @@ export function ReportsClient() {
       body.options = { limit_sources: form.limitSources };
     } else if (form.reportType === "by_tags") {
       body.options = { limit_tags: form.limitTags };
-    } else if (form.reportType === "top_games") {
-      body.options = { limit_games: form.limitGames };
+    } else if (form.reportType === "top_subjects") {
+      body.options = { limit_subjects: form.limitSubjects };
     }
     if (
-      form.filterGameId ||
+      form.filterSubjectId ||
       form.filterTagId ||
-      form.filterGenreId ||
-      form.filterPlatformId ||
+      form.filterTypeId ||
       form.sourceId
     ) {
       body.filters = {
-        ...(form.filterGameId && { gameId: form.filterGameId }),
+        ...(form.filterSubjectId && { subjectId: form.filterSubjectId }),
         ...(form.filterTagId && { tagId: form.filterTagId }),
-        ...(form.filterGenreId && { genreId: form.filterGenreId }),
-        ...(form.filterPlatformId && { platformId: form.filterPlatformId }),
+        ...(form.filterTypeId && { typeId: form.filterTypeId }),
+
         ...(form.sourceId && { sourceId: form.sourceId }),
       };
     }
@@ -271,7 +269,7 @@ export function ReportsClient() {
       <PageBackLink href="/admin">← Início</PageBackLink>
       <h2 className="text-2xl font-semibold">Relatórios</h2>
       <p className="text-muted-foreground">
-        Dados sobre publicações (artigos e vídeos) dos principais canais de games no Brasil.
+        Dados sobre publicações (artigos e vídeos) dos principais canais no Brasil.
       </p>
 
       <Card className="mb-6">
@@ -302,8 +300,8 @@ export function ReportsClient() {
                     <SelectItem value="by_source_detail">
                       Detalhe por fonte
                     </SelectItem>
-                    <SelectItem value="top_games">
-                      Top jogos por período
+                    <SelectItem value="top_subjects">
+                      Top assuntos por período
                     </SelectItem>
                     <SelectItem value="executive_summary">
                       Resumo executivo
@@ -465,29 +463,29 @@ export function ReportsClient() {
                     }
                   />
                 </div>
-              ) : form.reportType === "top_games" ? (
+              ) : form.reportType === "top_subjects" ? (
                 <div className="space-y-2">
-                  <Label>Limite de jogos</Label>
-                  <Input
-                    type="number"
-                    min={5}
-                    max={100}
-                    value={form.limitGames}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        limitGames: Number(e.target.value) || 20,
-                      }))
-                    }
-                  />
+                    <Label>Limite de assuntos</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={form.limitSubjects}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          limitSubjects: Number(e.target.value) || 20,
+                        }))
+                      }
+                    />
                 </div>
               ) : null}
               <div className="space-y-2">
-                <Label>Jogo</Label>
+                <Label>Assunto</Label>
                 <Select
-                  value={form.filterGameId}
+                  value={form.filterSubjectId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterGameId: value ?? "" }))
+                    setForm((f) => ({ ...f, filterSubjectId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -495,7 +493,7 @@ export function ReportsClient() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Todos</SelectItem>
-                    {catalogs?.games.map((g) => (
+                    {catalogs?.subjects.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
                         {g.name}
                       </SelectItem>
@@ -568,11 +566,11 @@ export function ReportsClient() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Gênero</Label>
+                <Label>Tipo</Label>
                 <Select
-                  value={form.filterGenreId}
+                  value={form.filterTypeId}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterGenreId: value ?? "" }))
+                    setForm((f) => ({ ...f, filterTypeId: value ?? "" }))
                   }
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -580,30 +578,9 @@ export function ReportsClient() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Todos</SelectItem>
-                    {catalogs?.genres.map((g) => (
+                    {catalogs?.types.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
                         {g.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Plataforma</Label>
-                <Select
-                  value={form.filterPlatformId}
-                  onValueChange={(value) =>
-                    setForm((f) => ({ ...f, filterPlatformId: value ?? "" }))
-                  }
-                >
-                  <SelectTrigger className="h-8 w-full">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
-                    {catalogs?.platforms.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -649,7 +626,7 @@ export function ReportsClient() {
                   <SelectItem value="by_source_detail">
                     Detalhe por fonte
                   </SelectItem>
-                  <SelectItem value="top_games">Top jogos por período</SelectItem>
+                  <SelectItem value="top_subjects">Top assuntos por período</SelectItem>
                   <SelectItem value="executive_summary">Resumo executivo</SelectItem>
                   <SelectItem value="month_presentation">Apresentação mensal</SelectItem>
                 </SelectContent>

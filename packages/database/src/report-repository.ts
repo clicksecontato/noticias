@@ -31,12 +31,11 @@ export interface ListReportsOutput {
   total: number;
 }
 
-/** Filtros opcionais para relatórios (jogo, tag, gênero, plataforma). */
+/** Filtros opcionais para relatórios (assunto, tag, tipo). */
 export interface ReportFilters {
-  gameId?: string;
+  subjectId?: string;
   tagId?: string;
-  genreId?: string;
-  platformId?: string;
+  typeId?: string;
   sourceId?: string;
 }
 
@@ -67,12 +66,12 @@ export interface ReportRepository {
     periodEnd: string,
     filters?: ReportFilters
   ): Promise<Array<{ tag_id: string; tag_name: string; count: number }>>;
-  /** Contagem de artigos e vídeos por jogo no período (para relatório top_games). */
-  getGameCountsForReports(
+  /** Contagem de artigos e vídeos por assunto no período (para relatório top_subjects). */
+  getSubjectCountsForReports(
     periodStart: string,
     periodEnd: string,
     filters?: ReportFilters
-  ): Promise<Array<{ game_id: string; game_name: string; articles: number; videos: number; total: number }>>;
+  ): Promise<Array<{ subject_id: string; subject_name: string; articles: number; videos: number; total: number }>>;
 }
 
 /** Início do dia em UTC quando a string é só data (YYYY-MM-DD). */
@@ -199,12 +198,12 @@ function createSupabaseReportRepository(): ReportRepository {
       if (articlesError) throw new Error(`Failed to fetch articles: ${articlesError.message}`);
       let list = articles ?? [];
 
-      if (filters?.gameId) {
-        const { data: gameLinks } = await client
-          .from("article_games")
+      if (filters?.subjectId) {
+        const { data: subjectLinks } = await client
+          .from("article_subjects")
           .select("article_id")
-          .eq("game_id", filters.gameId);
-        const ids = new Set((gameLinks || []).map((l) => l.article_id));
+          .eq("subject_id", filters.subjectId);
+        const ids = new Set((subjectLinks || []).map((l) => l.article_id));
         list = list.filter((a) => ids.has(a.id));
       }
       if (filters?.tagId) {
@@ -215,20 +214,12 @@ function createSupabaseReportRepository(): ReportRepository {
         const ids = new Set((tagLinks || []).map((l) => l.article_id));
         list = list.filter((a) => ids.has(a.id));
       }
-      if (filters?.genreId) {
-        const { data: genreLinks } = await client
-          .from("article_genres")
+      if (filters?.typeId) {
+        const { data: typeLinks } = await client
+          .from("article_types")
           .select("article_id")
-          .eq("genre_id", filters.genreId);
-        const ids = new Set((genreLinks || []).map((l) => l.article_id));
-        list = list.filter((a) => ids.has(a.id));
-      }
-      if (filters?.platformId) {
-        const { data: platformLinks } = await client
-          .from("article_platforms")
-          .select("article_id")
-          .eq("platform_id", filters.platformId);
-        const ids = new Set((platformLinks || []).map((l) => l.article_id));
+          .eq("type_id", filters.typeId);
+        const ids = new Set((typeLinks || []).map((l) => l.article_id));
         list = list.filter((a) => ids.has(a.id));
       }
 
@@ -265,12 +256,12 @@ function createSupabaseReportRepository(): ReportRepository {
       if (error) throw new Error(`Failed to fetch videos: ${error.message}`);
       let list = videos ?? [];
 
-      if (filters?.gameId) {
-        const { data: gameLinks } = await client
-          .from("youtube_video_games")
+      if (filters?.subjectId) {
+        const { data: subjectLinks } = await client
+          .from("youtube_video_subjects")
           .select("youtube_video_id")
-          .eq("game_id", filters.gameId);
-        const ids = new Set((gameLinks || []).map((l) => l.youtube_video_id));
+          .eq("subject_id", filters.subjectId);
+        const ids = new Set((subjectLinks || []).map((l) => l.youtube_video_id));
         list = list.filter((v) => ids.has(v.id));
       }
       if (filters?.tagId) {
@@ -281,20 +272,12 @@ function createSupabaseReportRepository(): ReportRepository {
         const ids = new Set((tagLinks || []).map((l) => l.youtube_video_id));
         list = list.filter((v) => ids.has(v.id));
       }
-      if (filters?.genreId) {
-        const { data: genreLinks } = await client
-          .from("youtube_video_genres")
+      if (filters?.typeId) {
+        const { data: typeLinks } = await client
+          .from("youtube_video_types")
           .select("youtube_video_id")
-          .eq("genre_id", filters.genreId);
-        const ids = new Set((genreLinks || []).map((l) => l.youtube_video_id));
-        list = list.filter((v) => ids.has(v.id));
-      }
-      if (filters?.platformId) {
-        const { data: platformLinks } = await client
-          .from("youtube_video_platforms")
-          .select("youtube_video_id")
-          .eq("platform_id", filters.platformId);
-        const ids = new Set((platformLinks || []).map((l) => l.youtube_video_id));
+          .eq("type_id", filters.typeId);
+        const ids = new Set((typeLinks || []).map((l) => l.youtube_video_id));
         list = list.filter((v) => ids.has(v.id));
       }
 
@@ -327,13 +310,13 @@ function createSupabaseReportRepository(): ReportRepository {
       let articleIds = (articles ?? []).map((a) => a.id);
       if (articleIds.length === 0) return [];
 
-      if (filters?.gameId) {
-        const { data: gameLinks } = await client
-          .from("article_games")
+      if (filters?.subjectId) {
+        const { data: subjectLinks } = await client
+          .from("article_subjects")
           .select("article_id")
-          .eq("game_id", filters.gameId)
+          .eq("subject_id", filters.subjectId)
           .in("article_id", articleIds);
-        const ids = new Set((gameLinks || []).map((l) => l.article_id));
+        const ids = new Set((subjectLinks || []).map((l) => l.article_id));
         articleIds = articleIds.filter((id) => ids.has(id));
       }
       if (articleIds.length > 0 && filters?.tagId) {
@@ -345,22 +328,13 @@ function createSupabaseReportRepository(): ReportRepository {
         const ids = new Set((tagLinks || []).map((l) => l.article_id));
         articleIds = articleIds.filter((id) => ids.has(id));
       }
-      if (articleIds.length > 0 && filters?.genreId) {
-        const { data: genreLinks } = await client
-          .from("article_genres")
+      if (articleIds.length > 0 && filters?.typeId) {
+        const { data: typeLinks } = await client
+          .from("article_types")
           .select("article_id")
-          .eq("genre_id", filters.genreId)
+          .eq("type_id", filters.typeId)
           .in("article_id", articleIds);
-        const ids = new Set((genreLinks || []).map((l) => l.article_id));
-        articleIds = articleIds.filter((id) => ids.has(id));
-      }
-      if (articleIds.length > 0 && filters?.platformId) {
-        const { data: platformLinks } = await client
-          .from("article_platforms")
-          .select("article_id")
-          .eq("platform_id", filters.platformId)
-          .in("article_id", articleIds);
-        const ids = new Set((platformLinks || []).map((l) => l.article_id));
+        const ids = new Set((typeLinks || []).map((l) => l.article_id));
         articleIds = articleIds.filter((id) => ids.has(id));
       }
       if (articleIds.length > 0 && filters?.sourceId) {
@@ -405,7 +379,7 @@ function createSupabaseReportRepository(): ReportRepository {
         .sort((a, b) => b.count - a.count);
     },
 
-    async getGameCountsForReports(periodStart, periodEnd, filters) {
+    async getSubjectCountsForReports(periodStart, periodEnd, filters) {
       const start = normalizePeriodStart(periodStart);
       const endExclusive = periodEndExclusive(periodEnd);
       const { data: articles, error: articlesError } = await client
@@ -426,23 +400,23 @@ function createSupabaseReportRepository(): ReportRepository {
       if (videosError) throw new Error(`Failed to fetch videos: ${videosError.message}`);
       let videoIds = (videos ?? []).map((v) => v.id);
 
-      if (filters?.gameId) {
+      if (filters?.subjectId) {
         if (articleIds.length > 0) {
-          const { data: gameLinks } = await client
-            .from("article_games")
+          const { data: subjectLinks } = await client
+            .from("article_subjects")
             .select("article_id")
-            .eq("game_id", filters.gameId)
+            .eq("subject_id", filters.subjectId)
             .in("article_id", articleIds);
-          const ids = new Set((gameLinks || []).map((l) => l.article_id));
+          const ids = new Set((subjectLinks || []).map((l) => l.article_id));
           articleIds = articleIds.filter((id) => ids.has(id));
         }
         if (videoIds.length > 0) {
-          const { data: gameLinks } = await client
-            .from("youtube_video_games")
+          const { data: subjectLinks } = await client
+            .from("youtube_video_subjects")
             .select("youtube_video_id")
-            .eq("game_id", filters.gameId)
+            .eq("subject_id", filters.subjectId)
             .in("youtube_video_id", videoIds);
-          const ids = new Set((gameLinks || []).map((l) => l.youtube_video_id));
+          const ids = new Set((subjectLinks || []).map((l) => l.youtube_video_id));
           videoIds = videoIds.filter((id) => ids.has(id));
         }
       }
@@ -464,40 +438,22 @@ function createSupabaseReportRepository(): ReportRepository {
         const ids = new Set((tagLinks || []).map((l) => l.youtube_video_id));
         videoIds = videoIds.filter((id) => ids.has(id));
       }
-      if (articleIds.length > 0 && filters?.genreId) {
-        const { data: genreLinks } = await client
-          .from("article_genres")
+      if (articleIds.length > 0 && filters?.typeId) {
+        const { data: typeLinks } = await client
+          .from("article_types")
           .select("article_id")
-          .eq("genre_id", filters.genreId)
+          .eq("type_id", filters.typeId)
           .in("article_id", articleIds);
-        const ids = new Set((genreLinks || []).map((l) => l.article_id));
+        const ids = new Set((typeLinks || []).map((l) => l.article_id));
         articleIds = articleIds.filter((id) => ids.has(id));
       }
-      if (videoIds.length > 0 && filters?.genreId) {
-        const { data: genreLinks } = await client
-          .from("youtube_video_genres")
+      if (videoIds.length > 0 && filters?.typeId) {
+        const { data: typeLinks } = await client
+          .from("youtube_video_types")
           .select("youtube_video_id")
-          .eq("genre_id", filters.genreId)
+          .eq("type_id", filters.typeId)
           .in("youtube_video_id", videoIds);
-        const ids = new Set((genreLinks || []).map((l) => l.youtube_video_id));
-        videoIds = videoIds.filter((id) => ids.has(id));
-      }
-      if (articleIds.length > 0 && filters?.platformId) {
-        const { data: platformLinks } = await client
-          .from("article_platforms")
-          .select("article_id")
-          .eq("platform_id", filters.platformId)
-          .in("article_id", articleIds);
-        const ids = new Set((platformLinks || []).map((l) => l.article_id));
-        articleIds = articleIds.filter((id) => ids.has(id));
-      }
-      if (videoIds.length > 0 && filters?.platformId) {
-        const { data: platformLinks } = await client
-          .from("youtube_video_platforms")
-          .select("youtube_video_id")
-          .eq("platform_id", filters.platformId)
-          .in("youtube_video_id", videoIds);
-        const ids = new Set((platformLinks || []).map((l) => l.youtube_video_id));
+        const ids = new Set((typeLinks || []).map((l) => l.youtube_video_id));
         videoIds = videoIds.filter((id) => ids.has(id));
       }
       if (articleIds.length > 0 && filters?.sourceId) {
@@ -516,21 +472,21 @@ function createSupabaseReportRepository(): ReportRepository {
         videoIds = withSource.map((v: { id: string }) => v.id);
       }
 
-      const gameCounts = new Map<string, { articles: number; videos: number }>();
+      const subjectCounts = new Map<string, { articles: number; videos: number }>();
 
       if (articleIds.length > 0) {
         const batchSize = 500;
         for (let i = 0; i < articleIds.length; i += batchSize) {
           const batch = articleIds.slice(i, i + batchSize);
           const { data: links, error: linksError } = await client
-            .from("article_games")
-            .select("game_id")
+            .from("article_subjects")
+            .select("subject_id")
             .in("article_id", batch);
-          if (linksError) throw new Error(`Failed to fetch article_games: ${linksError.message}`);
+          if (linksError) throw new Error(`Failed to fetch article_subjects: ${linksError.message}`);
           for (const row of links ?? []) {
-            const cur = gameCounts.get(row.game_id) ?? { articles: 0, videos: 0 };
+            const cur = subjectCounts.get(row.subject_id) ?? { articles: 0, videos: 0 };
             cur.articles += 1;
-            gameCounts.set(row.game_id, cur);
+            subjectCounts.set(row.subject_id, cur);
           }
         }
       }
@@ -539,35 +495,35 @@ function createSupabaseReportRepository(): ReportRepository {
         for (let i = 0; i < videoIds.length; i += batchSize) {
           const batch = videoIds.slice(i, i + batchSize);
           const { data: links, error: linksError } = await client
-            .from("youtube_video_games")
-            .select("game_id")
+            .from("youtube_video_subjects")
+            .select("subject_id")
             .in("youtube_video_id", batch);
-          if (linksError) throw new Error(`Failed to fetch youtube_video_games: ${linksError.message}`);
+          if (linksError) throw new Error(`Failed to fetch youtube_video_subjects: ${linksError.message}`);
           for (const row of links ?? []) {
-            const cur = gameCounts.get(row.game_id) ?? { articles: 0, videos: 0 };
+            const cur = subjectCounts.get(row.subject_id) ?? { articles: 0, videos: 0 };
             cur.videos += 1;
-            gameCounts.set(row.game_id, cur);
+            subjectCounts.set(row.subject_id, cur);
           }
         }
       }
 
-      const gameIds = Array.from(gameCounts.keys());
-      if (gameIds.length === 0) return [];
+      const subjectIds = Array.from(subjectCounts.keys());
+      if (subjectIds.length === 0) return [];
 
-      const { data: gamesRows, error: gamesError } = await client
-        .from("games")
+      const { data: subjectsRows, error: subjectsError } = await client
+        .from("subjects")
         .select("id, name")
-        .in("id", gameIds);
-      if (gamesError) throw new Error(`Failed to fetch games: ${gamesError.message}`);
-      const nameById = new Map((gamesRows ?? []).map((r) => [r.id, r.name ?? r.id]));
+        .in("id", subjectIds);
+      if (subjectsError) throw new Error(`Failed to fetch subjects: ${subjectsError.message}`);
+      const nameById = new Map((subjectsRows ?? []).map((r) => [r.id, r.name ?? r.id]));
 
-      return gameIds
-        .map((game_id) => {
-          const counts = gameCounts.get(game_id)!;
+      return subjectIds
+        .map((subject_id) => {
+          const counts = subjectCounts.get(subject_id)!;
           const total = counts.articles + counts.videos;
           return {
-            game_id,
-            game_name: nameById.get(game_id) ?? game_id,
+            subject_id,
+            subject_name: nameById.get(subject_id) ?? subject_id,
             articles: counts.articles,
             videos: counts.videos,
             total,
@@ -603,7 +559,7 @@ function createMemoryReportRepository(): ReportRepository {
     async getTagCountsForReports() {
       return [];
     },
-    async getGameCountsForReports() {
+    async getSubjectCountsForReports() {
       return [];
     },
   };

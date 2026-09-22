@@ -2,49 +2,44 @@ import { describe, expect, it } from "vitest";
 import { suggestInternalLinks } from "../src/internal-links";
 
 describe("SEO Agent - internal linking strategy", () => {
-  it("deve priorizar links com genero em comum", () => {
+  it("deve priorizar links com tipo em comum", () => {
     const origin = {
-      slugPath: "/games/elden-ring",
-      pageType: "game" as const,
-      genres: ["rpg", "soulslike"],
-      platforms: ["pc", "ps5"],
+      slugPath: "/subjects/chatgpt",
+      pageType: "subject" as const,
+      types: ["llm", "agentes"],
       tags: ["open-world"]
     };
 
     const links = suggestInternalLinks(origin, [
       {
-        slugPath: "/games/dark-souls-3",
-        pageType: "game",
-        genres: ["soulslike", "rpg"],
-        platforms: ["pc"],
+        slugPath: "/subjects/dark-souls-3",
+        pageType: "subject",
+        types: ["agentes", "llm"],
         tags: ["difficult"]
       },
       {
-        slugPath: "/games/fifa-26",
-        pageType: "game",
-        genres: ["sports"],
-        platforms: ["pc"],
+        slugPath: "/subjects/fifa-26",
+        pageType: "subject",
+        types: ["sports"],
         tags: ["football"]
       }
     ]);
 
-    expect(links[0]?.to).toBe("/games/dark-souls-3");
-    expect(links[0]?.reason).toBe("shared_genre");
+    expect(links[0]?.to).toBe("/subjects/dark-souls-3");
+    expect(links[0]?.reason).toBe("shared_type");
   });
 
   it("deve respeitar limite maximo de links", () => {
     const origin = {
-      slugPath: "/best/rpg",
+      slugPath: "/best/llm",
       pageType: "collection" as const,
-      genres: ["rpg"],
-      platforms: ["pc"]
+      types: ["llm"]
     };
 
     const candidates = Array.from({ length: 10 }, (_, index) => ({
-      slugPath: `/games/game-${index + 1}`,
-      pageType: "game" as const,
-      genres: ["rpg"],
-      platforms: ["pc"]
+      slugPath: `/subjects/subject-${index + 1}`,
+      pageType: "subject" as const,
+      types: ["llm"]
     }));
 
     const links = suggestInternalLinks(origin, candidates, 4);

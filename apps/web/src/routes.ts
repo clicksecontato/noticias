@@ -1,9 +1,8 @@
 export interface WebRouteInput {
-  type: "news" | "game" | "games-like" | "best-genre" | "best-genre-platform" | "hardware";
+  type: "news" | "subject" | "subjects-like" | "best-type";
   slug?: string;
-  genre?: string;
-  platform?: string;
-  ram?: string;
+  /** Slug do tipo para rotas /best/[type] */
+  typeSlug?: string;
 }
 
 function requireParam(value: string | undefined): string {
@@ -18,21 +17,13 @@ export function buildRoutePath(input: WebRouteInput): string {
     return `/news/${requireParam(input.slug)}`;
   }
 
-  if (input.type === "game") {
-    return `/games/${requireParam(input.slug)}`;
+  if (input.type === "subject") {
+    return `/subjects/${requireParam(input.slug)}`;
   }
 
-  if (input.type === "games-like") {
-    return `/games-like/${requireParam(input.slug)}`;
+  if (input.type === "subjects-like") {
+    return `/subjects-like/${requireParam(input.slug)}`;
   }
 
-  if (input.type === "best-genre") {
-    return `/best/${requireParam(input.genre)}`;
-  }
-
-  if (input.type === "best-genre-platform") {
-    return `/best/${requireParam(input.genre)}/${requireParam(input.platform)}`;
-  }
-
-  return `/hardware/${requireParam(input.ram)}`;
+  return `/best/${requireParam(input.typeSlug)}`;
 }

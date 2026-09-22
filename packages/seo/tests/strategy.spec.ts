@@ -5,12 +5,20 @@ describe("SEO Agent - strategy registry", () => {
   it("deve retornar estrategia de news com open graph article", () => {
     const strategy = getSeoStrategy("news");
     expect(strategy.openGraphType).toBe("article");
-    expect(strategy.titleTemplate("Atualizacao GTA 6")).toContain("Atualizacao GTA 6");
+    expect(strategy.titleTemplate("Atualizacao ChatGPT")).toContain("Atualizacao ChatGPT");
   });
 
-  it("deve retornar estrategia de genre com template de plataforma", () => {
-    const strategy = getSeoStrategy("genre");
+  it("deve retornar estrategia de type sem plataforma", () => {
+    const strategy = getSeoStrategy("type");
     expect(strategy.openGraphType).toBe("website");
-    expect(strategy.titleTemplate("RPG", "PC")).toContain("PC");
+    expect(strategy.titleTemplate("LLM")).toContain("LLM");
+    expect(strategy.titleTemplate("LLM").toLowerCase()).not.toContain("plataforma");
+  });
+
+  it("deve retornar estrategia de subject", () => {
+    const strategy = getSeoStrategy("subject");
+    expect(strategy.openGraphType).toBe("website");
+    expect(strategy.pageType).toBe("subject");
+    expect(strategy.titleTemplate("ChatGPT")).toContain("ChatGPT");
   });
 });

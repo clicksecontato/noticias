@@ -2,17 +2,16 @@ import { createContentRepository } from "../../../../../packages/database/src/co
 
 /**
  * GET /api/catalogs
- * Retorna jogos, tags, gêneros e plataformas para filtros de relatórios e enriquecimento.
+ * Retorna assuntos, tags e tipos para filtros de relatórios e enriquecimento.
  */
 export async function GET(): Promise<Response> {
   try {
     const repo = createContentRepository();
     const catalog = await repo.getCatalogsForEnrichment();
     return Response.json({
-      games: catalog.games,
+      subjects: catalog.subjects,
       tags: catalog.tags,
-      genres: catalog.genres,
-      platforms: catalog.platforms
+      types: catalog.types
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

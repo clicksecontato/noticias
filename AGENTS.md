@@ -1,7 +1,7 @@
 # AGENTS — Notícias (genérico + YouTube)
 
 ## Missão
-Portal de **notícias genéricas** e **vídeos YouTube**, com entidades temáticas (`subject` / `type` / `tag` / `source`). O domínio **não** é games: não introduzir conceitos, rotas, schemas ou copy exclusivos de jogos.
+Portal de **notícias de inteligência artificial** e **vídeos YouTube**, com entidades temáticas (`subject` / `type` / `tag` / `source`). O domínio **não** é games: não introduzir conceitos, rotas, schemas ou copy exclusivos de jogos.
 
 ## Glossário canônico
 | PT (UI) | EN (código / DB) | Papel |

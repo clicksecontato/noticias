@@ -35,10 +35,9 @@ export interface ArticleListRow {
   is_news: boolean;
   sourceId: string;
   sourceName: string;
-  gameNames: string[];
+  subjectNames: string[];
   tagNames: string[];
-  genreNames: string[];
-  platformNames: string[];
+  typeNames: string[];
 }
 
 export interface ArticleEditRow {
@@ -54,10 +53,9 @@ export interface ArticleEditRow {
   is_news: boolean;
   sourceId: string;
   sourceUrl: string | null;
-  gameIds: string[];
+  subjectIds: string[];
   tagIds: string[];
-  genreIds: string[];
-  platformIds: string[];
+  typeIds: string[];
 }
 
 export interface SourceOption {
@@ -139,12 +137,11 @@ export const newsRepository = {
     if (articles.length === 0) return [];
 
     const ids = articles.map((a) => a.id);
-    const [sourcesData, ag, at, agen, ap] = await Promise.all([
+    const [sourcesData, asub, at, atype] = await Promise.all([
       client.from("article_sources").select("article_id,source_id").in("article_id", ids),
-      client.from("article_games").select("article_id, games(name)").in("article_id", ids),
+      client.from("article_subjects").select("article_id, subjects(name)").in("article_id", ids),
       client.from("article_tags").select("article_id, tags(name)").in("article_id", ids),
-      client.from("article_genres").select("article_id, genres(name)").in("article_id", ids),
-      client.from("article_platforms").select("article_id, platforms(name)").in("article_id", ids),
+      client.from("article_types").select("article_id, types(name)").in("article_id", ids),
     ]);
 
     const sourceByArticle = new Map<string, string>();
@@ -155,9 +152,8 @@ export const newsRepository = {
     const sourceNameById = new Map((sourcesRows ?? []).map((s: { id: string; name: string }) => [s.id, s.name]));
 
     const addNames = (
-      list: Array<{ article_id: string; games?: { name: string }; tags?: { name: string }; genres?: { name: string }; platforms?: { name: string } }>,
-      key: "gameNames" | "tagNames" | "genreNames" | "platformNames",
-      sub: "games" | "tags" | "genres" | "platforms"
+      list: Array<{ article_id: string; subjects?: { name: string }; tags?: { name: string }; types?: { name: string } }>,
+      sub: "subjects" | "tags" | "types"
     ) => {
       const byArticle = new Map<string, string[]>();
       for (const r of list ?? []) {
@@ -170,10 +166,9 @@ export const newsRepository = {
       return byArticle;
     };
 
-    const gameNamesByArticle = addNames((ag.data ?? []) as never[], "gameNames", "games");
-    const tagNamesByArticle = addNames((at.data ?? []) as never[], "tagNames", "tags");
-    const genreNamesByArticle = addNames((agen.data ?? []) as never[], "genreNames", "genres");
-    const platformNamesByArticle = addNames((ap.data ?? []) as never[], "platformNames", "platforms");
+    const subjectNamesByArticle = addNames((asub.data ?? []) as never[], "subjects");
+    const tagNamesByArticle = addNames((at.data ?? []) as never[], "tags");
+    const typeNamesByArticle = addNames((atype.data ?? []) as never[], "types");
 
     return articles.map((a) => {
       const sourceId = sourceByArticle.get(a.id) ?? "";
@@ -186,10 +181,9 @@ export const newsRepository = {
         is_news: a.is_news ?? true,
         sourceId,
         sourceName: sourceNameById.get(sourceId) ?? "",
-        gameNames: gameNamesByArticle.get(a.id) ?? [],
+        subjectNames: subjectNamesByArticle.get(a.id) ?? [],
         tagNames: tagNamesByArticle.get(a.id) ?? [],
-        genreNames: genreNamesByArticle.get(a.id) ?? [],
-        platformNames: platformNamesByArticle.get(a.id) ?? [],
+        typeNames: typeNamesByArticle.get(a.id) ?? [],
       };
     });
   },
@@ -204,12 +198,11 @@ export const newsRepository = {
     if (error) throw new Error(error.message);
     if (!article) return null;
 
-    const [sourceLink, games, tags, genres, platforms] = await Promise.all([
+    const [sourceLink, subjects, tags, types] = await Promise.all([
       client.from("article_sources").select("source_id,source_url").eq("article_id", id).limit(1).maybeSingle(),
-      client.from("article_games").select("game_id").eq("article_id", id),
+      client.from("article_subjects").select("subject_id").eq("article_id", id),
       client.from("article_tags").select("tag_id").eq("article_id", id),
-      client.from("article_genres").select("genre_id").eq("article_id", id),
-      client.from("article_platforms").select("platform_id").eq("article_id", id),
+      client.from("article_types").select("type_id").eq("article_id", id),
     ]);
 
     return {
@@ -225,10 +218,9 @@ export const newsRepository = {
       is_news: article.is_news ?? true,
       sourceId: sourceLink?.data?.source_id ?? "",
       sourceUrl: sourceLink?.data?.source_url ?? null,
-      gameIds: (games.data ?? []).map((r: { game_id: string }) => r.game_id),
+      subjectIds: (subjects.data ?? []).map((r: { subject_id: string }) => r.subject_id),
       tagIds: (tags.data ?? []).map((r: { tag_id: string }) => r.tag_id),
-      genreIds: (genres.data ?? []).map((r: { genre_id: string }) => r.genre_id),
-      platformIds: (platforms.data ?? []).map((r: { platform_id: string }) => r.platform_id),
+      typeIds: (types.data ?? []).map((r: { type_id: string }) => r.type_id),
     };
   },
 
@@ -265,7 +257,7 @@ export const newsRepository = {
         published_at: publishedAt,
         status: "published",
         is_news: true,
-        canonical_url: `https://noticias-gaming-platform.local/news/${slug}`,
+        canonical_url: `https://noticias-ia-platform.local/news/${slug}`,
         source_article_hash: "",
         ai_model: "admin",
         quality_score: 0,
@@ -342,24 +334,20 @@ export const newsRepository = {
 
   async setArticleEntities(
     articleId: string,
-    ids: { gameIds: string[]; tagIds: string[]; genreIds: string[]; platformIds: string[] }
+    ids: { subjectIds: string[]; tagIds: string[]; typeIds: string[] }
   ): Promise<void> {
     const client = getClient();
-    await client.from("article_games").delete().eq("article_id", articleId);
+    await client.from("article_subjects").delete().eq("article_id", articleId);
     await client.from("article_tags").delete().eq("article_id", articleId);
-    await client.from("article_genres").delete().eq("article_id", articleId);
-    await client.from("article_platforms").delete().eq("article_id", articleId);
-    for (const gameId of ids.gameIds) {
-      await client.from("article_games").upsert({ article_id: articleId, game_id: gameId }, { onConflict: "article_id,game_id" });
+    await client.from("article_types").delete().eq("article_id", articleId);
+    for (const subjectId of ids.subjectIds) {
+      await client.from("article_subjects").upsert({ article_id: articleId, subject_id: subjectId }, { onConflict: "article_id,subject_id" });
     }
     for (const tagId of ids.tagIds) {
       await client.from("article_tags").upsert({ article_id: articleId, tag_id: tagId }, { onConflict: "article_id,tag_id" });
     }
-    for (const genreId of ids.genreIds) {
-      await client.from("article_genres").upsert({ article_id: articleId, genre_id: genreId }, { onConflict: "article_id,genre_id" });
-    }
-    for (const platformId of ids.platformIds) {
-      await client.from("article_platforms").upsert({ article_id: articleId, platform_id: platformId }, { onConflict: "article_id,platform_id" });
+    for (const typeId of ids.typeIds) {
+      await client.from("article_types").upsert({ article_id: articleId, type_id: typeId }, { onConflict: "article_id,type_id" });
     }
   },
 };

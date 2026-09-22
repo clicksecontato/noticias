@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { getCoreTableDefinitions } from "../src/schema-contract";
 
 describe("Database Agent - indexes and constraints contracts", () => {
-  it("deve definir indices de escala para tabela games", () => {
-    const games = getCoreTableDefinitions().find((entry) => entry.table === "games");
+  it("deve definir indices de escala para tabela subjects", () => {
+    const subjects = getCoreTableDefinitions().find((entry) => entry.table === "subjects");
 
-    expect(games).toBeDefined();
-    expect(games?.requiredIndexes).toEqual(
+    expect(subjects).toBeDefined();
+    expect(subjects?.requiredIndexes).toEqual(
       expect.arrayContaining([
-        "games_slug_unique_idx",
-        "games_release_date_idx",
-        "games_search_vector_idx"
+        "subjects_slug_unique_idx",
+        "subjects_release_date_idx",
+        "subjects_search_vector_idx"
       ])
     );
   });

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityWeekdayChart } from "../components/reports/ActivityWeekdayChart";
 import { TagsChart } from "../components/reports/TagsChart";
-import { TopGamesChart } from "../components/reports/TopGamesChart";
+import { TopSubjectsChart } from "../components/reports/TopSubjectsChart";
 import { TopSourcesChart } from "../components/reports/TopSourcesChart";
 import { VolumeChart } from "../components/reports/VolumeChart";
 
@@ -218,11 +218,11 @@ export function ReportPayload({
     );
   }
 
-  if (type === "top_games") {
+  if (type === "top_subjects") {
     const items =
       (payload.items as Array<{
-        game_id: string;
-        game_name: string;
+        subject_id: string;
+        subject_name: string;
         articles: number;
         videos: number;
         total: number;
@@ -230,19 +230,19 @@ export function ReportPayload({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Top jogos por período</CardTitle>
+          <CardTitle>Top assuntos por período</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-0">
           <p className="text-sm text-muted-foreground">
-            Jogos com mais cobertura (artigos e vídeos) no período selecionado.
+            Assuntos com mais cobertura (artigos e vídeos) no período selecionado.
           </p>
-          <TopGamesChart data={items} />
+          <TopSubjectsChart data={items} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="p-3 text-left">#</th>
-                  <th className="p-3 text-left">Jogo</th>
+                  <th className="p-3 text-left">Assunto</th>
                   <th className="p-3 text-right">Artigos</th>
                   <th className="p-3 text-right">Vídeos</th>
                   <th className="p-3 text-right">Total</th>
@@ -250,9 +250,9 @@ export function ReportPayload({
               </thead>
               <tbody>
                 {items.map((row, i) => (
-                  <tr key={row.game_id} className="border-b border-border">
+                  <tr key={row.subject_id} className="border-b border-border">
                     <td className="p-3">{i + 1}</td>
-                    <td className="p-3">{row.game_name}</td>
+                    <td className="p-3">{row.subject_name}</td>
                     <td className="p-3 text-right">{row.articles}</td>
                     <td className="p-3 text-right">{row.videos}</td>
                     <td className="p-3 text-right font-semibold">{row.total}</td>
@@ -319,7 +319,7 @@ export function ReportPayload({
       videos: number;
       rss_vs_youtube: { rssPct: number; youtubePct: number };
       top_sources: Array<{ source_name: string; articles: number; videos: number; total: number }>;
-      top_games: Array<{ game_name: string; articles: number; videos: number; total: number }>;
+      top_subjects: Array<{ subject_name: string; articles: number; videos: number; total: number }>;
     };
 
     const referenceDate = (payload.reference_date as string) ?? "";
@@ -367,19 +367,19 @@ export function ReportPayload({
               </div>
             </div>
             <div>
-              <h4 className="mb-2 text-sm font-semibold">Top jogos</h4>
+              <h4 className="mb-2 text-sm font-semibold">Top assuntos</h4>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="p-2 text-left">Jogo</th>
+                      <th className="p-2 text-left">Assunto</th>
                       <th className="p-2 text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(data.top_games ?? []).slice(0, 5).map((row, i) => (
+                    {(data.top_subjects ?? []).slice(0, 5).map((row, i) => (
                       <tr key={i} className="border-b border-border">
-                        <td className="p-2">{row.game_name}</td>
+                        <td className="p-2">{row.subject_name}</td>
                         <td className="p-2 text-right">{row.total}</td>
                       </tr>
                     ))}
@@ -406,7 +406,7 @@ export function ReportPayload({
               videos: 0,
               rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
               top_sources: [],
-              top_games: [],
+              top_subjects: [],
             }
           }
         />
@@ -418,7 +418,7 @@ export function ReportPayload({
               videos: 0,
               rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
               top_sources: [],
-              top_games: [],
+              top_subjects: [],
             }
           }
         />
@@ -430,7 +430,7 @@ export function ReportPayload({
               videos: 0,
               rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
               top_sources: [],
-              top_games: [],
+              top_subjects: [],
             }
           }
         />

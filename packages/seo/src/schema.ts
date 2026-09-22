@@ -3,11 +3,9 @@ export interface BreadcrumbItem {
   item: string;
 }
 
-export interface GameSchemaInput {
+export interface SubjectSchemaInput {
   name: string;
   description: string;
-  genre: string;
-  platform: string;
   url: string;
 }
 
@@ -19,13 +17,11 @@ export interface NewsSchemaInput {
   url: string;
 }
 
-export interface VideoGameSchema {
+export interface SubjectSchema {
   "@context": "https://schema.org";
-  "@type": "VideoGame";
+  "@type": "Thing";
   name: string;
   description: string;
-  genre: string;
-  gamePlatform: string;
   url: string;
 }
 
@@ -53,14 +49,12 @@ export interface BreadcrumbListSchema {
   }>;
 }
 
-export function buildGameSchema(input: GameSchemaInput): VideoGameSchema {
+export function buildSubjectSchema(input: SubjectSchemaInput): SubjectSchema {
   return {
     "@context": "https://schema.org",
-    "@type": "VideoGame",
+    "@type": "Thing",
     name: input.name,
     description: input.description,
-    genre: input.genre,
-    gamePlatform: input.platform,
     url: input.url
   };
 }

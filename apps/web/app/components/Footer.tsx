@@ -15,7 +15,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-[960px] flex-col gap-4 px-4 py-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <p className="font-medium text-foreground">
           <Link href="/" className="hover:underline">
-            Notícias Games
+            Notícias IA
           </Link>
         </p>
         <nav className="flex gap-6" aria-label="Rodapé">
@@ -25,7 +25,7 @@ export function Footer() {
             </Link>
           ))}
         </nav>
-        <p>Portal de notícias de games.</p>
+        <p>Portal de notícias de inteligência artificial.</p>
       </div>
     </footer>
   );

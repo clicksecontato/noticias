@@ -8,17 +8,20 @@ describe("Database Agent - schema policy registry", () => {
 
     expect(tables).toEqual(
       expect.arrayContaining([
-        "games",
-        "genres",
-        "platforms",
+        "subjects",
+        "types",
         "tags",
-        "game_tags",
+        "subject_tags",
         "articles",
         "sources",
         "article_sources",
         "seo_pages"
       ])
     );
+    expect(tables).not.toContain("platforms");
+    expect(tables).not.toContain("games");
+    expect(tables).not.toContain("genres");
+    expect(tables).not.toContain("game_tags");
   });
 
   it("deve manter politica forte de integridade para articles", () => {
