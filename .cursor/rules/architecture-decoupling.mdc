@@ -10,5 +10,6 @@ alwaysApply: true
 - Centralizar regras por tipo em `*strategy.ts`.
 - Centralizar contratos/políticas em `*policy.ts`.
 - Evitar duplicar regras entre `app/` e `src/`.
-- Quando adicionar novo `pageType`, atualizar registry único.
+- Quando adicionar novo `pageType`, atualizar o registry único (`page-strategy` / SEO strategy) com valores do glossário: `news`, `subject`, `subjects-like`/`related`, `best-type`, `video`.
+- Não registrar `game`, `hardware` ou `best-genre-platform` como destino canônico.
 - Preferir funções puras e contratos explícitos.

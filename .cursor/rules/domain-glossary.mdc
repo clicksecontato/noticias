@@ -1,0 +1,16 @@
+---
+description: Glossário canônico subject/type para notícias genéricas + YouTube
+alwaysApply: true
+---
+
+# Domain Glossary
+
+- PT na UI; EN em código, DB, APIs e testes.
+- assunto ↔ subject (ex-jogo/game).
+- tipo ↔ type (ex-gênero/genre).
+- tag, source, article/news, youtube_video: manter.
+- source = origem (RSS ou canal YouTube), não console.
+- platform/plataforma: deprecado — não modelar; usar source ou subject/type.
+- pageTypes canônicos: news, subject, subjects-like/related, best-type, video.
+- Rotas alvo: `/news`, `/subjects`, relacionados, `/best/[type]`, `/admin` — não `/games` nem `/hardware`.
+- Detalhes: ADR `0003-domain-news-youtube` e `AGENTS.md`.

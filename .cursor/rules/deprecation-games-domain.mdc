@@ -1,0 +1,20 @@
+---
+description: Proíbe novos usos de conceitos exclusivos de games no domínio canônico
+alwaysApply: true
+---
+
+# Deprecation — Games Domain
+
+Não criar nem expandir como modelo canônico:
+
+- Entidades/rotas: game/jogo, genre/gênero (canônico), platform/console, `/games`, `/games-like`, `/hardware`, `/best/.../[platform]`
+- Schema.org: `VideoGame`, `gamePlatform`
+- Copy/prompts: gameplay, gamer, “Notícias Games” como destino de produto
+- Relatórios: novos usos de `top_games` (usar `top_subjects`)
+
+Exceções permitidas:
+
+- Migration SQL, redirects 301 e skill `domain-migrate-games-to-subjects`
+- Menções históricas em docs de migração/deprecation
+
+Se o nome só faz sentido em jogos → não portar; preferir subject/type/tag/source.

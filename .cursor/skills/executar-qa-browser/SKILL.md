@@ -12,9 +12,10 @@ Validar comportamento real da interface após mudanças de frontend.
 1. Definir cenários críticos (principal + erro + persistência/reload).
 2. Acionar subagent `browser-use`.
 3. Validar:
-   - fluxo principal do `/admin`,
+   - fluxo principal do `/admin` (RSS e YouTube quando aplicável),
    - resposta visual para falha de autenticação,
-   - resultado exibido após sucesso.
+   - resultado exibido após sucesso,
+   - regressão leve em rotas públicas canônicas (`/news`, vídeo) — não tratar `/games`/`/hardware` como destino.
 4. Registrar evidências objetivas por cenário.
 
 ## Saída padrão
