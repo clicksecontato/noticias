@@ -6,88 +6,124 @@
 
 @layer base {
   :root {
-    /* Light — curriculum-michael */
-    --background: #ffffff;
-    --foreground: #1b2126;
-    --card: #f8f9fa;
-    --card-foreground: #1b2126;
+    /* Light — espelho da identidade dashboard */
+    --background: #ececec;
+    --foreground: #121212;
+    --card: #f4f4f4;
+    --card-foreground: #121212;
     --popover: #ffffff;
-    --popover-foreground: #1b2126;
-    --primary: #21b6bf;
+    --popover-foreground: #121212;
+    --primary: #0ea5e9;
     --primary-foreground: #ffffff;
-    --primary-soft: #e6f7f8;
-    --primary-dark: #1a9ba3;
-    --secondary: #e9ecef;
-    --secondary-foreground: #313c43;
-    --muted: #f8f9fa;
-    --muted-foreground: #7d8d96;
-    --accent: #e6f7f8;
-    --accent-foreground: #1a9ba3;
-    --destructive: #b91c1c;
-    --destructive-foreground: #fef2f2;
-    --success: #15803d;
+    --primary-soft: #e0f2fe;
+    --primary-dark: #0284c7;
+    --secondary: #e4e4e4;
+    --secondary-foreground: #2a2a2a;
+    --muted: #e8e8e8;
+    --muted-foreground: #6a6a6a;
+    --accent: #e0f2fe;
+    --accent-foreground: #0369a1;
+    --destructive: #ff3d3d;
+    --destructive-foreground: #ffffff;
+    --success: #00c853;
     --success-foreground: #ffffff;
-    --success-soft: #dcfce7;
-    --warning: #a16207;
-    --warning-foreground: #1b2126;
-    --warning-soft: #fefce8;
-    --info: #1d4ed8;
-    --info-foreground: #ffffff;
-    --info-soft: #dbeafe;
-    --border: #a4b3ba;
-    --input: #a4b3ba;
-    --ring: #21b6bf;
-    --radius: 0.5rem;
-    --shadow-sm: 0 1px 2px 0 rgb(27 33 38 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(27 33 38 / 0.1), 0 2px 4px -2px rgb(27 33 38 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(27 33 38 / 0.1), 0 4px 6px -4px rgb(27 33 38 / 0.1);
-    --chart-1: #21b6bf;
-    --chart-2: #15803d;
-    --chart-3: #a16207;
-    --chart-4: #5d6b74;
-    --chart-5: #b91c1c;
+    --success-soft: #d8f8e6;
+    --warning: #ffb800;
+    --warning-foreground: #121212;
+    --warning-soft: #fff3cc;
+    --info: #00e5c8;
+    --info-foreground: #04201a;
+    --info-soft: #d4fff8;
+    --border: rgba(0, 0, 0, 0.08);
+    --input: rgba(0, 0, 0, 0.1);
+    --ring: #0ea5e9;
+    --radius: 1.5rem;
+    --edge-light: rgba(255, 255, 255, 0.7);
+    --edge-dark: rgba(0, 0, 0, 0.08);
+    --shadow-sm: 4px 4px 10px rgb(0 0 0 / 0.08), -2px -2px 8px rgb(255 255 255 / 0.7);
+    --shadow-md:
+      10px 10px 28px rgb(0 0 0 / 0.12),
+      -6px -6px 20px rgb(255 255 255 / 0.75),
+      inset 0 1px 0 rgb(255 255 255 / 0.9);
+    --shadow-lg:
+      16px 16px 40px rgb(0 0 0 / 0.14),
+      -8px -8px 28px rgb(255 255 255 / 0.8);
+    --chart-1: #ff6a00;
+    --chart-2: #00c853;
+    --chart-3: #ffb800;
+    --chart-4: #6b6b6b;
+    --chart-5: #ff3d3d;
+    --grad-warm: linear-gradient(180deg, #ffd54f 0%, #ff6a00 55%, #c43a00 100%);
+    --grad-cool: linear-gradient(180deg, #00e5c8 0%, #00c853 55%, #007a3d 100%);
+    --grad-amber: linear-gradient(180deg, #ffe082 0%, #ffb800 100%);
+    --grad-brand: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 52%, #0284c7 100%);
+    --grad-page:
+      radial-gradient(ellipse 100% 70% at 50% -10%, #ffffff 0%, transparent 50%),
+      linear-gradient(180deg, #f0f0f0 0%, #e4e4e4 100%);
   }
 
   .dark {
-    /* Dark — curriculum-michael (fonte de verdade visual) */
-    --background: #1b2126;
-    --foreground: #f8fafc;
-    --card: #2c383f;
-    --card-foreground: #f8fafc;
-    --popover: #2c383f;
-    --popover-foreground: #f8fafc;
-    --primary: #21b6bf;
-    --primary-foreground: #1b2126;
-    --primary-soft: #243940;
-    --primary-dark: #1a9ba3;
-    --secondary: #313c43;
-    --secondary-foreground: #a4b3ba;
-    --muted: #313c43;
-    --muted-foreground: #7d8d96;
-    --accent: #313c43;
-    --accent-foreground: #21b6bf;
-    --destructive: #f87171;
-    --destructive-foreground: #1b2126;
-    --success: #7dd3a0;
-    --success-foreground: #0d1117;
-    --success-soft: #1a3328;
-    --warning: #fde047;
-    --warning-foreground: #1b2126;
-    --warning-soft: #3d3210;
-    --info: #93c5fd;
-    --info-foreground: #1b2126;
-    --info-soft: #1e2a3d;
-    --border: #5d6b74;
-    --input: #5d6b74;
-    --ring: #21b6bf;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
-    --chart-1: #21b6bf;
-    --chart-2: #7dd3a0;
-    --chart-3: #fde047;
-    --chart-4: #a4b3ba;
-    --chart-5: #f87171;
+    /* Dark neumórfico — exemplo-layout.jpg (carvão azulado) */
+    --background: #2e3539;
+    --foreground: #f0f0f0;
+    --card: #262c30;
+    --card-foreground: #f0f0f0;
+    --popover: #2a3135;
+    --popover-foreground: #f0f0f0;
+    --primary: #0ea5e9;
+    --primary-foreground: #ffffff;
+    --primary-soft: #0c2a3a;
+    --primary-dark: #38bdf8;
+    --secondary: #343b40;
+    --secondary-foreground: #b8b8b8;
+    --muted: #2a3135;
+    --muted-foreground: #8a8a8a;
+    --accent: #343b40;
+    --accent-foreground: #7dd3fc;
+    --destructive: #ff4d4d;
+    --destructive-foreground: #121212;
+    --success: #00c853;
+    --success-foreground: #04140a;
+    --success-soft: #0c2416;
+    --warning: #ffb800;
+    --warning-foreground: #121212;
+    --warning-soft: #2a2208;
+    --info: #00e5c8;
+    --info-foreground: #041814;
+    --info-soft: #0a2420;
+    --border: rgba(255, 255, 255, 0.06);
+    --input: rgba(255, 255, 255, 0.08);
+    --ring: #0ea5e9;
+    --radius: 1.5rem;
+    --edge-light: rgba(255, 255, 255, 0.09);
+    --edge-dark: rgba(0, 0, 0, 0.55);
+    --shadow-sm:
+      4px 4px 12px rgb(0 0 0 / 0.55),
+      -2px -2px 8px rgb(255 255 255 / 0.03);
+    --shadow-md:
+      12px 14px 32px rgb(0 0 0 / 0.65),
+      -5px -5px 18px rgb(255 255 255 / 0.035),
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      inset 0 -1px 0 rgb(0 0 0 / 0.35);
+    --shadow-lg:
+      18px 22px 48px rgb(0 0 0 / 0.7),
+      -6px -8px 24px rgb(255 255 255 / 0.03),
+      inset 0 1px 0 rgb(255 255 255 / 0.07);
+    --chart-1: #ff6a00;
+    --chart-2: #00c853;
+    --chart-3: #ffb800;
+    --chart-4: #6b6b6b;
+    --chart-5: #ff4d4d;
+    --grad-warm: linear-gradient(180deg, #ffd54f 0%, #ff6a00 50%, #c43a00 100%);
+    --grad-cool: linear-gradient(180deg, #00e5c8 0%, #00c853 50%, #007a3d 100%);
+    --grad-amber: linear-gradient(180deg, #ffe082 0%, #ffb800 100%);
+    --grad-brand: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 52%, #0284c7 100%);
+    /* Página: topo/direita mais claros → base/esquerda mais escuros */
+    --grad-page:
+      radial-gradient(ellipse 90% 65% at 85% 0%, #434e51 0%, transparent 55%),
+      radial-gradient(ellipse 55% 45% at 100% 100%, #363e42 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 0% 85%, #252b2f 0%, transparent 45%),
+      linear-gradient(165deg, #3b4347 0%, #2e3539 48%, #22282c 100%);
   }
 
   * {
@@ -101,11 +137,20 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     margin: 0;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: var(--background);
+    background-image: var(--grad-page);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  :root:not(.dark) body,
+  html:not(.dark) body {
+    background-image: var(--grad-page);
   }
 
   h1,
@@ -155,24 +200,86 @@
     @apply list-inside space-y-1;
   }
 
+  /* Superfície elevada estilo exemplo-layout (neumórfico suave) */
+  .surface-neo {
+    background:
+      linear-gradient(155deg, #2f363a 0%, #262c30 42%, #22282c 100%);
+    border: 1px solid var(--edge-light);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+
+  .dark .surface-neo,
+  html.dark .surface-neo {
+    background:
+      linear-gradient(155deg, #2f363a 0%, #262c30 42%, #22282c 100%);
+  }
+
+  html:not(.dark) .surface-neo {
+    background: linear-gradient(155deg, #ffffff 0%, #f2f2f2 100%);
+    border-color: rgba(255, 255, 255, 0.9);
+  }
+
   .surface-brand {
-    @apply border bg-card shadow-md;
-    border-color: var(--border);
-    background-image: radial-gradient(
-      ellipse 80% 60% at 100% 0%,
-      color-mix(in srgb, var(--primary) 16%, transparent),
-      transparent 55%
-    );
+    @apply surface-neo;
+    background-image:
+      radial-gradient(
+        ellipse 80% 55% at 100% 0%,
+        color-mix(in srgb, var(--primary) 22%, transparent),
+        transparent 55%
+      ),
+      linear-gradient(155deg, #2f363a 0%, #262c30 42%, #22282c 100%);
+  }
+
+  html:not(.dark) .surface-brand {
+    background-image:
+      radial-gradient(
+        ellipse 80% 55% at 100% 0%,
+        color-mix(in srgb, var(--primary) 14%, transparent),
+        transparent 55%
+      ),
+      linear-gradient(155deg, #ffffff 0%, #f2f2f2 100%);
   }
 
   .accent-bar {
-    @apply absolute inset-y-0 left-0 w-1 bg-primary;
+    @apply absolute inset-y-0 left-0 w-1;
+    background: var(--grad-brand);
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, var(--foreground), var(--primary));
+    background: var(--grad-brand);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .kpi-label {
+    @apply text-xs font-medium uppercase tracking-wide text-muted-foreground;
+  }
+
+  .kpi-value {
+    @apply text-2xl font-semibold tabular-nums text-foreground;
+    text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+
+  .fill-grad-warm {
+    background: var(--grad-warm);
+  }
+
+  .fill-grad-cool {
+    background: var(--grad-cool);
+  }
+
+  /* Barras de cobertura / progresso estilo dashboard */
+  .progress-neo {
+    @apply h-2.5 overflow-hidden rounded-full;
+    background: rgb(0 0 0 / 0.35);
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.5);
+  }
+
+  .progress-neo > span {
+    @apply block h-full rounded-full;
+    background: var(--grad-brand);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 45%, transparent);
   }
 }

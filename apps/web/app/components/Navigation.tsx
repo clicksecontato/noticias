@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/news", label: "Notícias" },
   { href: "/videos", label: "Vídeos" },
   { href: "/sistema", label: "Sistema" },
+  { href: "/admin", label: "Admin" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -43,7 +44,7 @@ export function Navigation() {
   return (
     <>
       <nav
-        className="sticky top-0 z-50 w-full border-b border-border bg-card/95 shadow-sm backdrop-blur-md"
+        className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/85 shadow-md backdrop-blur-xl"
         role="navigation"
         aria-label="Menu principal"
       >
@@ -110,7 +111,6 @@ export function Navigation() {
           </div>
         )}
       </nav>
-      <div className="h-16 shrink-0" aria-hidden />
     </>
   );
 }

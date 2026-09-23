@@ -1,0 +1,28 @@
+---
+description: Propósito do produto — ferramenta pessoal de agregação/relatórios/conteúdo IA (não site público)
+alwaysApply: true
+---
+
+# Propósito do produto
+
+Este repositório **não** é um site público multi-usuário. É uma **ferramenta pessoal** usada só pelo operador no computador local. Não será publicado para audiência externa.
+
+## Objetivos (nesta ordem de valor)
+
+1. **Agregar** informações sobre assuntos (foco atual: tudo que envolve IA) — RSS, YouTube, catálogo.
+2. **Relatórios** relevantes sobre o agregado, para aprender, ensinar e compartilhar com a comunidade nos vídeos do operador.
+3. **Criar conteúdos** a partir das informações agregadas (pauta, shorts, apresentações, etc.).
+4. **Organizar** o acervo (assuntos, tipos, tags, fontes, filtro editorial/pauta).
+
+## Implicações para UX e produto
+
+- Único usuário = o operador. Priorizar **eficiência operacional** sobre marketing, onboarding de visitantes ou SEO de audiência massiva.
+- **Admin no menu** é desejável e necessário (atalho diário). Não remover sob pretexto de “site público limpo”.
+- A **página inicial pública não é o destino principal**. Pode redirecionar para `/admin` (ou equivalente operacional). Páginas `/news`, `/videos`, `/sistema` etc. servem como **preview/utilidade do operador**, não como portal aberto.
+- Evitar copy e empty states voltados a “visitante do site” (“ainda não há conteúdo, volte depois”). Preferir orientação operacional quando fizer sentido.
+- Decisões de UI devem facilitar: ingestão → organização → relatório → criação/compartilhamento de conteúdo.
+
+## O que não mudar por causa disto
+
+- Glossário canônico (`subject`/`type`/`tag`/`source`) e depreciação do domínio games.
+- Boundaries de packages, TDD e ADRs existentes.

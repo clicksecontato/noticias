@@ -7,6 +7,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { useChartGradientFills } from "@/src/ui/chart-gradients";
 
 export interface ByTagsItem {
   tag_id: string;
@@ -29,6 +30,7 @@ interface TagsChartProps {
 }
 
 export function TagsChart({ data }: TagsChartProps) {
+  const { defs, fillWarm } = useChartGradientFills();
   const chartData = data.slice(0, MAX_BARS);
   if (!chartData.length) return null;
 
@@ -39,7 +41,8 @@ export function TagsChart({ data }: TagsChartProps) {
         layout="vertical"
         margin={{ left: 80, right: 12, top: 4, bottom: 4 }}
       >
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-muted" />
+        {defs}
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
         <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis
           type="category"
@@ -51,7 +54,7 @@ export function TagsChart({ data }: TagsChartProps) {
           tickFormatter={(v) => (v.length > 22 ? `${v.slice(0, 20)}…` : v)}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="count" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="count" fill={fillWarm} radius={[0, 8, 8, 0]} />
       </BarChart>
     </ChartContainer>
   );

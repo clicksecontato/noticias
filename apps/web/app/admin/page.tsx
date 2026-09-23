@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminHubClient } from "./AdminHubClient";
 
 export default function AdminPage() {
-  redirect("/admin/ingestao");
+  return <AdminHubClient />;
 }

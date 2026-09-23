@@ -7,6 +7,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { useChartGradientFills } from "@/src/ui/chart-gradients";
 
 export interface TopSubjectsItem {
   subject_id: string;
@@ -39,6 +40,7 @@ interface TopSubjectsChartProps {
 }
 
 export function TopSubjectsChart({ data }: TopSubjectsChartProps) {
+  const { defs, fillWarm, fillCool } = useChartGradientFills();
   const chartData = data.slice(0, MAX_BARS);
   if (!chartData.length) return null;
 
@@ -49,7 +51,8 @@ export function TopSubjectsChart({ data }: TopSubjectsChartProps) {
         layout="vertical"
         margin={{ left: 80, right: 12, top: 4, bottom: 4 }}
       >
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-muted" />
+        {defs}
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
         <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis
           type="category"
@@ -61,8 +64,8 @@ export function TopSubjectsChart({ data }: TopSubjectsChartProps) {
           tickFormatter={(v) => (v.length > 20 ? `${v.slice(0, 18)}…` : v)}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="articles" fill="var(--chart-1)" radius={[0, 4, 4, 0]} stackId="s" />
-        <Bar dataKey="videos" fill="var(--chart-2)" radius={[0, 4, 4, 0]} stackId="s" />
+        <Bar dataKey="articles" fill={fillWarm} radius={[0, 8, 8, 0]} stackId="s" />
+        <Bar dataKey="videos" fill={fillCool} radius={[0, 8, 8, 0]} stackId="s" />
       </BarChart>
     </ChartContainer>
   );

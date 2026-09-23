@@ -71,6 +71,10 @@ export interface ListArticlesFilters {
   dateFrom?: string;
   /** ISO date string (inclusive). */
   dateTo?: string;
+  /** true = na pauta; false = fora; undefined = todos. */
+  isNews?: boolean;
+  /** Só artigos sem vínculo em article_subjects. */
+  withoutSubject?: boolean;
 }
 
 export const newsRepository = {
@@ -86,11 +90,12 @@ export const newsRepository = {
 
   async countArticles(filters: ListArticlesFilters = {}): Promise<number> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
 
     let query = client.from("articles").select("id", { count: "exact", head: true });
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
     if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
+    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
 
     if (sourceId) {
       const { data: linkRows, error: linkError } = await client
@@ -103,6 +108,19 @@ export const newsRepository = {
       query = query.in("id", articleIds);
     }
 
+    if (withoutSubject) {
+      const { data: linked, error: linkErr } = await client
+        .from("article_subjects")
+        .select("article_id");
+      if (linkErr) throw new Error(linkErr.message);
+      const withSubject = [
+        ...new Set((linked ?? []).map((r: { article_id: string }) => r.article_id)),
+      ];
+      if (withSubject.length > 0) {
+        query = query.not("id", "in", `(${withSubject.join(",")})`);
+      }
+    }
+
     const { count, error } = await query;
     if (error) throw new Error(error.message);
     return count ?? 0;
@@ -110,7 +128,7 @@ export const newsRepository = {
 
   async listArticles(limit = 100, offset = 0, filters: Omit<ListArticlesFilters, "limit" | "offset"> = {}): Promise<ArticleListRow[]> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
 
     let query = client
       .from("articles")
@@ -119,6 +137,7 @@ export const newsRepository = {
 
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
     if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
+    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
 
     if (sourceId) {
       const { data: linkRows, error: linkError } = await client
@@ -129,6 +148,19 @@ export const newsRepository = {
       const articleIds = (linkRows ?? []).map((r: { article_id: string }) => r.article_id);
       if (articleIds.length === 0) return [];
       query = query.in("id", articleIds);
+    }
+
+    if (withoutSubject) {
+      const { data: linked, error: linkErr } = await client
+        .from("article_subjects")
+        .select("article_id");
+      if (linkErr) throw new Error(linkErr.message);
+      const withSubject = [
+        ...new Set((linked ?? []).map((r: { article_id: string }) => r.article_id)),
+      ];
+      if (withSubject.length > 0) {
+        query = query.not("id", "in", `(${withSubject.join(",")})`);
+      }
     }
 
     const { data: rows, error } = await query.range(offset, offset + limit - 1);

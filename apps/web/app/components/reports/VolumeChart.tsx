@@ -13,6 +13,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { useChartGradientFills } from "@/src/ui/chart-gradients";
 
 export interface VolumeSeriesPoint {
   date: string;
@@ -43,12 +44,14 @@ interface VolumeChartProps {
 }
 
 export function VolumeChart({ data, groupBy }: VolumeChartProps) {
+  const { defs, fillWarm, fillCool, strokeWarm, strokeCool } = useChartGradientFills();
   if (!data.length) return null;
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[280px] w-full">
       <AreaChart data={data} margin={{ left: 12, right: 12 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        {defs}
+        <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
         <XAxis
           dataKey="date"
           tickLine={false}
@@ -66,17 +69,17 @@ export function VolumeChart({ data, groupBy }: VolumeChartProps) {
           type="monotone"
           dataKey="articles"
           stackId="a"
-          stroke="var(--chart-1)"
-          fill="var(--chart-1)"
-          fillOpacity={0.6}
+          stroke={strokeWarm}
+          fill={fillWarm}
+          strokeWidth={2}
         />
         <Area
           type="monotone"
           dataKey="videos"
           stackId="a"
-          stroke="var(--chart-2)"
-          fill="var(--chart-2)"
-          fillOpacity={0.6}
+          stroke={strokeCool}
+          fill={fillCool}
+          strokeWidth={2}
         />
       </AreaChart>
     </ChartContainer>

@@ -4,31 +4,59 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    "group/button inline-flex shrink-0 items-center justify-center",
+    "rounded-2xl border text-sm font-semibold whitespace-nowrap",
+    "transition-all duration-200 outline-none select-none",
+    "focus-visible:ring-3 focus-visible:ring-ring/35",
+    "active:translate-y-px",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-[var(--primary-dark)] hover:-translate-y-px",
-        outline:
-          "border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-muted",
+        default: [
+          "overflow-hidden border-transparent text-white",
+          /* degradê termina mais escuro à direita para evitar franja clara na ponta */
+          "bg-[linear-gradient(145deg,#38bdf8_0%,#0ea5e9_48%,#0284c7_100%)]",
+          "bg-clip-padding",
+          "shadow-[0_6px_20px_rgba(14,165,233,0.35)]",
+          "hover:bg-[linear-gradient(145deg,#7dd3fc_0%,#38bdf8_42%,#0ea5e9_100%)]",
+          "hover:shadow-[0_8px_24px_rgba(14,165,233,0.45)]",
+          "hover:-translate-y-px",
+        ].join(" "),
+        outline: [
+          "border border-white/15 bg-transparent text-foreground",
+          "hover:border-transparent hover:text-white",
+          "hover:bg-[linear-gradient(145deg,#38bdf8_0%,#0ea5e9_55%,#0284c7_100%)]",
+          "hover:shadow-[0_6px_18px_rgba(14,165,233,0.3)]",
+        ].join(" "),
+        secondary: [
+          "border border-white/10 bg-secondary text-secondary-foreground",
+          "shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "hover:bg-muted hover:border-white/15",
+        ].join(" "),
         ghost:
-          "border-transparent hover:bg-muted hover:text-foreground",
-        destructive:
-          "border-transparent bg-destructive/15 text-destructive hover:bg-destructive/25",
-        link: "border-transparent text-primary underline-offset-4 hover:underline",
+          "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground",
+        destructive: [
+          "overflow-hidden border-transparent text-white",
+          "bg-[linear-gradient(145deg,#ff6b6b_0%,#ff4d4d_55%,#dc2626_100%)]",
+          "shadow-[0_4px_14px_rgba(255,77,77,0.3)]",
+          "hover:brightness-110",
+        ].join(" "),
+        link: "border-transparent rounded-md text-primary underline-offset-4 hover:underline shadow-none",
       },
       size: {
         default:
           "h-10 gap-2 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
-        xs: "h-7 gap-1 rounded-md px-2.5 text-xs [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 gap-1.5 rounded-md px-3.5 text-sm [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-11 gap-2 px-6 text-base",
+        xs: "h-8 gap-1 px-3 text-xs [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-9 gap-1.5 px-4 text-sm [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-12 gap-2 px-7 text-base",
         icon: "size-10",
-        "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-9 rounded-md",
+        "icon-xs": "size-8 [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-9",
         "icon-lg": "size-11",
       },
     },

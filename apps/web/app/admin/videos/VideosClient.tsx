@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,11 @@ import {
 } from "@/components/ui/select";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
+import {
+  parsePautaFilter,
+  parseWithoutSubject,
+  type PautaFilter,
+} from "@/src/admin/list-filters";
 
 interface VideoRow {
   id: string;
@@ -40,6 +46,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function VideosClient() {
   const { showAlert, showConfirm, dialogs } = useSystemDialogs();
+  const searchParams = useSearchParams();
   const [list, setList] = useState<VideoRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -53,6 +60,12 @@ export function VideosClient() {
   const [sourceId, setSourceId] = useState<string>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [pauta, setPauta] = useState<PautaFilter>(() =>
+    parsePautaFilter(searchParams.get("pauta"))
+  );
+  const [semAssunto, setSemAssunto] = useState(() =>
+    parseWithoutSubject(searchParams.get("semAssunto"))
+  );
 
   function buildQuery() {
     const params = new URLSearchParams();
@@ -61,6 +74,9 @@ export function VideosClient() {
     if (sourceId) params.set("sourceId", sourceId);
     if (dateFrom) params.set("dateFrom", dateFrom);
     if (dateTo) params.set("dateTo", dateTo);
+    if (pauta === "in") params.set("pauta", "1");
+    if (pauta === "out") params.set("pauta", "0");
+    if (semAssunto) params.set("semAssunto", "1");
     return params.toString();
   }
 
@@ -89,7 +105,7 @@ export function VideosClient() {
 
   useEffect(() => {
     load();
-  }, [page, limit, sourceId, dateFrom, dateTo]);
+  }, [page, limit, sourceId, dateFrom, dateTo, pauta, semAssunto]);
 
   useEffect(() => {
     fetch("/api/admin/sources")
@@ -132,6 +148,8 @@ export function VideosClient() {
     setSourceId("");
     setDateFrom("");
     setDateTo("");
+    setPauta("all");
+    setSemAssunto(false);
     setPage(1);
   }
 
@@ -172,11 +190,17 @@ export function VideosClient() {
     }
   }
 
-  const hasFilters = sourceId || dateFrom || dateTo;
+  const hasFilters = sourceId || dateFrom || dateTo || pauta !== "all" || semAssunto;
 
   const sourceSelectItems = {
     __all__: "Todos os canais",
     ...Object.fromEntries(sources.map((s) => [s.id, s.name])),
+  };
+
+  const pautaSelectItems = {
+    all: "Todas",
+    in: "Na pauta",
+    out: "Fora da pauta",
   };
 
   const pageSizeItems = Object.fromEntries(
@@ -236,6 +260,41 @@ export function VideosClient() {
               />
             </div>
             <div className="space-y-2">
+              <Label className="text-xs">Pauta</Label>
+              <Select
+                value={pauta}
+                onValueChange={(v) => {
+                  setPauta((v as PautaFilter) || "all");
+                  setPage(1);
+                }}
+                items={pautaSelectItems}
+              >
+                <SelectTrigger className="w-[160px] bg-background text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="in">Na pauta</SelectItem>
+                  <SelectItem value="out">Fora da pauta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 pb-1">
+              <input
+                id="sem-assunto-video"
+                type="checkbox"
+                checked={semAssunto}
+                onChange={(e) => {
+                  setSemAssunto(e.target.checked);
+                  setPage(1);
+                }}
+                className="size-4 accent-primary"
+              />
+              <Label htmlFor="sem-assunto-video" className="cursor-pointer text-xs font-normal">
+                Sem assunto
+              </Label>
+            </div>
+            <div className="space-y-2">
               <Label className="text-xs">Por página</Label>
               <Select
                 value={String(limit)}
@@ -288,8 +347,7 @@ export function VideosClient() {
                   <thead>
                     <tr className="border-b border-border">
                       <th className="p-2 text-left">Título</th>
-                      <th className="p-2 text-left max-w-[200px]">Descrição</th>
-                      <th className="p-2 text-left">Conteúdo</th>
+                      <th className="p-2 text-left">Na pauta</th>
                       <th className="p-2 text-left">Canal</th>
                       <th className="p-2 text-left">Data</th>
                       <th className="p-2 text-left">Assuntos / Tags</th>
@@ -304,9 +362,6 @@ export function VideosClient() {
                             {v.title}
                           </Link>
                         </td>
-                        <td className="p-2 max-w-[200px] text-muted-foreground text-xs line-clamp-2">
-                          {v.description ?? "—"}
-                        </td>
                         <td className="p-2">
                           <Button
                             type="button"
@@ -315,7 +370,7 @@ export function VideosClient() {
                             className="h-7 cursor-pointer px-2.5 font-normal transition-opacity hover:opacity-90"
                             disabled={togglingId === v.id}
                             onClick={() => handleToggleIsNews(v.id, v.is_news)}
-                            title="Clique para alternar (exibir no site e relatórios)"
+                            title="Clique para alternar se entra na pauta editorial"
                           >
                             {togglingId === v.id ? "…" : v.is_news ? "Sim" : "Não"}
                           </Button>

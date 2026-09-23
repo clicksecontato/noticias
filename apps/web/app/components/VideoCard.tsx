@@ -1,7 +1,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -36,7 +35,7 @@ export function VideoCard({ video, className }: VideoCardProps) {
   return (
     <Card
       className={cn(
-        "overflow-hidden border-border/80 transition-colors hover:border-primary/40 hover:bg-primary-soft/40",
+        "overflow-hidden border-border/80 pt-0 transition-colors hover:border-primary/40 hover:bg-primary-soft/40",
         className
       )}
     >
@@ -44,27 +43,27 @@ export function VideoCard({ video, className }: VideoCardProps) {
         href={video.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="group block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group relative block w-full shrink-0 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {video.thumbnailUrl ? (
           <img
             src={video.thumbnailUrl}
             alt=""
-            className="aspect-video h-auto w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="aspect-video h-auto w-full rounded-t-[var(--radius)] object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             width={320}
             height={180}
             loading="lazy"
           />
         ) : (
           <div
-            className="flex aspect-video w-full items-center justify-center bg-muted text-sm text-muted-foreground"
+            className="flex aspect-video w-full items-center justify-center rounded-t-[var(--radius)] bg-muted text-sm text-muted-foreground"
             aria-hidden
           >
             Vídeo
           </div>
         )}
       </a>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 pt-4">
         <CardTitle className="text-base leading-snug">
           <a
             href={video.url}
@@ -77,11 +76,6 @@ export function VideoCard({ video, className }: VideoCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 pt-0">
-        {video.description ? (
-          <CardDescription className="line-clamp-2 text-sm leading-snug">
-            {video.description}
-          </CardDescription>
-        ) : null}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium text-foreground/80">{video.sourceName}</span>
           <span aria-hidden className="text-border">

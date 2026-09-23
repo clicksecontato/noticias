@@ -5,7 +5,9 @@
 
 ## Contexto
 
-O monorepo nasceu orientado a **games/jogos**. O produto é um portal de **notícias de inteligência artificial** com **vídeos YouTube**, reutilizando ingestão, admin, enrichment e SEO programático — sem acoplamento semântico a jogos.
+O monorepo nasceu orientado a **games/jogos**. O produto é um acervo de **notícias de inteligência artificial** com **vídeos YouTube**, reutilizando ingestão, admin, enrichment e SEO programático — sem acoplamento semântico a jogos.
+
+**Uso:** ferramenta **pessoal** do operador (local), não portal público multi-usuário. Objetivos: agregar → organizar → relatar → criar/compartilhar conteúdo. Detalhes em `AGENTS.md` e `.cursor/rules/product-purpose.mdc`.
 
 ## Decisão
 

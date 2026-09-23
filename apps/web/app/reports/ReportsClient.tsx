@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageBackLink } from "../components/PageBackLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,9 @@ const statusVariant = (status: string): "default" | "secondary" | "destructive" 
 };
 
 export function ReportsClient() {
+  const searchParams = useSearchParams();
+  const initialType = searchParams.get("type")?.trim() || "volume";
+
   const now = new Date();
   const currentYear = now.getUTCFullYear();
   const currentMonth = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -105,7 +109,7 @@ export function ReportsClient() {
   const [generateSuccess, setGenerateSuccess] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    reportType: "volume",
+    reportType: REPORT_TYPE_LABELS[initialType] ? initialType : "volume",
     periodStart: "",
     periodEnd: "",
     monthPresentationYear: String(currentYear),

@@ -4,7 +4,7 @@ import { createReportRepository } from "../../../../../packages/database/src/rep
 export const metadata = {
   title: "Apresentação do Mês",
   description:
-    "Resumo executivo mensal com dados de audiência e oportunidades comerciais para marcas, criadores e parceiros de conteúdo.",
+    "Resumo mensal do acervo para aprender, ensinar e montar roteiros de vídeo.",
 };
 
 async function getLatestMonthPresentationReport() {

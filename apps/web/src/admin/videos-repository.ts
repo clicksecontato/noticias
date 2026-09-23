@@ -54,6 +54,8 @@ export interface ListVideosFilters {
   sourceId?: string;
   dateFrom?: string;
   dateTo?: string;
+  isNews?: boolean;
+  withoutSubject?: boolean;
 }
 
 export const videosRepository = {
@@ -70,12 +72,28 @@ export const videosRepository = {
 
   async countVideos(filters: ListVideosFilters = {}): Promise<number> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
 
     let query = client.from("youtube_videos").select("id", { count: "exact", head: true });
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
     if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
     if (sourceId) query = query.eq("source_id", sourceId);
+    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
+
+    if (withoutSubject) {
+      const { data: linked, error: linkErr } = await client
+        .from("youtube_video_subjects")
+        .select("youtube_video_id");
+      if (linkErr) throw new Error(linkErr.message);
+      const withSubject = [
+        ...new Set(
+          (linked ?? []).map((r: { youtube_video_id: string }) => r.youtube_video_id)
+        ),
+      ];
+      if (withSubject.length > 0) {
+        query = query.not("id", "in", `(${withSubject.join(",")})`);
+      }
+    }
 
     const { count, error } = await query;
     if (error) throw new Error(error.message);
@@ -88,7 +106,7 @@ export const videosRepository = {
     filters: Omit<ListVideosFilters, "limit" | "offset"> = {}
   ): Promise<VideoListRow[]> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
 
     let query = client
       .from("youtube_videos")
@@ -98,6 +116,22 @@ export const videosRepository = {
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
     if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
     if (sourceId) query = query.eq("source_id", sourceId);
+    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
+
+    if (withoutSubject) {
+      const { data: linked, error: linkErr } = await client
+        .from("youtube_video_subjects")
+        .select("youtube_video_id");
+      if (linkErr) throw new Error(linkErr.message);
+      const withSubject = [
+        ...new Set(
+          (linked ?? []).map((r: { youtube_video_id: string }) => r.youtube_video_id)
+        ),
+      ];
+      if (withSubject.length > 0) {
+        query = query.not("id", "in", `(${withSubject.join(",")})`);
+      }
+    }
 
     const { data: rows, error } = await query.range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);

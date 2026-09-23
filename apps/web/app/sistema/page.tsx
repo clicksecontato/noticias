@@ -65,10 +65,8 @@ function Kpi({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="text-2xl font-semibold tabular-nums text-foreground">{value}</p>
+      <p className="kpi-label">{label}</p>
+      <p className="kpi-value">{value}</p>
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -82,11 +80,8 @@ function CoverageBar({ label, pct }: { label: string; pct: number }) {
         <span>{label}</span>
         <span className="tabular-nums text-muted-foreground">{formatPct(pct)}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-[width]"
-          style={{ width: `${width}%` }}
-        />
+      <div className="progress-neo">
+        <span style={{ width: `${width}%` }} />
       </div>
     </div>
   );
@@ -103,23 +98,25 @@ export default async function SistemaPage() {
           A máquina que organiza a pauta
         </h1>
         <p className="max-w-2xl text-muted-foreground">
-          Este portal tem dois lados: o consumo da pauta de inteligência artificial
-          e a transparência do sistema que a monta — fontes, ingestão, filtro
-          editorial e vínculos temáticos. Os números abaixo vêm do banco em
-          produção (atualizados a cada ~15 minutos).
+          Visão do pipeline operacional: fontes, ingestão, filtro editorial (pauta)
+          e vínculos temáticos. Números do banco (atualizados a cada ~15 minutos).
         </p>
         <p className="text-sm text-muted-foreground">
-          Quer só a pauta? Veja{" "}
-          <Link href="/news" className="text-primary underline-offset-2 hover:underline">
+          Atalhos:{" "}
+          <Link href="/admin" className="text-primary underline-offset-2 hover:underline">
+            hub
+          </Link>
+          ,{" "}
+          <Link href="/admin/noticias" className="text-primary underline-offset-2 hover:underline">
             notícias
           </Link>
           ,{" "}
-          <Link href="/videos" className="text-primary underline-offset-2 hover:underline">
+          <Link href="/admin/videos" className="text-primary underline-offset-2 hover:underline">
             vídeos
           </Link>{" "}
-          e o{" "}
-          <Link href="/roteiro" className="text-primary underline-offset-2 hover:underline">
-            roteiro da semana
+          e{" "}
+          <Link href="/admin/reports" className="text-primary underline-offset-2 hover:underline">
+            relatórios
           </Link>
           .
         </p>
@@ -133,7 +130,7 @@ export default async function SistemaPage() {
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {PIPELINE_STEPS.map((item) => (
               <li key={item.step} className="relative space-y-2">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(145deg,#38bdf8,#0ea5e9,#0284c7)] text-sm font-semibold text-white shadow-[0_4px_12px_rgba(14,165,233,0.35)]">
                   {item.step}
                 </span>
                 <h2 className="text-base font-semibold">{item.title}</h2>

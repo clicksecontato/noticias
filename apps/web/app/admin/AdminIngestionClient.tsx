@@ -13,7 +13,9 @@ import { formatIngestionDurationMs } from "@/src/ui/format-ingestion-duration";
 import {
   areAllSourcesSelected,
   deselectAllSourceIds,
+  isSourceStale,
   selectAllSourceIds,
+  selectStaleSourceIds,
   toggleSourceId,
 } from "@/src/admin/source-selection";
 
@@ -25,6 +27,8 @@ interface SourceItem {
   isActive: boolean;
   provider?: "rss" | "youtube";
   channelId?: string;
+  lastIngestedAt?: string;
+  lastIngestionDurationMs?: number;
 }
 
 interface ApiResult {
@@ -56,6 +60,10 @@ export function AdminIngestionClient({
   const availableIds = useMemo(() => sources.map((s) => s.id), [sources]);
   const allSelected = areAllSourcesSelected(selectedSourceIds, availableIds);
   const selectedCount = selectedSourceIds.length;
+  const staleCount = useMemo(
+    () => selectStaleSourceIds(sources).length,
+    [sources]
+  );
 
   function loadSources(mode: "select-all" | "preserve" = "preserve") {
     fetch("/api/admin/sources")
@@ -92,6 +100,24 @@ export function AdminIngestionClient({
     setSelectedSourceIds(
       allSelected ? deselectAllSourceIds() : selectAllSourceIds(availableIds)
     );
+  }
+
+  function onSelectStale() {
+    setSelectedSourceIds(selectStaleSourceIds(sources));
+  }
+
+  function formatLastIngested(iso?: string) {
+    if (!iso) return "nunca ingerida";
+    try {
+      return new Date(iso).toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
   }
 
   async function onTriggerIngestion() {
@@ -136,8 +162,7 @@ export function AdminIngestionClient({
           Ingestão manual
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Dispare a busca e criação de notícias em Português Brasileiro. Para cadastrar
-          fontes, use{" "}
+          Busque e agregue artigos/vídeos das fontes ativas. Cadastro em{" "}
           <Link
             href="/admin/fontes"
             className="text-primary underline-offset-2 hover:underline"
@@ -174,6 +199,15 @@ export function AdminIngestionClient({
               </div>
               {sources.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onSelectStale}
+                    disabled={staleCount === 0}
+                  >
+                    Só atrasadas ({staleCount})
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -228,6 +262,24 @@ export function AdminIngestionClient({
                               >
                                 {s.provider === "youtube" ? "YouTube" : "RSS"}
                               </Badge>
+                              <Badge
+                                variant={
+                                  isSourceStale(s.lastIngestedAt)
+                                    ? "warning"
+                                    : "secondary"
+                                }
+                                className="text-xs font-normal"
+                              >
+                                {isSourceStale(s.lastIngestedAt)
+                                  ? "Atrasada"
+                                  : "Ok"}
+                              </Badge>
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              Última: {formatLastIngested(s.lastIngestedAt)}
+                              {typeof s.lastIngestionDurationMs === "number"
+                                ? ` · ${formatIngestionDurationMs(s.lastIngestionDurationMs)}`
+                                : ""}
                             </span>
                             {s.provider === "youtube" && s.channelId ? (
                               <span className="block text-xs text-muted-foreground">
@@ -255,7 +307,7 @@ export function AdminIngestionClient({
             onClick={onTriggerIngestion}
             disabled={isLoading || selectedSourceIds.length === 0}
           >
-            {isLoading ? "Processando..." : "Buscar e criar notícias"}
+            {isLoading ? "Processando..." : "Ingerir fontes selecionadas"}
           </Button>
         </CardContent>
       </Card>

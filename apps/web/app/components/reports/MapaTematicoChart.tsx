@@ -9,6 +9,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { PIE_COLORS } from "@/src/ui/chart-gradients";
 
 export interface MapaTematicoChartItem {
   cluster_id: string;
@@ -16,15 +17,6 @@ export interface MapaTematicoChartItem {
   total: number;
   share_pct: number;
 }
-
-const pieColors = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--muted-foreground)",
-];
 
 const chartConfig = {
   total: { label: "Cobertura" },
@@ -41,7 +33,7 @@ export function MapaTematicoChart({ data }: MapaTematicoChartProps) {
   const config = chartData.reduce((acc, row, index) => {
     acc[row.cluster_id] = {
       label: row.cluster_label,
-      color: pieColors[index % pieColors.length],
+      color: PIE_COLORS[index % PIE_COLORS.length],
     };
     return acc;
   }, {} as ChartConfig);
@@ -69,14 +61,15 @@ export function MapaTematicoChart({ data }: MapaTematicoChartProps) {
           nameKey="cluster_label"
           cx="50%"
           cy="50%"
-          innerRadius={48}
+          innerRadius={52}
           outerRadius={96}
           paddingAngle={2}
+          strokeWidth={0}
         >
           {chartData.map((row, index) => (
             <Cell
               key={row.cluster_id}
-              fill={pieColors[index % pieColors.length]}
+              fill={PIE_COLORS[index % PIE_COLORS.length]}
             />
           ))}
         </Pie>

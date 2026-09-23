@@ -33,6 +33,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { PIE_COLORS } from "@/src/ui/chart-gradients";
+import { NeoChartContainer } from "@/src/ui/NeoChartContainer";
 
 interface MonthPresentationPayload {
   summary: {
@@ -81,10 +83,7 @@ interface MonthPresentationPayload {
   script: Array<{ title: string; text: string }>;
 }
 
-const pieColors = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-];
+const pieColors = [...PIE_COLORS];
 
 const sourceMixConfig = {
   fontes: { label: "Fontes", color: "var(--chart-1)" },
@@ -505,17 +504,20 @@ export function MonthPresentationClient({
           </CardHeader>
           <CardContent className="flex flex-col gap-3 pb-6">
             <div className="h-[240px] w-full shrink-0">
-              <ChartContainer config={sourceMixConfig} className="aspect-auto h-full w-full min-h-0">
-                <BarChart data={sourceMix}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tipo" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="fontes" fill="var(--color-fontes)" radius={[6, 6, 0, 0]} isAnimationActive />
-                  <Bar dataKey="conteudos" fill="var(--color-conteudos)" radius={[6, 6, 0, 0]} isAnimationActive />
-                </BarChart>
-              </ChartContainer>
+              <NeoChartContainer config={sourceMixConfig} className="aspect-auto h-full w-full min-h-0">
+                {({ defs, fillWarm, fillCool }) => (
+                  <BarChart data={sourceMix}>
+                    {defs}
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                    <XAxis dataKey="tipo" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="fontes" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
+                    <Bar dataKey="conteudos" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
+                  </BarChart>
+                )}
+              </NeoChartContainer>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
             Leitura rápida: RSS domina em volume bruto, YouTube tende a puxar contexto mais denso por conteúdo.
@@ -531,7 +533,7 @@ export function MonthPresentationClient({
             <div className="h-[240px] w-full shrink-0">
               <ChartContainer config={sourceMixConfig} className="aspect-auto h-full w-full min-h-0">
                 <PieChart>
-                  <Pie data={sourceMix} dataKey="share" nameKey="tipo" outerRadius={95} isAnimationActive>
+                  <Pie data={sourceMix} dataKey="share" nameKey="tipo" innerRadius={58} outerRadius={98} paddingAngle={3} strokeWidth={0} isAnimationActive>
                     {sourceMix.map((_, idx) => (
                       <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
                     ))}
@@ -556,26 +558,28 @@ export function MonthPresentationClient({
             <div className="h-[260px] w-full shrink-0">
               <ChartContainer config={monthlyEvolutionConfig} className="aspect-auto h-full w-full min-h-0">
                 <LineChart data={monthlyEvolution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/25" vertical={false} />
+                  <XAxis dataKey="mes" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Line
                     type="monotone"
                     dataKey="conteudos"
-                    stroke="var(--color-conteudos)"
-                    strokeWidth={3}
+                    stroke="#ff6a00"
+                    strokeWidth={2.5}
                     dot={false}
                     isAnimationActive
+                    style={{ filter: "drop-shadow(0 0 6px rgba(255,106,0,0.55))" }}
                   />
                   <Line
                     type="monotone"
                     dataKey="vinculos"
-                    stroke="var(--color-vinculos)"
-                    strokeWidth={3}
+                    stroke="#00c853"
+                    strokeWidth={2.5}
                     dot={false}
                     isAnimationActive
+                    style={{ filter: "drop-shadow(0 0 6px rgba(0,200,83,0.45))" }}
                   />
                 </LineChart>
               </ChartContainer>
@@ -610,18 +614,21 @@ export function MonthPresentationClient({
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pb-6">
           <div className="h-[280px] w-full shrink-0">
-            <ChartContainer config={linkQualityConfig} className="aspect-auto h-full w-full min-h-0">
-              <BarChart data={linkQualityByType}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tipo" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="assuntos" fill="var(--color-assuntos)" isAnimationActive />
-                <Bar dataKey="tags" fill="var(--color-tags)" isAnimationActive />
-                <Bar dataKey="tipos" fill="var(--color-tipos)" isAnimationActive />
-              </BarChart>
-            </ChartContainer>
+            <NeoChartContainer config={linkQualityConfig} className="aspect-auto h-full w-full min-h-0">
+              {({ defs, fillWarm, fillCool, fillAmber }) => (
+                <BarChart data={linkQualityByType}>
+                  {defs}
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                  <XAxis dataKey="tipo" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="assuntos" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
+                  <Bar dataKey="tags" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
+                  <Bar dataKey="tipos" fill={fillAmber} radius={[10, 10, 4, 4]} isAnimationActive />
+                </BarChart>
+              )}
+            </NeoChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Explicação para vídeo: compare densidade por tipo para mostrar o equilíbrio entre volume e profundidade.
@@ -648,25 +655,25 @@ export function MonthPresentationClient({
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs font-medium text-muted-foreground">RSS (todos os itens)</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.articles.total}</p>
+                <div className="rounded-[var(--radius)] border border-border p-3">
+                  <p className="kpi-label">RSS (todos os itens)</p>
+                  <p className="kpi-value mt-1">{newsRelevance.articles.total}</p>
                   <p className="text-xs text-muted-foreground">
                     {newsRelevance.articles.subjects_context} relevantes · {newsRelevance.articles.generic} genéricos ·{" "}
                     {newsRelevance.articles.pct_subjects}% relevantes
                   </p>
                 </div>
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs font-medium text-muted-foreground">YouTube (todos os itens)</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.videos.total}</p>
+                <div className="rounded-[var(--radius)] border border-border p-3">
+                  <p className="kpi-label">YouTube (todos os itens)</p>
+                  <p className="kpi-value mt-1">{newsRelevance.videos.total}</p>
                   <p className="text-xs text-muted-foreground">
                     {newsRelevance.videos.subjects_context} relevantes · {newsRelevance.videos.generic} genéricos ·{" "}
                     {newsRelevance.videos.pct_subjects}% relevantes
                   </p>
                 </div>
-                <div className="rounded-lg border border-border p-3 bg-muted/20">
-                  <p className="text-xs font-medium text-muted-foreground">Combinado</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{newsRelevance.combined.total}</p>
+                <div className="rounded-[var(--radius)] border border-border bg-muted/20 p-3">
+                  <p className="kpi-label">Combinado</p>
+                  <p className="kpi-value mt-1">{newsRelevance.combined.total}</p>
                   <p className="text-xs text-muted-foreground">
                     {newsRelevance.combined.subjects_context} relevantes · {newsRelevance.combined.generic} genéricos ·{" "}
                     {newsRelevance.combined.pct_subjects}% relevantes
@@ -674,29 +681,32 @@ export function MonthPresentationClient({
                 </div>
               </div>
               <div className="h-[220px] w-full shrink-0">
-                <ChartContainer config={newsRelevanceStackConfig} className="aspect-auto h-full w-full min-h-0">
-                  <BarChart data={newsRelevanceBarData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="canal" />
-                    <YAxis allowDecimals={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar
-                      dataKey="relevantes"
-                      stackId="a"
-                      fill="var(--color-relevantes)"
-                      radius={[0, 0, 0, 0]}
-                      isAnimationActive
-                    />
-                    <Bar
-                      dataKey="genericos"
-                      stackId="a"
-                      fill="var(--color-genericos)"
-                      radius={[4, 4, 0, 0]}
-                      isAnimationActive
-                    />
-                  </BarChart>
-                </ChartContainer>
+                <NeoChartContainer config={newsRelevanceStackConfig} className="aspect-auto h-full w-full min-h-0">
+                  {({ defs, fillWarm, fillAmber }) => (
+                    <BarChart data={newsRelevanceBarData}>
+                      {defs}
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                      <XAxis dataKey="canal" tickLine={false} axisLine={false} />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Bar
+                        dataKey="relevantes"
+                        stackId="a"
+                        fill={fillWarm}
+                        radius={[0, 0, 0, 0]}
+                        isAnimationActive
+                      />
+                      <Bar
+                        dataKey="genericos"
+                        stackId="a"
+                        fill={fillAmber}
+                        radius={[10, 10, 0, 0]}
+                        isAnimationActive
+                      />
+                    </BarChart>
+                  )}
+                </NeoChartContainer>
               </div>
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full min-w-[640px] text-left text-sm">
@@ -741,17 +751,20 @@ export function MonthPresentationClient({
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pb-6">
           <div className="h-[260px] w-full shrink-0">
-            <ChartContainer config={cadenceConfig} className="aspect-auto h-full w-full min-h-0">
-              <BarChart data={cadenceByWeekday}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="dia" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="rss" fill="var(--color-rss)" radius={[4, 4, 0, 0]} isAnimationActive />
-                <Bar dataKey="youtube" fill="var(--color-youtube)" radius={[4, 4, 0, 0]} isAnimationActive />
-              </BarChart>
-            </ChartContainer>
+            <NeoChartContainer config={cadenceConfig} className="aspect-auto h-full w-full min-h-0">
+              {({ defs, fillWarm, fillCool }) => (
+                <BarChart data={cadenceByWeekday}>
+                  {defs}
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                  <XAxis dataKey="dia" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="rss" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
+                  <Bar dataKey="youtube" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
+                </BarChart>
+              )}
+            </NeoChartContainer>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Visão agregada do período: útil para ver em quais dias da semana o agregador recebe mais RSS e mais YouTube.
@@ -807,23 +820,30 @@ export function MonthPresentationClient({
 
               {selectedCadenceSource ? (
                 <div className="h-[260px] w-full shrink-0">
-                  <ChartContainer
+                  <NeoChartContainer
                     config={sourceWeekdayChartConfig}
                     className="aspect-auto h-full w-full min-h-0"
                   >
-                    <BarChart data={selectedCadenceSource.dias}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="dia" />
-                      <YAxis allowDecimals={false} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar
-                        dataKey="conteudos"
-                        fill="var(--color-conteudos)"
-                        radius={[4, 4, 0, 0]}
-                        isAnimationActive
-                      />
-                    </BarChart>
-                  </ChartContainer>
+                    {({ defs, fillWarm, fillCool }) => (
+                      <BarChart data={selectedCadenceSource.dias}>
+                        {defs}
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                        <XAxis dataKey="dia" tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar
+                          dataKey="conteudos"
+                          fill={
+                            selectedCadenceSource.provider === "youtube"
+                              ? fillCool
+                              : fillWarm
+                          }
+                          radius={[10, 10, 4, 4]}
+                          isAnimationActive
+                        />
+                      </BarChart>
+                    )}
+                  </NeoChartContainer>
                 </div>
               ) : null}
 

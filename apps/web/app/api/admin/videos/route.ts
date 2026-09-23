@@ -1,4 +1,9 @@
 import { videosRepository } from "@/src/admin/videos-repository";
+import {
+  parsePautaFilter,
+  parseWithoutSubject,
+  pautaFilterToIsNews,
+} from "@/src/admin/list-filters";
 import { NextResponse } from "next/server";
 
 const DEFAULT_LIMIT = 20;
@@ -12,9 +17,11 @@ export async function GET(request: Request): Promise<Response> {
     const sourceId = searchParams.get("sourceId")?.trim() || undefined;
     const dateFrom = searchParams.get("dateFrom")?.trim() || undefined;
     const dateTo = searchParams.get("dateTo")?.trim() || undefined;
+    const isNews = pautaFilterToIsNews(parsePautaFilter(searchParams.get("pauta")));
+    const withoutSubject = parseWithoutSubject(searchParams.get("semAssunto"));
 
     const offset = (page - 1) * limit;
-    const filters = { sourceId, dateFrom, dateTo };
+    const filters = { sourceId, dateFrom, dateTo, isNews, withoutSubject };
 
     const [items, total] = await Promise.all([
       videosRepository.listVideos(limit, offset, filters),
