@@ -18,20 +18,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: [
-          "overflow-hidden border-transparent text-white",
-          /* degradê termina mais escuro à direita para evitar franja clara na ponta */
-          "bg-[linear-gradient(145deg,#38bdf8_0%,#0ea5e9_48%,#0284c7_100%)]",
+          "overflow-hidden border-transparent text-[#1a1410]",
+          "bg-[linear-gradient(145deg,#e8c49a_0%,#d4a574_48%,#a67c52_100%)]",
           "bg-clip-padding",
-          "shadow-[0_6px_20px_rgba(14,165,233,0.35)]",
-          "hover:bg-[linear-gradient(145deg,#7dd3fc_0%,#38bdf8_42%,#0ea5e9_100%)]",
-          "hover:shadow-[0_8px_24px_rgba(14,165,233,0.45)]",
+          "shadow-[0_6px_20px_rgba(212,165,116,0.35)]",
+          "hover:bg-[linear-gradient(145deg,#f0d4a8_0%,#e8c49a_42%,#d4a574_100%)]",
+          "hover:shadow-[0_8px_24px_rgba(212,165,116,0.45)]",
           "hover:-translate-y-px",
         ].join(" "),
         outline: [
           "border border-white/15 bg-transparent text-foreground",
-          "hover:border-transparent hover:text-white",
-          "hover:bg-[linear-gradient(145deg,#38bdf8_0%,#0ea5e9_55%,#0284c7_100%)]",
-          "hover:shadow-[0_6px_18px_rgba(14,165,233,0.3)]",
+          "hover:border-transparent hover:text-[#1a1410]",
+          "hover:bg-[linear-gradient(145deg,#e8c49a_0%,#d4a574_55%,#a67c52_100%)]",
+          "hover:shadow-[0_6px_18px_rgba(212,165,116,0.3)]",
         ].join(" "),
         secondary: [
           "border border-white/10 bg-secondary text-secondary-foreground",

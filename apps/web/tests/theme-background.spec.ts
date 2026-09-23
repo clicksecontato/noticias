@@ -7,17 +7,15 @@ const globalsCss = readFileSync(
   "utf8"
 );
 
-describe("theme background (exemplo-layout.jpg)", () => {
-  it("define fundo dark carvão azulado amostrado da referência", () => {
+describe("theme background (exemplo-layout-final)", () => {
+  it("define fundo dark carvão profundo do modelo final", () => {
     const darkBlock = globalsCss.match(/\.dark\s*\{([\s\S]*?)\n  \}/)?.[1];
     expect(darkBlock).toBeTruthy();
-    expect(darkBlock).toMatch(/--background:\s*#2e3539\b/);
+    expect(darkBlock).toMatch(/--background:\s*#1a1a1a\b/);
   });
 
-  it("define degradê de página com tons semelhantes da referência", () => {
-    expect(globalsCss).toMatch(
-      /--grad-page:\s*[^;]*#3b4347[^;]*#2e3539[^;]*#22282c/
-    );
+  it("define degradê de página carvão", () => {
+    expect(globalsCss).toMatch(/--grad-page:\s*[^;]*#1a1a1a/);
   });
 
   it("aplica o degradê de página no body dark", () => {

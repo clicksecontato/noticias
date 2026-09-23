@@ -17,7 +17,15 @@ import {
   isSourceStale,
   selectStaleSourceIds,
 } from "@/src/admin/source-selection";
+import {
+  buildSourceFreshnessBars,
+  buildSourceHealthSlices,
+} from "@/src/admin/source-status-chart";
 import { formatIngestionDurationMs } from "@/src/ui/format-ingestion-duration";
+import {
+  SourceFreshnessBars,
+  SourceHealthDonut,
+} from "./components/SourceStatusCharts";
 
 interface SourceItem {
   id: string;
@@ -56,6 +64,14 @@ export function AdminHubClient() {
   }, []);
 
   const staleIds = useMemo(() => selectStaleSourceIds(sources), [sources]);
+  const healthSlices = useMemo(
+    () => buildSourceHealthSlices(sources),
+    [sources]
+  );
+  const freshnessBars = useMemo(
+    () => buildSourceFreshnessBars(sources),
+    [sources]
+  );
   const lastIngested = useMemo(() => {
     const times = sources
       .map((s) => s.lastIngestedAt)
@@ -102,10 +118,6 @@ export function AdminHubClient() {
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Hub operacional
         </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-          Agregar → organizar → relatar → criar conteúdo. Atalhos do ritual
-          diário.
-        </p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -155,41 +167,65 @@ export function AdminHubClient() {
               .
             </p>
           ) : (
-            <ul className="divide-y divide-border/70">
-              {sources.map((s) => {
-                const stale = isSourceStale(s.lastIngestedAt);
-                return (
-                  <li
-                    key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatWhen(s.lastIngestedAt)}
-                        {typeof s.lastIngestionDurationMs === "number"
-                          ? ` · ${formatIngestionDurationMs(s.lastIngestionDurationMs)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={s.provider === "youtube" ? "info" : "soft"}
-                        className="text-xs"
+            <div className="grid gap-8 lg:grid-cols-[240px_1fr] lg:items-start">
+              <div className="space-y-3">
+                <p className="text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Saúde da ingestão
+                </p>
+                <SourceHealthDonut slices={healthSlices} total={sources.length} />
+                <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-[#d4a574]" />
+                    Em dia ({sources.length - staleIds.length})
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-[#c4784a]" />
+                    Atrasada ({staleIds.length})
+                  </span>
+                </div>
+              </div>
+              <div className="min-w-0 space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Horas desde a última ingestão
+                </p>
+                <SourceFreshnessBars bars={freshnessBars} />
+                <ul className="mt-2 divide-y divide-border/70 border-t border-border/60 pt-2">
+                  {sources.map((s) => {
+                    const stale = isSourceStale(s.lastIngestedAt);
+                    return (
+                      <li
+                        key={s.id}
+                        className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
                       >
-                        {s.provider === "youtube" ? "YouTube" : "RSS"}
-                      </Badge>
-                      <Badge
-                        variant={stale ? "warning" : "secondary"}
-                        className="text-xs"
-                      >
-                        {stale ? "Atrasada" : "Ok"}
-                      </Badge>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatWhen(s.lastIngestedAt)}
+                            {typeof s.lastIngestionDurationMs === "number"
+                              ? ` · ${formatIngestionDurationMs(s.lastIngestionDurationMs)}`
+                              : ""}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={s.provider === "youtube" ? "info" : "soft"}
+                            className="text-xs"
+                          >
+                            {s.provider === "youtube" ? "YouTube" : "RSS"}
+                          </Badge>
+                          <Badge
+                            variant={stale ? "warning" : "secondary"}
+                            className="text-xs"
+                          >
+                            {stale ? "Atrasada" : "Ok"}
+                          </Badge>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

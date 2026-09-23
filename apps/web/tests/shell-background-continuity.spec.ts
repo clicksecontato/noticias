@@ -6,30 +6,28 @@ const adminLayout = readFileSync(
   resolve(__dirname, "../app/admin/components/AdminLayoutClient.tsx"),
   "utf8"
 );
+const appShell = readFileSync(
+  resolve(__dirname, "../app/components/AppShell.tsx"),
+  "utf8"
+);
 const navigation = readFileSync(
   resolve(__dirname, "../app/components/Navigation.tsx"),
   "utf8"
 );
-const footer = readFileSync(
-  resolve(__dirname, "../app/components/Footer.tsx"),
-  "utf8"
-);
 
-describe("shell background continuity (admin ≈ /videos)", () => {
-  it("admin main não pinta degradê próprio sobre o fundo da página", () => {
+describe("shell admin sem menu topo", () => {
+  it("admin main sem degradê próprio e com padding dinâmico da sidebar", () => {
     expect(adminLayout).not.toMatch(/bg-gradient-to-br/);
-    expect(adminLayout).not.toMatch(/from-background/);
-    expect(adminLayout).toMatch(/<main className="[^"]*pl-56/);
+    expect(adminLayout).toMatch(/pl-16|pl-56/);
+    expect(adminLayout).not.toMatch(/top-16/);
   });
 
-  it("nav e footer usam token de fundo (sem hex legado preto)", () => {
-    expect(navigation).not.toMatch(/bg-\[#161616\]/);
-    expect(navigation).toMatch(/bg-background\//);
-    expect(footer).not.toMatch(/bg-\[#141414\]/);
-    expect(footer).toMatch(/bg-background\//);
+  it("AppShell omite Navigation no admin", () => {
+    expect(appShell).toMatch(/isAdminApp/);
+    expect(appShell).toMatch(/Navigation/);
   });
 
-  it("nav sticky não deixa faixa fantasma (spacer) abaixo do menu", () => {
+  it("nav sticky sem spacer fantasma", () => {
     expect(navigation).not.toMatch(/h-16 shrink-0/);
   });
 });

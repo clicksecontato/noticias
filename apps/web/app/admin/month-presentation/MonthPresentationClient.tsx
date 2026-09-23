@@ -566,11 +566,11 @@ export function MonthPresentationClient({
                   <Line
                     type="monotone"
                     dataKey="conteudos"
-                    stroke="#ff6a00"
+                    stroke="#d4a574"
                     strokeWidth={2.5}
                     dot={false}
                     isAnimationActive
-                    style={{ filter: "drop-shadow(0 0 6px rgba(255,106,0,0.55))" }}
+                    style={{ filter: "drop-shadow(0 0 6px rgba(212,165,116,0.55))" }}
                   />
                   <Line
                     type="monotone"

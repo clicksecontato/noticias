@@ -130,7 +130,7 @@ export default async function SistemaPage() {
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {PIPELINE_STEPS.map((item) => (
               <li key={item.step} className="relative space-y-2">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(145deg,#38bdf8,#0ea5e9,#0284c7)] text-sm font-semibold text-white shadow-[0_4px_12px_rgba(14,165,233,0.35)]">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(145deg,#e8c49a,#d4a574,#a67c52)] text-sm font-semibold text-[#1a1410] shadow-[0_4px_12px_rgba(212,165,116,0.35)]">
                   {item.step}
                 </span>
                 <h2 className="text-base font-semibold">{item.title}</h2>

@@ -3,19 +3,18 @@
 import { useId, type ReactElement } from "react";
 
 /**
- * Gradientes luminosos (exemplo-layout):
- * warm = laranja → âmbar; cool = verde → ciano; amber = amarelo.
- * Hex estáveis + IDs únicos por instância.
+ * Gradientes luminosos (exemplo-layout-final):
+ * warm = gold/bronze; cool = verde → ciano; amber = cream-gold.
  */
 const HEX = {
-  warmTop: "#ffd54f",
-  warmMid: "#ff6a00",
-  warmBot: "#c43a00",
+  warmTop: "#e8c49a",
+  warmMid: "#d4a574",
+  warmBot: "#a67c52",
   coolTop: "#00e5c8",
   coolMid: "#00c853",
   coolBot: "#007a3d",
-  amberTop: "#ffe082",
-  amberBot: "#ffb800",
+  amberTop: "#f0d4a8",
+  amberBot: "#d4a574",
 } as const;
 
 export const PIE_COLORS = [

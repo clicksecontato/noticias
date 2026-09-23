@@ -1,13 +1,39 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/client";
 import { AdminSidebar } from "./AdminSidebar";
+import { cn } from "@/lib/utils";
+
+const COLLAPSED_KEY = "admin-sidebar-collapsed";
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isLoginPage = pathname === "/admin/login";
+  const [collapsed, setCollapsed] = useState(true);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COLLAPSED_KEY);
+      if (raw === "0") setCollapsed(false);
+      else if (raw === "1") setCollapsed(true);
+    } catch {
+      /* ignore */
+    }
+    setReady(true);
+  }, []);
+
+  function handleCollapsedChange(next: boolean) {
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function handleLogout() {
     const supabase = createClient();
@@ -21,10 +47,21 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 w-full">
-      <AdminSidebar onLogout={handleLogout} />
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto pl-56">
-        <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8 lg:py-10">{children}</div>
+    <div className="flex min-h-screen w-full">
+      <AdminSidebar
+        collapsed={ready ? collapsed : true}
+        onCollapsedChange={handleCollapsedChange}
+        onLogout={handleLogout}
+      />
+      <main
+        className={cn(
+          "min-h-screen min-w-0 flex-1 overflow-y-auto overflow-x-auto transition-[padding] duration-200 ease-out",
+          collapsed ? "pl-16" : "pl-56"
+        )}
+      >
+        <div className="mx-auto max-w-6xl px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+          {children}
+        </div>
       </main>
     </div>
   );
