@@ -157,7 +157,7 @@ export default async function RoteiroPage() {
 
   return (
     <section className="space-y-8">
-      <PageBackLink href="/">← Início</PageBackLink>
+      <PageBackLink href="/">Início</PageBackLink>
       <h1 className="text-2xl font-semibold">Roteiros</h1>
       <p className="text-muted-foreground">
         Roteiro de apresentação do canal e roteiro da semana com dados atualizados do banco. Use na

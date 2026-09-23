@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { runContentIngestion } from "../src/content-ingestion-orchestrator";
-import type { ContentSource, FetchedContentItem } from "../src/content-sources/types";
+import type {
+  ContentFetchOutcome,
+  ContentSource,
+  FetchedContentItem
+} from "../src/content-sources/types";
 import type { IContentFetcher } from "../src/fetchers/content-fetcher.interface";
 import type { IContentPersister } from "../src/persisters/content-persister.interface";
 
@@ -123,5 +127,44 @@ describe("Content Ingestion Orchestrator", () => {
 
     expect(result.failedSources.s1).toBe("DB error");
     expect(result.totalCreated).toBe(0);
+  });
+
+  it("mede durationMs por fonte com relógio injetável", async () => {
+    let tick = 1_000;
+    const result = await runContentIngestion([rssSource], {
+      getFetcher: () => ({
+        fetch: async () => {
+          tick += 250;
+          return stubFetcher([]).fetch(rssSource);
+        }
+      }),
+      getPersister: () => ({
+        persist: async () => {
+          tick += 150;
+          return { created: 1, skipped: 0, skippedItems: [] };
+        }
+      }),
+      nowMs: () => tick
+    });
+
+    expect(result.resultsBySource.s1.fetchStats?.durationMs).toBe(400);
+    expect(result.durationMsBySource.s1).toBe(400);
+  });
+
+  it("mede durationMs também em falha", async () => {
+    let tick = 5_000;
+    const result = await runContentIngestion([rssSource], {
+      getFetcher: () => ({
+        fetch: async () => {
+          tick += 90;
+          throw new Error("timeout");
+        }
+      }),
+      getPersister: () => stubPersister(0, 0),
+      nowMs: () => tick
+    });
+
+    expect(result.failedSources.s1).toBe("timeout");
+    expect(result.durationMsBySource.s1).toBe(90);
   });
 });

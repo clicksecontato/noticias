@@ -156,6 +156,23 @@ describe("Database Agent - content repository", () => {
     expect(ign).toBeUndefined();
   });
 
+  it("updateSourceIngestionTiming persiste e reaparece em getContentSourcesForIngestion (memory)", async () => {
+    const repository = createContentRepository();
+    const before = await repository.getContentSourcesForIngestion();
+    const target = before[0];
+    expect(target).toBeDefined();
+
+    await repository.updateSourceIngestionTiming(target.id, {
+      lastIngestedAt: "2026-09-22T22:00:00.000Z",
+      durationMs: 1500
+    });
+
+    const after = await repository.getContentSourcesForIngestion();
+    const updated = after.find((s) => s.id === target.id);
+    expect(updated?.lastIngestedAt).toBe("2026-09-22T22:00:00.000Z");
+    expect(updated?.lastIngestionDurationMs).toBe(1500);
+  });
+
   it("saveYoutubeVideos retorna shape esperado (memory: no-op)", async () => {
     const repository = createContentRepository();
     const result = await repository.saveYoutubeVideos("s1", [

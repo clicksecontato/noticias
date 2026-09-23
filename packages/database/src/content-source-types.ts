@@ -14,6 +14,15 @@ export interface ContentSourceRecord {
   rssUrl?: string | null;
   channelId?: string | null;
   isActive: boolean;
+  /** ISO timestamp da última tentativa de ingestão. */
+  lastIngestedAt?: string | null;
+  /** Wall-clock da última ingestão em ms. */
+  lastIngestionDurationMs?: number | null;
+}
+
+export interface SourceIngestionTimingUpdate {
+  lastIngestedAt: string;
+  durationMs: number;
 }
 
 export interface YoutubeVideoItem {

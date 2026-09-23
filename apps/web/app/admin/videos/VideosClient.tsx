@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSystemDialogs } from "../../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
 interface VideoRow {
   id: string;
@@ -37,6 +39,7 @@ interface SourceOption {
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function VideosClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const [list, setList] = useState<VideoRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -111,11 +114,11 @@ export function VideosClient() {
       });
       if (!res.ok) {
         setList((prev) => prev.map((v) => (v.id === id ? { ...v, is_news: current } : v)));
-        alert("Falha ao atualizar. Tente de novo.");
+        showAlert("Falha ao atualizar. Tente de novo.", "Erro");
       }
     } catch {
       setList((prev) => prev.map((v) => (v.id === id ? { ...v, is_news: current } : v)));
-      alert("Falha ao atualizar. Tente de novo.");
+      showAlert("Falha ao atualizar. Tente de novo.", "Erro");
     } finally {
       setTogglingId(null);
     }
@@ -132,19 +135,29 @@ export function VideosClient() {
     setPage(1);
   }
 
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Excluir o vídeo "${title.slice(0, 50)}${title.length > 50 ? "…" : ""}"?`)) return;
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE" });
-      if (res.ok) load();
-      else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Erro ao excluir.");
-      }
-    } finally {
-      setDeletingId(null);
-    }
+  function handleDelete(id: string, title: string) {
+    const copy = buildDeleteConfirmCopy({
+      entity: "vídeo",
+      name: title,
+      maxNameLength: 50,
+    });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        setDeletingId(id);
+        try {
+          const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE" });
+          if (res.ok) load();
+          else {
+            const data = await res.json().catch(() => ({}));
+            showAlert(data.error || "Erro ao excluir.", "Erro");
+          }
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   }
 
   function formatDate(iso: string) {
@@ -161,8 +174,18 @@ export function VideosClient() {
 
   const hasFilters = sourceId || dateFrom || dateTo;
 
+  const sourceSelectItems = {
+    __all__: "Todos os canais",
+    ...Object.fromEntries(sources.map((s) => [s.id, s.name])),
+  };
+
+  const pageSizeItems = Object.fromEntries(
+    PAGE_SIZE_OPTIONS.map((n) => [String(n), String(n)])
+  );
+
   return (
     <div className="space-y-6">
+      {dialogs}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Vídeos</h1>
       </div>
@@ -181,9 +204,10 @@ export function VideosClient() {
               <Select
                 value={sourceId || "__all__"}
                 onValueChange={(v) => setSourceId(v === "__all__" ? "" : (v ?? ""))}
+                items={sourceSelectItems}
               >
                 <SelectTrigger className="w-[200px] bg-background text-foreground">
-                  <SelectValue placeholder="Todos" />
+                  <SelectValue placeholder="Todos os canais" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">Todos os canais</SelectItem>
@@ -219,6 +243,7 @@ export function VideosClient() {
                   setLimit(Number(v));
                   setPage(1);
                 }}
+                items={pageSizeItems}
               >
                 <SelectTrigger className="w-[100px] bg-background text-foreground">
                   <SelectValue />

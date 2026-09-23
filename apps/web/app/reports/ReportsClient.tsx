@@ -266,7 +266,7 @@ export function ReportsClient() {
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/admin">← Início</PageBackLink>
+      <PageBackLink href="/admin">Início</PageBackLink>
       <h2 className="text-2xl font-semibold">Relatórios</h2>
       <p className="text-muted-foreground">
         Dados sobre publicações (artigos e vídeos) dos principais canais no Brasil.
@@ -594,7 +594,7 @@ export function ReportsClient() {
               <p className="text-sm text-destructive">{generateError}</p>
             ) : null}
             {generateSuccess ? (
-              <p className="text-sm text-primary">{generateSuccess}</p>
+              <p className="text-sm text-success">{generateSuccess}</p>
             ) : null}
           </form>
         </CardContent>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,10 @@ export default function NovaNoticiaPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Link href="/admin/noticias">
-          <Button variant="ghost" size="sm">← Notícias</Button>
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <ChevronLeft className="size-4 shrink-0" aria-hidden />
+            Notícias
+          </Button>
         </Link>
       </div>
       <h1 className="text-2xl font-semibold">Nova notícia</h1>

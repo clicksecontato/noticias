@@ -65,7 +65,7 @@ export default async function ReportDetailPage({
   if (!report) {
     return (
       <section className="space-y-4">
-        <PageBackLink href="/reports">← Relatórios</PageBackLink>
+        <PageBackLink href="/reports">Relatórios</PageBackLink>
         <p className="text-muted-foreground">Relatório não encontrado.</p>
       </section>
     );
@@ -77,7 +77,7 @@ export default async function ReportDetailPage({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/reports">← Relatórios</PageBackLink>
+      <PageBackLink href="/reports">Relatórios</PageBackLink>
       <h2 className="text-2xl font-semibold">{label}</h2>
       <p className="text-muted-foreground">
         Período: {formatYMDAsPTBR(safeReport.periodStart)} a{" "}

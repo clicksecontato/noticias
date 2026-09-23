@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSystemDialogs } from "../../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
 interface ArticleRow {
   id: string;
@@ -37,6 +39,7 @@ interface SourceOption {
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function NoticiasClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const [list, setList] = useState<ArticleRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -110,11 +113,11 @@ export function NoticiasClient() {
       });
       if (!res.ok) {
         setList((prev) => prev.map((a) => (a.id === id ? { ...a, is_news: current } : a)));
-        alert("Falha ao atualizar. Tente de novo.");
+        showAlert("Falha ao atualizar. Tente de novo.", "Erro");
       }
     } catch {
       setList((prev) => prev.map((a) => (a.id === id ? { ...a, is_news: current } : a)));
-      alert("Falha ao atualizar. Tente de novo.");
+      showAlert("Falha ao atualizar. Tente de novo.", "Erro");
     } finally {
       setTogglingId(null);
     }
@@ -131,19 +134,29 @@ export function NoticiasClient() {
     setPage(1);
   }
 
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Excluir a notícia "${title.slice(0, 50)}${title.length > 50 ? "…" : ""}"?`)) return;
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/admin/news/${id}`, { method: "DELETE" });
-      if (res.ok) load();
-      else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Erro ao excluir.");
-      }
-    } finally {
-      setDeletingId(null);
-    }
+  function handleDelete(id: string, title: string) {
+    const copy = buildDeleteConfirmCopy({
+      entity: "notícia",
+      name: title,
+      maxNameLength: 50,
+    });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        setDeletingId(id);
+        try {
+          const res = await fetch(`/api/admin/news/${id}`, { method: "DELETE" });
+          if (res.ok) load();
+          else {
+            const data = await res.json().catch(() => ({}));
+            showAlert(data.error || "Erro ao excluir.", "Erro");
+          }
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   }
 
   function formatDate(iso: string) {
@@ -160,8 +173,18 @@ export function NoticiasClient() {
 
   const hasFilters = sourceId || dateFrom || dateTo;
 
+  const sourceSelectItems = {
+    __all__: "Todas as fontes",
+    ...Object.fromEntries(sources.map((s) => [s.id, s.name])),
+  };
+
+  const pageSizeItems = Object.fromEntries(
+    PAGE_SIZE_OPTIONS.map((n) => [String(n), String(n)])
+  );
+
   return (
     <div className="space-y-6">
+      {dialogs}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Notícias</h1>
         <Link href="/admin/noticias/nova">
@@ -183,9 +206,10 @@ export function NoticiasClient() {
               <Select
                 value={sourceId || "__all__"}
                 onValueChange={(v) => setSourceId(v === "__all__" ? "" : (v ?? ""))}
+                items={sourceSelectItems}
               >
                 <SelectTrigger className="w-[200px] bg-background text-foreground">
-                  <SelectValue placeholder="Todas" />
+                  <SelectValue placeholder="Todas as fontes" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">Todas as fontes</SelectItem>
@@ -221,6 +245,7 @@ export function NoticiasClient() {
                   setLimit(Number(v));
                   setPage(1);
                 }}
+                items={pageSizeItems}
               >
                 <SelectTrigger className="w-[100px] bg-background text-foreground">
                   <SelectValue />

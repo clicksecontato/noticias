@@ -20,12 +20,32 @@ const config = {
         primary: {
           DEFAULT: "var(--primary)",
           foreground: "var(--primary-foreground)",
+          soft: "var(--primary-soft)",
+          dark: "var(--primary-dark)",
         },
         secondary: {
           DEFAULT: "var(--secondary)",
           foreground: "var(--secondary-foreground)",
         },
-        destructive: "var(--destructive)",
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          foreground: "var(--success-foreground)",
+          soft: "var(--success-soft)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          foreground: "var(--warning-foreground)",
+          soft: "var(--warning-soft)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          foreground: "var(--info-foreground)",
+          soft: "var(--info-soft)",
+        },
         muted: {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
@@ -42,6 +62,14 @@ const config = {
           DEFAULT: "var(--popover)",
           foreground: "var(--popover-foreground)",
         },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Arial", "Helvetica", "sans-serif"],
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
       },
       borderRadius: {
         lg: "var(--radius)",

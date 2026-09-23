@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import { generateRouteMetadata } from "../../../src/publishing";
 import { createRouteContentProvider } from "../../../src/content-provider";
 import { EntityChips } from "../../components/EntityChips";
@@ -60,10 +61,12 @@ export default async function NewsPage({
 
   return (
     <article className="space-y-6">
-      <PageBackLink href="/news">← Voltar às notícias</PageBackLink>
+      <PageBackLink href="/news">Voltar às notícias</PageBackLink>
 
       <header className="space-y-2">
-        <p className="text-sm font-medium text-primary">{article.sourceName}</p>
+        <p className="inline-flex items-center rounded-md bg-primary-soft px-2 py-0.5 text-sm font-medium text-primary">
+          {article.sourceName}
+        </p>
         <h1 className="text-3xl font-bold leading-tight tracking-tight">
           {article.title}
         </h1>
@@ -112,9 +115,10 @@ export default async function NewsPage({
             href={article.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 font-medium text-primary no-underline hover:underline"
           >
-            Leia no {article.sourceName} →
+            Leia no {article.sourceName}
+            <ExternalLink className="size-4 shrink-0" aria-hidden />
           </a>
         </p>
       ) : null}

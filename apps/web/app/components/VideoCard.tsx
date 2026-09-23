@@ -34,38 +34,43 @@ export function VideoCard({ video, className }: VideoCardProps) {
   });
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden border-border/80 transition-colors hover:border-primary/40 hover:bg-primary-soft/40",
+        className
+      )}
+    >
       <a
         href={video.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {video.thumbnailUrl ? (
           <img
             src={video.thumbnailUrl}
             alt=""
-            className="h-auto w-full object-cover"
+            className="aspect-video h-auto w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             width={320}
             height={180}
             loading="lazy"
           />
         ) : (
           <div
-            className="flex aspect-video w-full items-center justify-center bg-muted text-muted-foreground"
+            className="flex aspect-video w-full items-center justify-center bg-muted text-sm text-muted-foreground"
             aria-hidden
           >
             Vídeo
           </div>
         )}
       </a>
-      <CardHeader className="pb-1">
-        <CardTitle className="text-base">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base leading-snug">
           <a
             href={video.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-foreground hover:underline"
+            className="font-semibold text-foreground no-underline hover:text-primary hover:no-underline"
           >
             {video.title}
           </a>
@@ -77,8 +82,13 @@ export function VideoCard({ video, className }: VideoCardProps) {
             {video.description}
           </CardDescription>
         ) : null}
-        <p className="text-xs text-muted-foreground">{video.sourceName}</p>
-        <p className="text-xs text-muted-foreground/80">{dateStr}</p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/80">{video.sourceName}</span>
+          <span aria-hidden className="text-border">
+            ·
+          </span>
+          <time dateTime={video.publishedAt}>{dateStr}</time>
+        </div>
         <EntityChips
           subjectNames={video.subjectNames}
           tagNames={video.tagNames}

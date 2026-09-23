@@ -3,6 +3,7 @@ import { createRouteContentProvider } from "../../src/content-provider";
 import { FilterChipRow } from "../components/FilterChipRow";
 import { PageBackLink } from "../components/PageBackLink";
 import { PaginationNav } from "../components/PaginationNav";
+import { SectionHeader } from "../components/SectionHeader";
 import { VideoCard } from "../components/VideoCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -53,15 +54,16 @@ export default async function VideosPage({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/">← Início</PageBackLink>
-      <h2 className="text-2xl font-semibold">Vídeos de IA</h2>
-      <p className="text-muted-foreground">
-        Vídeos dos nossos canais parceiros no YouTube.
-      </p>
+      <PageBackLink href="/">Início</PageBackLink>
+      <SectionHeader
+        level="page"
+        title="Vídeos de IA"
+        description="Vídeos dos nossos canais parceiros no YouTube."
+      />
 
-      <Card>
+      <Card className="border-border/80 shadow-sm">
         <CardContent className="pt-4">
-          <p className="mb-2 text-sm font-medium text-muted-foreground">Canal:</p>
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Canal</p>
           <FilterChipRow
             items={filters}
             activeId={sourceId || null}
@@ -71,9 +73,9 @@ export default async function VideosPage({
       </Card>
 
       {videos.length === 0 ? (
-        <Card>
-          <CardContent className="pt-4">
-            <p className="mb-3 text-muted-foreground">
+        <Card className="border-dashed border-border/80">
+          <CardContent className="px-6 py-10 text-center">
+            <p className="mb-4 text-muted-foreground">
               Nenhum vídeo encontrado. Execute a ingestão de fontes YouTube no admin para popular esta seção.
             </p>
             <Link href="/videos" className={buttonVariants({ variant: "default" })}>

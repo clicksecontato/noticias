@@ -314,7 +314,7 @@ export function MonthPresentationClient({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/admin">← Admin</PageBackLink>
+      <PageBackLink href="/admin">Admin</PageBackLink>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

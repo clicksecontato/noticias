@@ -47,7 +47,14 @@ export function getSchemaPolicies(): TablePolicy[] {
     },
     {
       table: "sources",
-      requiredColumns: ["id", "name", "base_url", "is_active"],
+      requiredColumns: [
+        "id",
+        "name",
+        "base_url",
+        "is_active",
+        "last_ingested_at",
+        "last_ingestion_duration_ms"
+      ],
       requiredIndexes: ["sources_base_url_unique_idx"],
       requiredConstraints: ["sources_pk", "sources_base_url_unique"]
     },

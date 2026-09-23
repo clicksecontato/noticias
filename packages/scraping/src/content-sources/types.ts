@@ -54,6 +54,8 @@ export interface IngestionFetchStats {
   youtubeItemsDroppedInvalid?: number;
   /** YouTube: entregues ao persister. */
   youtubeItemsDelivered?: number;
+  /** Wall-clock da rodada (fetch + persist) em milissegundos. */
+  durationMs?: number;
 }
 
 /** Resultado do fetcher: itens + estatísticas para logs e API admin. */

@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Plus, Rss } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AddSourceForm } from "../components/AddSourceForm";
+import { useSystemDialogs } from "../../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
+import { formatIngestionDurationMs } from "@/src/ui/format-ingestion-duration";
+
 interface SourceItem {
   id: string;
   name: string;
@@ -17,13 +21,17 @@ interface SourceItem {
   channelId?: string;
   baseUrl?: string;
   trustScore?: number;
+  lastIngestedAt?: string;
+  lastIngestionDurationMs?: number;
 }
 
 export function FontesClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const [sources, setSources] = useState<SourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   function loadSources() {
     setLoading(true);
@@ -50,11 +58,11 @@ export function FontesClient() {
       if (!res.ok) {
         setSources((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: current } : s)));
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Falha ao atualizar. Tente de novo.");
+        showAlert(data.error || "Falha ao atualizar. Tente de novo.", "Erro");
       }
     } catch {
       setSources((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: current } : s)));
-      alert("Falha ao atualizar. Tente de novo.");
+      showAlert("Falha ao atualizar. Tente de novo.", "Erro");
     } finally {
       setTogglingId(null);
     }
@@ -64,77 +72,140 @@ export function FontesClient() {
     loadSources();
   }, []);
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Excluir a fonte "${name}"? Artigos e vídeos vinculados podem ser afetados.`)) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/sources/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      if (res.ok) loadSources();
-      else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Erro ao excluir.");
-      }
-    } finally {
-      setDeleting(false);
-    }
+  function handleDelete(id: string, name: string) {
+    const copy = buildDeleteConfirmCopy({
+      entity: "fonte",
+      name,
+      consequence: "Artigos e vídeos vinculados podem ser afetados.",
+    });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        setDeleting(true);
+        try {
+          const res = await fetch(`/api/admin/sources/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+          });
+          if (res.ok) loadSources();
+          else {
+            const data = await res.json().catch(() => ({}));
+            showAlert(data.error || "Erro ao excluir.", "Erro");
+          }
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   }
 
   const rssCount = sources.filter((s) => s.provider === "rss").length;
   const youtubeCount = sources.filter((s) => s.provider === "youtube").length;
-  const titleSuffix =
-    loading ? "" : ` (RSS[${rssCount}] - YouTube[${youtubeCount}])`;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">
-          Fontes{titleSuffix}
-        </h1>
-        <Link href="/admin/ingestao">
-          <Button size="sm">Adicionar fonte (ingestão)</Button>
-        </Link>
-      </div>
-      <p className="text-muted-foreground">
-        Liste, edite ou remova fontes de conteúdo (RSS e YouTube). Para criar nova fonte, use o
-        formulário na página de Ingestão.
-      </p>
+      {dialogs}
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Fontes</h1>
+          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Cadastre e gerencie feeds RSS e canais YouTube usados na ingestão.
+          </p>
+          {!loading ? (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">{rssCount}</span> RSS ·{" "}
+              <span className="font-medium text-foreground/80">{youtubeCount}</span> YouTube ·{" "}
+              <span className="font-medium text-foreground/80">{sources.length}</span> no total
+            </p>
+          ) : null}
+        </div>
+        <Button
+          size="sm"
+          className="gap-1.5 shadow-sm shadow-primary/15"
+          onClick={() => setShowCreate((v) => !v)}
+        >
+          <Plus className="h-4 w-4" />
+          {showCreate ? "Fechar" : "Nova fonte"}
+        </Button>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Listagem</CardTitle>
+      {showCreate || (!loading && sources.length === 0) ? (
+        <AddSourceForm
+          title="Cadastrar fonte"
+          alwaysOpen
+          onCreated={() => {
+            loadSources();
+            setShowCreate(true);
+          }}
+        />
+      ) : null}
+
+      <Card className="overflow-hidden border-border/80 shadow-sm">
+        <CardHeader className="border-b border-border/60 bg-muted/15 pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <Rss className="h-4 w-4 text-primary" />
+            Listagem
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {loading ? (
             <p className="text-muted-foreground">Carregando…</p>
           ) : sources.length === 0 ? (
-            <p className="text-muted-foreground">Nenhuma fonte cadastrada.</p>
+            <div className="rounded-lg border border-dashed border-border bg-muted/10 px-6 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma fonte cadastrada. Use o formulário acima para criar a primeira.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Depois dispare a ingestão em{" "}
+                <Link href="/admin/ingestao" className="text-primary underline-offset-2 hover:underline">
+                  Ingestão
+                </Link>
+                .
+              </p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-md border border-border/60">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="p-2 text-left">Nome</th>
-                    <th className="p-2 text-left">ID</th>
-                    <th className="p-2 text-left">Tipo</th>
-                    <th className="p-2 text-left">Idioma</th>
-                    <th className="p-2 text-left">Ativo</th>
-                    <th className="p-2 text-right">Ações</th>
+                  <tr className="border-b border-border bg-muted/20 text-muted-foreground">
+                    <th className="p-3 text-left font-medium">Nome</th>
+                    <th className="p-3 text-left font-medium">ID</th>
+                    <th className="p-3 text-left font-medium">Tipo</th>
+                    <th className="p-3 text-left font-medium">Idioma</th>
+                    <th className="p-3 text-left font-medium">Última ingestão</th>
+                    <th className="p-3 text-left font-medium">Duração</th>
+                    <th className="p-3 text-left font-medium">Ativo</th>
+                    <th className="p-3 text-right font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sources.map((s) => (
-                    <tr key={s.id} className="border-b border-border">
-                      <td className="p-2 font-medium">{s.name}</td>
-                      <td className="p-2 text-muted-foreground">{s.id}</td>
-                      <td className="p-2">
-                        <Badge variant={s.provider === "youtube" ? "default" : "secondary"}>
+                    <tr
+                      key={s.id}
+                      className="border-b border-border/70 transition-colors hover:bg-muted/20"
+                    >
+                      <td className="p-3 font-medium">{s.name}</td>
+                      <td className="p-3 font-mono text-xs text-muted-foreground">{s.id}</td>
+                      <td className="p-3">
+                        <Badge variant={s.provider === "youtube" ? "info" : "soft"}>
                           {s.provider === "youtube" ? "YouTube" : "RSS"}
                         </Badge>
                       </td>
-                      <td className="p-2">{s.language}</td>
-                      <td className="p-2">
+                      <td className="p-3">{s.language}</td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {s.lastIngestedAt
+                          ? new Date(s.lastIngestedAt).toLocaleString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })
+                          : "—"}
+                      </td>
+                      <td className="p-3 font-mono text-xs tabular-nums">
+                        {formatIngestionDurationMs(s.lastIngestionDurationMs)}
+                      </td>
+                      <td className="p-3">
                         <Button
                           type="button"
                           variant={s.isActive ? "default" : "secondary"}
@@ -147,9 +218,11 @@ export function FontesClient() {
                           {togglingId === s.id ? "…" : s.isActive ? "Sim" : "Não"}
                         </Button>
                       </td>
-                      <td className="p-2 text-right">
+                      <td className="p-3 text-right">
                         <Link href={`/admin/fontes/${encodeURIComponent(s.id)}`}>
-                          <Button variant="outline" size="sm">Editar</Button>
+                          <Button variant="outline" size="sm">
+                            Editar
+                          </Button>
                         </Link>
                         <Button
                           variant="ghost"

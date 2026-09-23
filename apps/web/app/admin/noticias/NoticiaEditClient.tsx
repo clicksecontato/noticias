@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -157,8 +158,12 @@ export function NoticiaEditClient({
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/noticias" className="text-sm text-muted-foreground hover:text-foreground underline">
-        ← Notícias
+      <Link
+        href="/admin/noticias"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground no-underline hover:text-foreground hover:no-underline"
+      >
+        <ChevronLeft className="size-4 shrink-0" aria-hidden />
+        Notícias
       </Link>
       <h1 className="text-2xl font-semibold">Editar notícia</h1>
       <p className="text-muted-foreground">

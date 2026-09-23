@@ -68,6 +68,16 @@ export async function executeContentIngestion(
     getPersister
   });
 
+  const finishedAt = new Date().toISOString();
+  await Promise.all(
+    Object.entries(result.durationMsBySource).map(([sourceId, durationMs]) =>
+      repository.updateSourceIngestionTiming(sourceId, {
+        lastIngestedAt: finishedAt,
+        durationMs
+      })
+    )
+  );
+
   const createdBySource: Record<string, number> = {};
   const skippedBySource: Record<string, number> = {};
   const fetchStatsBySource: Record<string, IngestionFetchStats> = {};
@@ -80,6 +90,12 @@ export async function executeContentIngestion(
     if (!r) continue;
     if (r.fetchStats) {
       fetchStatsBySource[sourceId] = r.fetchStats;
+    } else if (result.durationMsBySource[sourceId] != null) {
+      const source = sources.find((s) => s.id === sourceId);
+      fetchStatsBySource[sourceId] = {
+        provider: source?.provider ?? "rss",
+        durationMs: result.durationMsBySource[sourceId]
+      };
     }
     const source = sources.find((s) => s.id === sourceId);
     if (source?.provider === "youtube") {
@@ -96,6 +112,16 @@ export async function executeContentIngestion(
         sourceUrl: s.url
       }))
     );
+  }
+
+  // Inclui duração de fontes que falharam (para a UI de ingestão).
+  for (const [sourceId, durationMs] of Object.entries(result.durationMsBySource)) {
+    if (fetchStatsBySource[sourceId]) continue;
+    const source = sources.find((s) => s.id === sourceId);
+    fetchStatsBySource[sourceId] = {
+      provider: source?.provider ?? "rss",
+      durationMs
+    };
   }
 
   return {

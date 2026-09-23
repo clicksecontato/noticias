@@ -57,7 +57,7 @@ export default async function SubjectPage({
 
   return (
     <article className="space-y-8">
-      <PageBackLink href="/news">← Notícias</PageBackLink>
+      <PageBackLink href="/news">Notícias</PageBackLink>
 
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{metadataInput.titleBase}</h1>

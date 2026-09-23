@@ -6,6 +6,7 @@ import { NewsCard } from "../components/NewsCard";
 import { PageBackLink } from "../components/PageBackLink";
 import { PaginationNav } from "../components/PaginationNav";
 import { SearchForm } from "../components/SearchForm";
+import { SectionHeader } from "../components/SectionHeader";
 import { SortChips } from "../components/SortChips";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -47,25 +48,26 @@ export default async function NewsListingPage({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/">← Início</PageBackLink>
-      <h2 className="text-2xl font-semibold">Notícias de IA</h2>
-      <p className="text-muted-foreground">
-        Listagem com paginação, busca por termo e filtro por fonte.
-      </p>
+      <PageBackLink href="/">Início</PageBackLink>
+      <SectionHeader
+        level="page"
+        title="Notícias de IA"
+        description="Listagem com paginação, busca por termo e filtro por fonte."
+      />
 
-      <Card>
-        <CardContent className="pt-4 space-y-4">
+      <Card className="border-border/80 shadow-sm">
+        <CardContent className="space-y-4 pt-4">
           <SearchForm
             action="/news"
             query={query ?? undefined}
             hiddenFields={{ source: sourceId ?? "", sort: sortMode }}
           />
-          <p className="text-sm font-medium text-muted-foreground">Ordenação:</p>
+          <p className="text-sm font-medium text-muted-foreground">Ordenação</p>
           <SortChips
             currentSort={sortMode}
             buildHref={(sort) => buildQueryPath(1, sourceId ?? "", sort)}
           />
-          <p className="text-sm font-medium text-muted-foreground">Filtrar por fonte:</p>
+          <p className="text-sm font-medium text-muted-foreground">Filtrar por fonte</p>
           <FilterChipRow
             items={filters}
             activeId={sourceId || null}
@@ -75,9 +77,9 @@ export default async function NewsListingPage({
       </Card>
 
       {cards.length === 0 ? (
-        <Card>
-          <CardContent className="pt-4">
-            <p className="mb-3 text-muted-foreground">
+        <Card className="border-dashed border-border/80">
+          <CardContent className="px-6 py-10 text-center">
+            <p className="mb-4 text-muted-foreground">
               Nenhuma notícia encontrada com os filtros atuais.
             </p>
             <Link href="/news" className={buttonVariants({ variant: "default" })}>
@@ -87,7 +89,7 @@ export default async function NewsListingPage({
         </Card>
       ) : null}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {cards.map((card) => (
           <NewsCard
             key={card.slug}

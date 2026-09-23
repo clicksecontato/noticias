@@ -53,7 +53,7 @@ export function AdminSidebar({
   return (
     <aside
       className={cn(
-        "fixed left-0 top-14 bottom-0 z-40 flex flex-col border-r border-border bg-card text-card-foreground shadow-sm",
+        "fixed left-0 top-16 bottom-0 z-40 flex flex-col border-r border-border bg-card text-card-foreground shadow-sm",
         collapsed ? "w-[56px]" : "w-56"
       )}
     >
@@ -81,7 +81,7 @@ export function AdminSidebar({
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary-soft text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >

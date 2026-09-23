@@ -41,7 +41,7 @@ export default async function SubjectsLikePage({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href={`/subjects/${slug}`}>← Voltar ao assunto</PageBackLink>
+      <PageBackLink href={`/subjects/${slug}`}>Voltar ao assunto</PageBackLink>
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
           Assuntos como {current?.title ?? slug.replace(/-/g, " ")}

@@ -6,6 +6,8 @@ export interface ContentIngestionResult {
   processedSourceIds: string[];
   resultsBySource: Record<string, PersistContentResult>;
   failedSources: Record<string, string>;
+  /** Duração wall-clock por fonte (sucesso ou falha), em ms. */
+  durationMsBySource: Record<string, number>;
   totalCreated: number;
   totalSkipped: number;
 }
@@ -13,6 +15,8 @@ export interface ContentIngestionResult {
 export interface RunContentIngestionDeps {
   getFetcher: (provider: ContentSource["provider"]) => IContentFetcher;
   getPersister: (provider: ContentSource["provider"]) => IContentPersister;
+  /** Relógio injetável para testes; default Date.now. */
+  nowMs?: () => number;
 }
 
 /**
@@ -25,22 +29,28 @@ export async function runContentIngestion(
 ): Promise<ContentIngestionResult> {
   const resultsBySource: Record<string, PersistContentResult> = {};
   const failedSources: Record<string, string> = {};
+  const durationMsBySource: Record<string, number> = {};
   let totalCreated = 0;
   let totalSkipped = 0;
   const processedSourceIds: string[] = [];
+  const nowMs = deps.nowMs ?? (() => Date.now());
 
   for (const source of sources) {
+    const startedAt = nowMs();
     try {
       const fetcher = deps.getFetcher(source.provider);
       const persister = deps.getPersister(source.provider);
 
       const outcome = await fetcher.fetch(source);
       const result = await persister.persist(source, outcome.items);
+      const durationMs = Math.max(0, nowMs() - startedAt);
 
+      const fetchStats = { ...outcome.stats, durationMs };
       resultsBySource[source.id] = {
         ...result,
-        fetchStats: outcome.stats
+        fetchStats
       };
+      durationMsBySource[source.id] = durationMs;
       processedSourceIds.push(source.id);
       totalCreated += result.created;
       totalSkipped += result.skipped;
@@ -51,12 +61,15 @@ export async function runContentIngestion(
             event: "ingestion.source.complete",
             sourceId: source.id,
             provider: source.provider,
-            fetch: outcome.stats,
+            durationMs,
+            fetch: fetchStats,
             persist: { created: result.created, skipped: result.skipped }
           })
         );
       }
     } catch (err) {
+      const durationMs = Math.max(0, nowMs() - startedAt);
+      durationMsBySource[source.id] = durationMs;
       const message = err instanceof Error ? err.message : String(err);
       failedSources[source.id] = message;
       if (typeof process !== "undefined" && !process.env.VITEST) {
@@ -65,6 +78,7 @@ export async function runContentIngestion(
             event: "ingestion.source.failed",
             sourceId: source.id,
             provider: source.provider,
+            durationMs,
             error: message
           })
         );
@@ -76,6 +90,7 @@ export async function runContentIngestion(
     processedSourceIds,
     resultsBySource,
     failedSources,
+    durationMsBySource,
     totalCreated,
     totalSkipped
   };

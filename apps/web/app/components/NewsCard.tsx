@@ -48,7 +48,12 @@ export function NewsCard({
   const media = classifyMediaUrl(card.imageUrl);
   return (
     <article>
-      <Card className={cn("overflow-hidden", className)}>
+      <Card
+        className={cn(
+          "overflow-hidden border-border/80 transition-colors hover:border-primary/40 hover:bg-primary-soft/40",
+          className
+        )}
+      >
         {media?.kind === "image" ? (
           <Link
             href={`/news/${card.slug}`}
@@ -57,7 +62,7 @@ export function NewsCard({
             <img
               src={media.url}
               alt=""
-              className="h-auto w-full object-cover"
+              className="aspect-[16/9] h-auto w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
               width={400}
               height={220}
               loading="lazy"
@@ -75,22 +80,27 @@ export function NewsCard({
             />
           </div>
         ) : null}
-        <CardHeader className="pb-1">
-          <CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg leading-snug sm:text-xl">
             <Link
               href={`/news/${card.slug}`}
-              className="font-semibold leading-tight text-foreground hover:underline"
+              className="font-semibold text-foreground no-underline hover:text-primary hover:no-underline"
             >
               {card.title}
             </Link>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 pt-0">
-          <CardDescription className="line-clamp-3">{card.summary}</CardDescription>
-          <p className="text-xs text-muted-foreground">Fonte: {card.sourceName}</p>
-          <p className="text-xs text-muted-foreground/80">
-            Publicado em: {formatDate(card.publishedAt)}
-          </p>
+        <CardContent className="flex flex-col gap-2.5 pt-0">
+          <CardDescription className="line-clamp-3 text-sm leading-relaxed">
+            {card.summary}
+          </CardDescription>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/80">{card.sourceName}</span>
+            <span aria-hidden className="text-border">
+              ·
+            </span>
+            <time dateTime={card.publishedAt}>{formatDate(card.publishedAt)}</time>
+          </div>
           <EntityChips
             subjectNames={card.subjectNames}
             tagNames={card.tagNames}

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSystemDialogs } from "../../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
 interface TypeRow {
   id: string;
@@ -14,6 +16,7 @@ interface TypeRow {
 }
 
 export function TiposClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const [list, setList] = useState<TypeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -63,22 +66,29 @@ export function TiposClient() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Excluir o tipo "${name}"?`)) return;
-    try {
-      const res = await fetch(`/api/admin/types/${id}`, { method: "DELETE" });
-      if (res.ok) load();
-      else {
-        const d = await res.json().catch(() => ({}));
-        alert(d.error || "Erro ao excluir.");
-      }
-    } catch {
-      alert("Erro ao excluir.");
-    }
+  function handleDelete(id: string, name: string) {
+    const copy = buildDeleteConfirmCopy({ entity: "tipo", name });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/types/${id}`, { method: "DELETE" });
+          if (res.ok) load();
+          else {
+            const d = await res.json().catch(() => ({}));
+            showAlert(d.error || "Erro ao excluir.", "Erro");
+          }
+        } catch {
+          showAlert("Erro ao excluir.", "Erro");
+        }
+      },
+    });
   }
 
   return (
     <div className="space-y-6">
+      {dialogs}
       <h1 className="text-2xl font-semibold">Tipos</h1>
       <p className="text-muted-foreground">Catálogo de tipos para enriquecimento.</p>
 

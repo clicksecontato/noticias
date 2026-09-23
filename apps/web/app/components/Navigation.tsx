@@ -39,32 +39,34 @@ export function Navigation() {
     return pathname.startsWith(href);
   };
 
-  const linkClass = (href: string) =>
-    cn(
-      "text-sm font-medium transition-colors hover:text-foreground",
-      isActive(href) ? "text-foreground" : "text-muted-foreground"
-    );
-
   return (
     <>
       <nav
-        className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        className="sticky top-0 z-50 w-full border-b border-border bg-card/95 shadow-sm backdrop-blur-md"
         role="navigation"
         aria-label="Menu principal"
       >
-        <div className="mx-auto flex h-14 max-w-[960px] items-center justify-between px-4">
+        <div className="mx-auto flex h-16 max-w-[960px] items-center justify-between px-4">
           <Link
             href="/"
-            className="text-lg font-semibold tracking-tight text-foreground no-underline hover:no-underline"
+            className="text-xl font-bold text-foreground no-underline hover:no-underline"
             onClick={() => setMobileOpen(false)}
           >
-            Notícias <span className="text-primary">IA</span>
+            Notícias <span className="gradient-text">IA</span>
           </Link>
 
-          <ul className="hidden gap-6 md:flex">
+          <ul className="hidden items-center gap-1 md:flex">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className={linkClass(item.href)}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "relative rounded-md px-3 py-2 text-sm font-medium no-underline transition-colors hover:no-underline",
+                    isActive(item.href)
+                      ? "text-primary after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-full after:-translate-x-1/2 after:bg-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
                   {item.label}
                 </Link>
               </li>
@@ -85,15 +87,17 @@ export function Navigation() {
         </div>
 
         {mobileOpen && (
-          <div className="absolute left-0 right-0 top-14 border-b border-border bg-card md:hidden">
+          <div className="absolute left-0 right-0 top-16 border-b border-border bg-card md:hidden">
             <ul className="flex flex-col gap-0 px-4 py-3">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className={cn(
-                      "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      isActive(item.href) ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      "block rounded-md px-3 py-2 text-sm font-medium no-underline transition-colors",
+                      isActive(item.href)
+                        ? "bg-primary-soft text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                     onClick={() => setMobileOpen(false)}
                   >
@@ -105,7 +109,7 @@ export function Navigation() {
           </div>
         )}
       </nav>
-      <div className="h-14 shrink-0" aria-hidden />
+      <div className="h-16 shrink-0" aria-hidden />
     </>
   );
 }

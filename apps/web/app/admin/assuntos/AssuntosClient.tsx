@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSystemDialogs } from "../../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
 interface SubjectRow {
   id: string;
@@ -18,6 +20,7 @@ interface SubjectRow {
 }
 
 export function AssuntosClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const [list, setList] = useState<SubjectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -67,22 +70,29 @@ export function AssuntosClient() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Excluir o assunto "${name}"?`)) return;
-    try {
-      const res = await fetch(`/api/admin/subjects/${id}`, { method: "DELETE" });
-      if (res.ok) load();
-      else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Erro ao excluir.");
-      }
-    } catch {
-      alert("Erro ao excluir.");
-    }
+  function handleDelete(id: string, name: string) {
+    const copy = buildDeleteConfirmCopy({ entity: "assunto", name });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/subjects/${id}`, { method: "DELETE" });
+          if (res.ok) load();
+          else {
+            const data = await res.json().catch(() => ({}));
+            showAlert(data.error || "Erro ao excluir.", "Erro");
+          }
+        } catch {
+          showAlert("Erro ao excluir.", "Erro");
+        }
+      },
+    });
   }
 
   return (
     <div className="space-y-6">
+      {dialogs}
       <h1 className="text-2xl font-semibold">Assuntos</h1>
       <p className="text-muted-foreground">Catálogo de assuntos para enriquecimento e relatórios.</p>
 

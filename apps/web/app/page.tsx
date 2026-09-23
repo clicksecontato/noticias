@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../src/content-provider";
 import { buildNewsQueryPath, parseNewsListParams } from "../src/news-list-query";
-import { EntityChips } from "./components/EntityChips";
 import { FilterChipRow } from "./components/FilterChipRow";
 import { HeroSection } from "./components/HeroSection";
 import { NewsCard } from "./components/NewsCard";
 import { PaginationNav } from "./components/PaginationNav";
 import { SearchForm } from "./components/SearchForm";
+import { SectionHeader } from "./components/SectionHeader";
 import { SortChips } from "./components/SortChips";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const metadata = {
   description:
@@ -49,16 +49,16 @@ export default async function HomePage({
       <HeroSection
         title="Notícias IA"
         description="Cobertura de notícias recentes sobre inteligência artificial, com busca e filtro por fonte."
-        ctaHref="/news"
-        ctaLabel="Ver todas as notícias"
       />
 
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        <section>
-          <h2 className="mb-4 text-xl font-semibold">
-            Notícias recentes (página {currentPage})
-          </h2>
-          <Card className="mb-6">
+        <section className="space-y-5">
+          <SectionHeader
+            title={`Notícias recentes`}
+            description={`Página ${currentPage} de ${totalPages}`}
+            level="section"
+          />
+          <Card className="border-border/80 shadow-sm">
             <CardHeader className="pb-3">
               <SearchForm
                 action="/"
@@ -70,12 +70,12 @@ export default async function HomePage({
               />
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
-              <p className="text-sm font-medium text-muted-foreground">Ordenação:</p>
+              <p className="text-sm font-medium text-muted-foreground">Ordenação</p>
               <SortChips
                 currentSort={sortMode}
                 buildHref={(sort) => buildQueryPath(1, sourceId ?? "", sort)}
               />
-              <p className="text-sm font-medium text-muted-foreground">Filtrar por fonte:</p>
+              <p className="text-sm font-medium text-muted-foreground">Filtrar por fonte</p>
               <FilterChipRow
                 items={sourceFilters}
                 activeId={sourceId || null}
@@ -85,7 +85,7 @@ export default async function HomePage({
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             {newsCards.map((card) => (
               <NewsCard key={card.slug} card={card} />
             ))}
@@ -100,16 +100,19 @@ export default async function HomePage({
           />
         </section>
 
-        <aside>
-          <h2 className="mb-4 text-xl font-semibold">Mais lidas</h2>
-          <Card>
+        <aside className="space-y-4">
+          <SectionHeader title="Mais lidas" level="section" />
+          <Card className="border-border/80 shadow-sm">
             <CardContent className="pt-4">
-              <ol className="list-inside list-decimal space-y-2 text-sm">
-                {mostReadNews.map((card) => (
-                  <li key={card.slug}>
+              <ol className="space-y-3 text-sm">
+                {mostReadNews.map((card, index) => (
+                  <li key={card.slug} className="flex gap-3">
+                    <span className="mt-0.5 w-5 shrink-0 text-xs font-semibold tabular-nums text-primary">
+                      {index + 1}
+                    </span>
                     <Link
                       href={`/news/${card.slug}`}
-                      className="text-foreground hover:underline"
+                      className="leading-snug text-foreground no-underline hover:text-primary hover:no-underline"
                     >
                       {card.title}
                     </Link>

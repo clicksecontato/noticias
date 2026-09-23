@@ -5,6 +5,7 @@ import { extractEntityIdsFromText } from "./enrichment";
 import { extractEntitiesWithGemini, isEnrichmentAiEnabled } from "./enrichment-ai";
 import type {
   ContentSourceRecord,
+  SourceIngestionTimingUpdate,
   YoutubeVideoItem,
   SaveYoutubeVideosResult,
   YoutubeVideoDisplay
@@ -97,6 +98,11 @@ export interface ContentRepository {
   ): Promise<SaveIngestedResult>;
   /** Fontes ativas para ingestão (RSS + YouTube), com flag provider. */
   getContentSourcesForIngestion(): Promise<ContentSourceRecord[]>;
+  /** Persiste duração/timestamp da última ingestão por fonte. */
+  updateSourceIngestionTiming(
+    sourceId: string,
+    timing: SourceIngestionTimingUpdate
+  ): Promise<void>;
   /** Persiste vídeos do YouTube; dedup por (source_id, video_id). */
   saveYoutubeVideos(
     sourceId: string,
@@ -324,6 +330,11 @@ const SOURCES: SourceRecord[] = [
 ];
 
 function createMemoryContentRepository(): ContentRepository {
+  const ingestionTimingBySourceId = new Map<
+    string,
+    { lastIngestedAt: string; lastIngestionDurationMs: number }
+  >();
+
   return {
     async getNewsArticles() {
       return NEWS_ARTICLES;
@@ -343,15 +354,29 @@ function createMemoryContentRepository(): ContentRepository {
     async getContentSourcesForIngestion(): Promise<ContentSourceRecord[]> {
       return SOURCES.filter(
         (s) => s.isActive && (s.language === "pt-BR" || s.language === "pt")
-      ).map((s) => ({
-        id: s.id,
-        name: s.name,
-        language: s.language,
-        provider: "rss" as const,
-        rssUrl: s.rssUrl,
-        channelId: null,
-        isActive: s.isActive
-      }));
+      ).map((s) => {
+        const timing = ingestionTimingBySourceId.get(s.id);
+        return {
+          id: s.id,
+          name: s.name,
+          language: s.language,
+          provider: "rss" as const,
+          rssUrl: s.rssUrl,
+          channelId: null,
+          isActive: s.isActive,
+          lastIngestedAt: timing?.lastIngestedAt ?? null,
+          lastIngestionDurationMs: timing?.lastIngestionDurationMs ?? null
+        };
+      });
+    },
+    async updateSourceIngestionTiming(
+      sourceId: string,
+      timing: SourceIngestionTimingUpdate
+    ): Promise<void> {
+      ingestionTimingBySourceId.set(sourceId, {
+        lastIngestedAt: timing.lastIngestedAt,
+        lastIngestionDurationMs: timing.durationMs
+      });
     },
     async saveYoutubeVideos(
       _sourceId: string,
@@ -468,7 +493,9 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
   const fetchContentSourcesForIngestion = async (): Promise<ContentSourceRecord[]> => {
     const { data, error } = await readClient
       .from("sources")
-      .select("id,name,language,provider,rss_url,channel_id,is_active")
+      .select(
+        "id,name,language,provider,rss_url,channel_id,is_active,last_ingested_at,last_ingestion_duration_ms"
+      )
       .eq("is_active", true)
       .in("language", ["pt-BR", "pt"])
       .limit(100);
@@ -484,7 +511,12 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       provider: (row.provider === "youtube" ? "youtube" : "rss") as ContentSourceRecord["provider"],
       rssUrl: row.rss_url ?? null,
       channelId: row.channel_id ?? null,
-      isActive: row.is_active
+      isActive: row.is_active,
+      lastIngestedAt: row.last_ingested_at ?? null,
+      lastIngestionDurationMs:
+        typeof row.last_ingestion_duration_ms === "number"
+          ? row.last_ingestion_duration_ms
+          : null
     }));
   };
 
@@ -622,6 +654,23 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
     },
     async getContentSourcesForIngestion() {
       return fetchContentSourcesForIngestion();
+    },
+    async updateSourceIngestionTiming(
+      sourceId: string,
+      timing: SourceIngestionTimingUpdate
+    ): Promise<void> {
+      const { error } = await writeClient
+        .from("sources")
+        .update({
+          last_ingested_at: timing.lastIngestedAt,
+          last_ingestion_duration_ms: timing.durationMs,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sourceId);
+
+      if (error) {
+        throw new Error(`Failed to update source ingestion timing: ${error.message}`);
+      }
     },
     async saveYoutubeVideos(
       sourceId: string,

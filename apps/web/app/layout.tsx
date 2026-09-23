@@ -19,7 +19,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={cn("dark font-sans", geist.variable)}>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <Navigation />
         <main className="min-h-0 flex-1 flex flex-col">
           <MainContentWrapper>{children}</MainContentWrapper>

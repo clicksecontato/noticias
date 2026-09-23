@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +22,13 @@ export function PaginationNav({
   totalPages,
   buildPrevHref,
   buildNextHref,
-  prevLabel = "Página anterior",
-  nextLabel = "Próxima página",
+  prevLabel = "Anterior",
+  nextLabel = "Próxima",
   className,
 }: PaginationNavProps) {
+  const disabledClass =
+    "inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground opacity-60";
+
   return (
     <nav
       className={cn("flex flex-wrap items-center gap-2 pt-4", className)}
@@ -33,13 +37,18 @@ export function PaginationNav({
       {prevPage !== null ? (
         <Link
           href={buildPrevHref()}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "inline-flex items-center gap-1.5"
+          )}
           aria-label="Página anterior"
         >
+          <ChevronLeft className="size-4 shrink-0" aria-hidden />
           {prevLabel}
         </Link>
       ) : (
-        <span className="rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground" aria-hidden>
+        <span className={disabledClass} aria-hidden>
+          <ChevronLeft className="size-4 shrink-0" />
           {prevLabel}
         </span>
       )}
@@ -49,14 +58,19 @@ export function PaginationNav({
       {nextPage !== null ? (
         <Link
           href={buildNextHref()}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "inline-flex items-center gap-1.5"
+          )}
           aria-label="Próxima página"
         >
           {nextLabel}
+          <ChevronRight className="size-4 shrink-0" aria-hidden />
         </Link>
       ) : (
-        <span className="rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground" aria-hidden>
+        <span className={disabledClass} aria-hidden>
           {nextLabel}
+          <ChevronRight className="size-4 shrink-0" />
         </span>
       )}
     </nav>

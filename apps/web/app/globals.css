@@ -6,56 +6,88 @@
 
 @layer base {
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --radius: 0.625rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Light — curriculum-michael */
+    --background: #ffffff;
+    --foreground: #1b2126;
+    --card: #f8f9fa;
+    --card-foreground: #1b2126;
+    --popover: #ffffff;
+    --popover-foreground: #1b2126;
+    --primary: #21b6bf;
+    --primary-foreground: #ffffff;
+    --primary-soft: #e6f7f8;
+    --primary-dark: #1a9ba3;
+    --secondary: #e9ecef;
+    --secondary-foreground: #313c43;
+    --muted: #f8f9fa;
+    --muted-foreground: #7d8d96;
+    --accent: #e6f7f8;
+    --accent-foreground: #1a9ba3;
+    --destructive: #b91c1c;
+    --destructive-foreground: #fef2f2;
+    --success: #15803d;
+    --success-foreground: #ffffff;
+    --success-soft: #dcfce7;
+    --warning: #a16207;
+    --warning-foreground: #1b2126;
+    --warning-soft: #fefce8;
+    --info: #1d4ed8;
+    --info-foreground: #ffffff;
+    --info-soft: #dbeafe;
+    --border: #a4b3ba;
+    --input: #a4b3ba;
+    --ring: #21b6bf;
+    --radius: 0.5rem;
+    --shadow-sm: 0 1px 2px 0 rgb(27 33 38 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(27 33 38 / 0.1), 0 2px 4px -2px rgb(27 33 38 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(27 33 38 / 0.1), 0 4px 6px -4px rgb(27 33 38 / 0.1);
+    --chart-1: #21b6bf;
+    --chart-2: #15803d;
+    --chart-3: #a16207;
+    --chart-4: #5d6b74;
+    --chart-5: #b91c1c;
   }
 
   .dark {
-    --background: oklch(0.13 0.012 264);
-    --foreground: oklch(0.97 0.002 264);
-    --card: oklch(0.14 0.012 262);
-    --card-foreground: oklch(0.97 0.002 264);
-    --popover: oklch(0.16 0.014 260);
-    --popover-foreground: oklch(0.97 0.002 264);
-    --primary: oklch(0.65 0.15 230);
-    --primary-foreground: oklch(0.18 0.02 264);
-    --secondary: oklch(0.22 0.02 255);
-    --secondary-foreground: oklch(0.97 0.002 264);
-    --muted: oklch(0.22 0.02 255);
-    --muted-foreground: oklch(0.68 0.02 250);
-    --accent: oklch(0.65 0.12 230);
-    --accent-foreground: oklch(0.18 0.02 264);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(0.28 0.02 255);
-    --input: oklch(0.28 0.02 255);
-    --ring: oklch(0.65 0.15 230);
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Dark — curriculum-michael (fonte de verdade visual) */
+    --background: #1b2126;
+    --foreground: #f8fafc;
+    --card: #2c383f;
+    --card-foreground: #f8fafc;
+    --popover: #2c383f;
+    --popover-foreground: #f8fafc;
+    --primary: #21b6bf;
+    --primary-foreground: #1b2126;
+    --primary-soft: #243940;
+    --primary-dark: #1a9ba3;
+    --secondary: #313c43;
+    --secondary-foreground: #a4b3ba;
+    --muted: #313c43;
+    --muted-foreground: #7d8d96;
+    --accent: #313c43;
+    --accent-foreground: #21b6bf;
+    --destructive: #f87171;
+    --destructive-foreground: #1b2126;
+    --success: #7dd3a0;
+    --success-foreground: #0d1117;
+    --success-soft: #1a3328;
+    --warning: #fde047;
+    --warning-foreground: #1b2126;
+    --warning-soft: #3d3210;
+    --info: #93c5fd;
+    --info-foreground: #1b2126;
+    --info-soft: #1e2a3d;
+    --border: #5d6b74;
+    --input: #5d6b74;
+    --ring: #21b6bf;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --chart-1: #21b6bf;
+    --chart-2: #7dd3a0;
+    --chart-3: #fde047;
+    --chart-4: #a4b3ba;
+    --chart-5: #f87171;
   }
 
   * {
@@ -63,36 +95,57 @@
     box-sizing: border-box;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
-    margin: 0;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  }
-
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--foreground);
   }
 
   a {
-    @apply text-primary hover:underline;
+    @apply text-foreground underline-offset-2 hover:text-primary hover:underline;
   }
 }
 
 @layer components {
   .article-body {
     @apply max-w-none space-y-4 text-foreground;
+    line-height: 1.6;
   }
   .article-body h2 {
     @apply mt-6 text-xl font-semibold;
+    line-height: 1.2;
   }
   .article-body h3 {
     @apply mt-4 text-lg font-semibold;
+    line-height: 1.2;
   }
   .article-body p {
-    @apply leading-relaxed;
+    line-height: 1.6;
   }
   .article-body a {
-    @apply text-primary underline hover:no-underline;
+    @apply text-primary underline underline-offset-2;
+    text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  .article-body a:hover {
+    text-decoration-color: var(--primary);
   }
   .article-body img {
     @apply rounded-lg;
@@ -100,5 +153,26 @@
   .article-body ul,
   .article-body ol {
     @apply list-inside space-y-1;
+  }
+
+  .surface-brand {
+    @apply border bg-card shadow-md;
+    border-color: var(--border);
+    background-image: radial-gradient(
+      ellipse 80% 60% at 100% 0%,
+      color-mix(in srgb, var(--primary) 16%, transparent),
+      transparent 55%
+    );
+  }
+
+  .accent-bar {
+    @apply absolute inset-y-0 left-0 w-1 bg-primary;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--foreground), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

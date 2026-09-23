@@ -48,7 +48,7 @@ export default async function AdminReportDetailPage({
   if (!report) {
     return (
       <section className="space-y-4">
-        <PageBackLink href="/admin/reports">← Relatórios</PageBackLink>
+        <PageBackLink href="/admin/reports">Relatórios</PageBackLink>
         <p className="text-muted-foreground">Relatório não encontrado.</p>
       </section>
     );
@@ -59,7 +59,7 @@ export default async function AdminReportDetailPage({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/admin/reports">← Relatórios</PageBackLink>
+      <PageBackLink href="/admin/reports">Relatórios</PageBackLink>
       <h2 className="text-2xl font-semibold">{label}</h2>
       <p className="text-muted-foreground">
         Período:{" "}
