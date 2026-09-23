@@ -76,7 +76,7 @@ export default async function VideosPage({
         <Card className="border-dashed border-border/80">
           <CardContent className="px-6 py-10 text-center">
             <p className="mb-4 text-muted-foreground">
-              Nenhum vídeo encontrado. Execute a ingestão de fontes YouTube no admin para popular esta seção.
+              Nenhum vídeo encontrado. Use Atualizar Fontes no admin para popular esta seção.
             </p>
             <Link href="/videos" className={buttonVariants({ variant: "default" })}>
               Ver todos

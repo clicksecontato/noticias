@@ -1,7 +1,7 @@
 /** Copy canônica das etapas exibidas em /sistema (contrato de narrativa). */
 export const PIPELINE_STEP_TITLES = [
   "Fontes",
-  "Ingestão",
+  "Atualizar Fontes",
   "Filtro editorial",
   "Enriquecimento",
   "Pauta & machine",

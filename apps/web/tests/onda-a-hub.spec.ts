@@ -28,11 +28,10 @@ describe("onda A — hub operacional", () => {
     const news = sidebar.indexOf('"/admin/noticias"');
     const subjects = sidebar.indexOf('"/admin/assuntos"');
     const reports = sidebar.indexOf('"/admin/reports"');
-    const shorts = sidebar.indexOf('"/admin/youtube-shorts"');
     expect(ingest).toBeGreaterThan(-1);
     expect(news).toBeGreaterThan(ingest);
     expect(subjects).toBeGreaterThan(news);
     expect(reports).toBeGreaterThan(subjects);
-    expect(shorts).toBeGreaterThan(reports);
+    expect(sidebar).not.toMatch(/youtube-shorts/);
   });
 });

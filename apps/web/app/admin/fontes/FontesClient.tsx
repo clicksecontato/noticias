@@ -109,7 +109,7 @@ export function FontesClient() {
         <div className="space-y-1.5">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Fontes</h1>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Cadastre e gerencie feeds RSS e canais YouTube usados na ingestão.
+            Cadastre e gerencie feeds RSS e canais YouTube usados na atualização.
           </p>
           {!loading ? (
             <p className="text-xs text-muted-foreground">
@@ -156,9 +156,9 @@ export function FontesClient() {
                 Nenhuma fonte cadastrada. Use o formulário acima para criar a primeira.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Depois dispare a ingestão em{" "}
+                Depois atualize as fontes em{" "}
                 <Link href="/admin/ingestao" className="text-primary underline-offset-2 hover:underline">
-                  Ingestão
+                  Atualizar Fontes
                 </Link>
                 .
               </p>
@@ -172,7 +172,7 @@ export function FontesClient() {
                     <th className="p-3 text-left font-medium">ID</th>
                     <th className="p-3 text-left font-medium">Tipo</th>
                     <th className="p-3 text-left font-medium">Idioma</th>
-                    <th className="p-3 text-left font-medium">Última ingestão</th>
+                    <th className="p-3 text-left font-medium">Última atualização</th>
                     <th className="p-3 text-left font-medium">Duração</th>
                     <th className="p-3 text-left font-medium">Ativo</th>
                     <th className="p-3 text-right font-medium">Ações</th>

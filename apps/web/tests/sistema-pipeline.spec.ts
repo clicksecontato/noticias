@@ -5,7 +5,7 @@ describe("sistema pipeline copy", () => {
   it("mantém as 5 etapas da narrativa pública", () => {
     expect(PIPELINE_STEP_TITLES).toEqual([
       "Fontes",
-      "Ingestão",
+      "Atualizar Fontes",
       "Filtro editorial",
       "Enriquecimento",
       "Pauta & machine",

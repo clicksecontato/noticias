@@ -85,7 +85,7 @@ export function AdminHubClient() {
   const shortcuts = [
     {
       href: "/admin/ingestao",
-      title: "Ingerir",
+      title: "Atualizar Fontes",
       description:
         staleIds.length > 0
           ? `${staleIds.length} fonte(s) atrasada(s) (>24h)`
@@ -144,7 +144,7 @@ export function AdminHubClient() {
           <div>
             <CardTitle className="text-lg">Status das fontes</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Última ingestão no sistema:{" "}
+              Última atualização no sistema:{" "}
               <span className="text-foreground">{formatWhen(lastIngested ?? undefined)}</span>
             </p>
           </div>
@@ -152,7 +152,7 @@ export function AdminHubClient() {
             href="/admin/ingestao"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
-            Abrir ingestão
+            Atualizar Fontes
           </Link>
         </CardHeader>
         <CardContent>
@@ -170,7 +170,7 @@ export function AdminHubClient() {
             <div className="grid gap-8 lg:grid-cols-[240px_1fr] lg:items-start">
               <div className="space-y-3">
                 <p className="text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Saúde da ingestão
+                  Status das Fontes
                 </p>
                 <SourceHealthDonut slices={healthSlices} total={sources.length} />
                 <div className="flex justify-center gap-4 text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ export function AdminHubClient() {
               </div>
               <div className="min-w-0 space-y-3">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Horas desde a última ingestão
+                  Horas desde a última atualização
                 </p>
                 <SourceFreshnessBars bars={freshnessBars} />
                 <ul className="mt-2 divide-y divide-border/70 border-t border-border/60 pt-2">

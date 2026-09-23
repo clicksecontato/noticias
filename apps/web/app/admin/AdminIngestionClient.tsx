@@ -149,7 +149,7 @@ export function AdminIngestionClient({
         setResult(data);
       }
     } catch {
-      setError("Erro ao chamar API de ingestão.");
+      setError("Erro ao atualizar fontes.");
     } finally {
       setIsLoading(false);
     }
@@ -159,10 +159,10 @@ export function AdminIngestionClient({
     <div className="space-y-6">
       <header className="space-y-1.5 border-b border-border/70 pb-4">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Ingestão manual
+          Atualizar Fontes
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Busque e agregue artigos/vídeos das fontes ativas. Cadastro em{" "}
+          Busque e traga artigos/vídeos das fontes ativas. Cadastro em{" "}
           <Link
             href="/admin/fontes"
             className="text-primary underline-offset-2 hover:underline"
@@ -191,7 +191,7 @@ export function AdminIngestionClient({
           <Card className="border-border bg-muted/20">
             <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-base">Fontes para ingestão</CardTitle>
+                <CardTitle className="text-base">Fontes para atualizar</CardTitle>
                 <p className="text-xs text-muted-foreground">
                   {selectedCount} de {sources.length} selecionada
                   {selectedCount === 1 ? "" : "s"}
@@ -307,7 +307,7 @@ export function AdminIngestionClient({
             onClick={onTriggerIngestion}
             disabled={isLoading || selectedSourceIds.length === 0}
           >
-            {isLoading ? "Processando..." : "Ingerir fontes selecionadas"}
+            {isLoading ? "Atualizando..." : "Atualizar fontes selecionadas"}
           </Button>
         </CardContent>
       </Card>

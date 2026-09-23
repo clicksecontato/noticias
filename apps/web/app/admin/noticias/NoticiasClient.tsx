@@ -340,7 +340,7 @@ export function NoticiasClient() {
             <p className="text-muted-foreground">Carregando…</p>
           ) : list.length === 0 ? (
             <p className="text-muted-foreground">
-              Nenhuma notícia. Ajuste os filtros ou use Ingestão para trazer notícias do RSS.
+              Nenhuma notícia. Ajuste os filtros ou use Atualizar Fontes para trazer notícias do RSS.
             </p>
           ) : (
             <>

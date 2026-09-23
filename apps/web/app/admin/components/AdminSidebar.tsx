@@ -14,10 +14,10 @@ import {
   Sparkles,
   BarChart3,
   Presentation,
-  Clapperboard,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 export interface AdminMenuItem {
   path: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   exact?: boolean;
 }
 
@@ -39,7 +39,7 @@ const ADMIN_MENU_GROUPS: AdminMenuGroup[] = [
     label: "Operação",
     items: [
       { path: "/admin", label: "Hub", icon: LayoutDashboard, exact: true },
-      { path: "/admin/ingestao", label: "Ingestão", icon: Download },
+      { path: "/admin/ingestao", label: "Atualizar Fontes", icon: Download },
       { path: "/admin/fontes", label: "Fontes", icon: Rss },
     ],
   },
@@ -68,14 +68,53 @@ const ADMIN_MENU_GROUPS: AdminMenuGroup[] = [
         label: "Apresentação do Mês",
         icon: Presentation,
       },
-      {
-        path: "/admin/youtube-shorts",
-        label: "YouTube Shorts",
-        icon: Clapperboard,
-      },
     ],
   },
 ];
+
+/** Ícone preenchido + pedestal com sombra (profundidade estilo exemplo-layout-final). */
+function SidebarNavIcon({
+  icon: Icon,
+  active = false,
+  className,
+}: {
+  icon: LucideIcon;
+  active?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex size-8 shrink-0 items-center justify-center rounded-xl transition-all",
+        active
+          ? [
+              "bg-[linear-gradient(145deg,rgba(232,196,154,0.28),rgba(166,124,82,0.12))]",
+              "shadow-[0_6px_14px_rgba(0,0,0,0.45),0_0_16px_rgba(212,165,116,0.22),inset_0_1px_0_rgba(255,236,210,0.35)]",
+            ]
+          : [
+              "bg-[linear-gradient(145deg,rgba(255,255,255,0.07),rgba(0,0,0,0.2))]",
+              "shadow-[0_4px_10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)]",
+            ],
+        className
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-[17px]",
+          active ? "text-primary-dark" : "text-primary"
+        )}
+        fill="currentColor"
+        strokeWidth={1.15}
+        absoluteStrokeWidth
+        style={{
+          filter: active
+            ? "drop-shadow(0 2px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(232,196,154,0.55))"
+            : "drop-shadow(0 2px 3px rgba(0,0,0,0.5)) drop-shadow(0 0 4px rgba(212,165,116,0.28))",
+        }}
+      />
+    </span>
+  );
+}
 
 function SidebarTooltip({
   label,
@@ -121,6 +160,8 @@ export function AdminSidebar({
   const pathname = usePathname();
   const showLabel = !collapsed;
 
+  const collapseLabel = collapsed ? "Expandir menu" : "Recolher menu";
+
   return (
     <aside
       className={cn(
@@ -130,10 +171,39 @@ export function AdminSidebar({
         collapsed ? "w-16" : "w-56"
       )}
     >
+      <button
+        type="button"
+        onClick={() => onCollapsedChange(!collapsed)}
+        aria-label={collapseLabel}
+        title={collapseLabel}
+        className={cn(
+          "group/rail absolute top-1/2 z-50 flex h-14 w-3.5 -translate-y-1/2 items-center justify-center",
+          "rounded-r-md border border-l-0 border-border/80",
+          "bg-[#1c1b19]/95 text-primary shadow-[4px_0_12px_rgba(0,0,0,0.35)] backdrop-blur-sm",
+          "transition-colors hover:bg-primary-soft hover:text-primary-dark",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          "right-0 translate-x-full"
+        )}
+      >
+        {collapsed ? (
+          <ChevronRight
+            className="size-3.5 opacity-80 transition-opacity group-hover/rail:opacity-100"
+            strokeWidth={2.25}
+            aria-hidden
+          />
+        ) : (
+          <ChevronLeft
+            className="size-3.5 opacity-80 transition-opacity group-hover/rail:opacity-100"
+            strokeWidth={2.25}
+            aria-hidden
+          />
+        )}
+      </button>
+
       <div
         className={cn(
           "flex h-16 shrink-0 items-center border-b border-border/60",
-          collapsed ? "justify-center px-2" : "justify-between gap-2 px-4"
+          collapsed ? "justify-center px-2" : "px-4"
         )}
       >
         <SidebarTooltip label="Notícias IA" show={collapsed}>
@@ -154,36 +224,7 @@ export function AdminSidebar({
             )}
           </Link>
         </SidebarTooltip>
-        {showLabel ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="shrink-0 text-primary hover:text-primary-dark"
-            onClick={() => onCollapsedChange(true)}
-            aria-label="Recolher menu"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </Button>
-        ) : null}
       </div>
-
-      {collapsed ? (
-        <div className="flex justify-center border-b border-border/40 py-2">
-          <SidebarTooltip label="Expandir menu" show>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="text-primary hover:text-primary-dark"
-              onClick={() => onCollapsedChange(false)}
-              aria-label="Expandir menu"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </Button>
-          </SidebarTooltip>
-        </div>
-      ) : null}
 
       <nav
         className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-2.5"
@@ -200,26 +241,24 @@ export function AdminSidebar({
               const isActive = item.exact
                 ? pathname === item.path
                 : pathname === item.path || pathname.startsWith(`${item.path}/`);
-              const Icon = item.icon;
               return (
                 <SidebarTooltip key={item.path} label={item.label} show={collapsed}>
                   <Link
                     href={item.path}
                     className={cn(
                       "flex items-center rounded-xl text-sm font-medium transition-colors",
-                      collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2",
+                      collapsed ? "justify-center px-0 py-2" : "gap-3 px-2.5 py-1.5",
                       isActive
-                        ? "bg-primary-soft text-primary shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-primary"
+                        ? [
+                            "bg-[linear-gradient(135deg,rgba(232,196,154,0.32)_0%,rgba(212,165,116,0.18)_55%,rgba(166,124,82,0.12)_100%)]",
+                            "text-foreground",
+                            "shadow-[inset_0_0_0_1px_rgba(232,196,154,0.45),0_4px_14px_rgba(212,165,116,0.18)]",
+                          ]
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                     )}
                     aria-label={item.label}
                   >
-                    <Icon
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        isActive ? "text-primary" : "text-primary/70"
-                      )}
-                    />
+                    <SidebarNavIcon icon={item.icon} active={isActive} />
                     {showLabel ? <span>{item.label}</span> : null}
                   </Link>
                 </SidebarTooltip>
@@ -236,13 +275,15 @@ export function AdminSidebar({
               variant="ghost"
               size="sm"
               className={cn(
-                "text-muted-foreground hover:text-foreground",
-                collapsed ? "w-full justify-center px-0" : "w-full justify-start gap-3"
+                "h-auto text-muted-foreground hover:text-foreground",
+                collapsed
+                  ? "w-full justify-center px-0 py-2"
+                  : "w-full justify-start gap-3 px-2.5 py-1.5"
               )}
               onClick={onLogout}
               aria-label="Sair"
             >
-              <LogOut className="h-4 w-4 shrink-0 text-primary/70" />
+              <SidebarNavIcon icon={LogOut} />
               {showLabel ? <span>Sair</span> : null}
             </Button>
           </SidebarTooltip>

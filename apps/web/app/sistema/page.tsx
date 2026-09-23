@@ -11,7 +11,7 @@ export const revalidate = 900;
 export const metadata = {
   title: "Como o sistema funciona",
   description:
-    "Transparência do hub: ingestão de fontes, filtro editorial, enriquecimento e organização da pauta de IA.",
+    "Transparência do hub: atualização de fontes, filtro editorial, enriquecimento e organização da pauta de IA.",
 };
 
 const PIPELINE_BODIES = [
@@ -98,7 +98,7 @@ export default async function SistemaPage() {
           A máquina que organiza a pauta
         </h1>
         <p className="max-w-2xl text-muted-foreground">
-          Visão do pipeline operacional: fontes, ingestão, filtro editorial (pauta)
+          Visão do pipeline operacional: fontes, atualização, filtro editorial (pauta)
           e vínculos temáticos. Números do banco (atualizados a cada ~15 minutos).
         </p>
         <p className="text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export default async function SistemaPage() {
             <Card>
               <CardContent className="space-y-4 pt-6">
                 <Kpi
-                  label="Última ingestão"
+                  label="Última atualização"
                   value={formatDateTime(stats.sources.last_ingested_at)}
                   hint={`Média ${formatIngestionDurationMs(stats.sources.avg_ingestion_duration_ms)}`}
                 />

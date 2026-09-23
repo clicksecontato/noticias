@@ -214,7 +214,7 @@ export function VideosClient() {
         <h1 className="text-2xl font-semibold">Vídeos</h1>
       </div>
       <p className="text-muted-foreground">
-        Liste, edite ou exclua vídeos do YouTube. Use a Ingestão para trazer novos vídeos dos canais.
+        Liste, edite ou exclua vídeos do YouTube. Use Atualizar Fontes para trazer novos vídeos dos canais.
       </p>
 
       <Card>
@@ -338,7 +338,7 @@ export function VideosClient() {
             <p className="text-muted-foreground">Carregando…</p>
           ) : list.length === 0 ? (
             <p className="text-muted-foreground">
-              Nenhum vídeo. Use a Ingestão para trazer vídeos dos canais YouTube.
+              Nenhum vídeo. Use Atualizar Fontes para trazer vídeos dos canais YouTube.
             </p>
           ) : (
             <>
