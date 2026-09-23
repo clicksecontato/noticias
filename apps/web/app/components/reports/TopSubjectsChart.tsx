@@ -20,15 +20,15 @@ const chartConfig = {
   subject_name: { label: "Assunto" },
   articles: {
     label: "Artigos",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   videos: {
     label: "Vídeos",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   total: {
     label: "Total",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
   },
 } satisfies ChartConfig;
 
@@ -61,8 +61,8 @@ export function TopSubjectsChart({ data }: TopSubjectsChartProps) {
           tickFormatter={(v) => (v.length > 20 ? `${v.slice(0, 18)}…` : v)}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="articles" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} stackId="s" />
-        <Bar dataKey="videos" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} stackId="s" />
+        <Bar dataKey="articles" fill="var(--chart-1)" radius={[0, 4, 4, 0]} stackId="s" />
+        <Bar dataKey="videos" fill="var(--chart-2)" radius={[0, 4, 4, 0]} stackId="s" />
       </BarChart>
     </ChartContainer>
   );

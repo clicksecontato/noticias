@@ -71,7 +71,16 @@ export interface ReportRepository {
     periodStart: string,
     periodEnd: string,
     filters?: ReportFilters
-  ): Promise<Array<{ subject_id: string; subject_name: string; articles: number; videos: number; total: number }>>;
+  ): Promise<
+    Array<{
+      subject_id: string;
+      subject_name: string;
+      subject_slug: string;
+      articles: number;
+      videos: number;
+      total: number;
+    }>
+  >;
 }
 
 /** Início do dia em UTC quando a string é só data (YYYY-MM-DD). */
@@ -512,18 +521,25 @@ function createSupabaseReportRepository(): ReportRepository {
 
       const { data: subjectsRows, error: subjectsError } = await client
         .from("subjects")
-        .select("id, name")
+        .select("id, name, slug")
         .in("id", subjectIds);
       if (subjectsError) throw new Error(`Failed to fetch subjects: ${subjectsError.message}`);
-      const nameById = new Map((subjectsRows ?? []).map((r) => [r.id, r.name ?? r.id]));
+      const metaById = new Map(
+        (subjectsRows ?? []).map((r) => [
+          r.id,
+          { name: r.name ?? r.id, slug: r.slug ?? r.id },
+        ])
+      );
 
       return subjectIds
         .map((subject_id) => {
           const counts = subjectCounts.get(subject_id)!;
           const total = counts.articles + counts.videos;
+          const meta = metaById.get(subject_id);
           return {
             subject_id,
-            subject_name: nameById.get(subject_id) ?? subject_id,
+            subject_name: meta?.name ?? subject_id,
+            subject_slug: meta?.slug ?? subject_id,
             articles: counts.articles,
             videos: counts.videos,
             total,

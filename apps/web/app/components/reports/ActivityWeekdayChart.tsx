@@ -19,11 +19,11 @@ export interface ActivityWeekdayItem {
 const chartConfig = {
   articles: {
     label: "Artigos",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   videos: {
     label: "Vídeos",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
 
@@ -50,8 +50,8 @@ export function ActivityWeekdayChart({ data }: ActivityWeekdayChartProps) {
         />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="articles" stackId="a" fill="hsl(var(--chart-1))" />
-        <Bar dataKey="videos" stackId="a" fill="hsl(var(--chart-2))" />
+        <Bar dataKey="articles" stackId="a" fill="var(--chart-1)" />
+        <Bar dataKey="videos" stackId="a" fill="var(--chart-2)" />
       </BarChart>
     </ChartContainer>
   );

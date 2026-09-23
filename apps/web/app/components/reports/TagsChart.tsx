@@ -18,7 +18,7 @@ const chartConfig = {
   tag_name: { label: "Tag" },
   count: {
     label: "Notícias",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
 } satisfies ChartConfig;
 
@@ -51,7 +51,7 @@ export function TagsChart({ data }: TagsChartProps) {
           tickFormatter={(v) => (v.length > 22 ? `${v.slice(0, 20)}…` : v)}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="count" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ChartContainer>
   );

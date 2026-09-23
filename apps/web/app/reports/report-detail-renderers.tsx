@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityWeekdayChart } from "../components/reports/ActivityWeekdayChart";
 import { TagsChart } from "../components/reports/TagsChart";
 import { TopSubjectsChart } from "../components/reports/TopSubjectsChart";
+import { RadarPautaChart } from "../components/reports/RadarPautaChart";
+import { MapaTematicoChart } from "../components/reports/MapaTematicoChart";
 import { TopSourcesChart } from "../components/reports/TopSourcesChart";
 import { VolumeChart } from "../components/reports/VolumeChart";
 
@@ -260,6 +262,170 @@ export function ReportPayload({
                 ))}
               </tbody>
             </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "radar_pauta") {
+    const items =
+      (payload.items as Array<{
+        subject_id: string;
+        subject_name: string;
+        articles: number;
+        videos: number;
+        total: number;
+        previous_total: number;
+        delta: number;
+        delta_pct: number | null;
+        trend: "up" | "down" | "new" | "stable";
+        rank: number;
+        previous_rank: number | null;
+      }>) ?? [];
+    const previousPeriod = payload.previous_period as
+      | { start: string; end: string }
+      | undefined;
+    const trendLabel: Record<string, string> = {
+      up: "Alta",
+      down: "Queda",
+      new: "Novo",
+      stable: "Estável",
+    };
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Radar de pauta</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
+          <p className="text-sm text-muted-foreground">
+            Compara o período atual com a janela anterior de mesma duração
+            {previousPeriod
+              ? ` (${formatYMDAsPTBR(previousPeriod.start)} a ${formatYMDAsPTBR(previousPeriod.end)})`
+              : ""}
+            .
+          </p>
+          <RadarPautaChart data={items} />
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="p-3 text-left">#</th>
+                  <th className="p-3 text-left">Assunto</th>
+                  <th className="p-3 text-right">Atual</th>
+                  <th className="p-3 text-right">Anterior</th>
+                  <th className="p-3 text-right">Δ</th>
+                  <th className="p-3 text-right">Δ%</th>
+                  <th className="p-3 text-left">Tendência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((row) => (
+                  <tr key={row.subject_id} className="border-b border-border">
+                    <td className="p-3">{row.rank}</td>
+                    <td className="p-3">{row.subject_name}</td>
+                    <td className="p-3 text-right font-semibold">{row.total}</td>
+                    <td className="p-3 text-right">{row.previous_total}</td>
+                    <td className="p-3 text-right">
+                      {row.delta > 0 ? `+${row.delta}` : row.delta}
+                    </td>
+                    <td className="p-3 text-right">
+                      {row.delta_pct == null
+                        ? "—"
+                        : `${row.delta_pct > 0 ? "+" : ""}${row.delta_pct}%`}
+                    </td>
+                    <td className="p-3">{trendLabel[row.trend] ?? row.trend}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "mapa_tematico") {
+    const clusters =
+      (payload.clusters as Array<{
+        cluster_id: string;
+        cluster_label: string;
+        articles: number;
+        videos: number;
+        total: number;
+        share_pct: number;
+        subjects: Array<{
+          subject_id: string;
+          subject_name: string;
+          subject_slug: string;
+          articles: number;
+          videos: number;
+          total: number;
+        }>;
+      }>) ?? [];
+    const totals = (payload.totals as {
+      articles: number;
+      videos: number;
+      total: number;
+    }) ?? { articles: 0, videos: 0, total: 0 };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Mapa temático</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
+          <p className="text-sm text-muted-foreground">
+            Distribuição da cobertura por clusters editoriais (labs, capacidades,
+            regulação, infra, mercado/geopolítica). Totais: {totals.total}{" "}
+            menções ({totals.articles} artigos · {totals.videos} vídeos).
+          </p>
+          <MapaTematicoChart data={clusters} />
+          <div className="space-y-6">
+            {clusters.map((cluster) => (
+              <div key={cluster.cluster_id} className="space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h4 className="text-sm font-semibold">
+                    {cluster.cluster_label}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {cluster.total} ({cluster.share_pct}%) · {cluster.articles}{" "}
+                    art. · {cluster.videos} vídeos
+                  </p>
+                </div>
+                {cluster.subjects.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sem assuntos.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="p-2 text-left">Assunto</th>
+                          <th className="p-2 text-right">Artigos</th>
+                          <th className="p-2 text-right">Vídeos</th>
+                          <th className="p-2 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cluster.subjects.map((row) => (
+                          <tr
+                            key={row.subject_id}
+                            className="border-b border-border"
+                          >
+                            <td className="p-2">{row.subject_name}</td>
+                            <td className="p-2 text-right">{row.articles}</td>
+                            <td className="p-2 text-right">{row.videos}</td>
+                            <td className="p-2 text-right font-semibold">
+                              {row.total}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -25,15 +25,15 @@ const chartConfig = {
   date: { label: "Data" },
   articles: {
     label: "Artigos",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   videos: {
     label: "Vídeos",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   total: {
     label: "Total",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
   },
 } satisfies ChartConfig;
 
@@ -66,16 +66,16 @@ export function VolumeChart({ data, groupBy }: VolumeChartProps) {
           type="monotone"
           dataKey="articles"
           stackId="a"
-          stroke="hsl(var(--chart-1))"
-          fill="hsl(var(--chart-1))"
+          stroke="var(--chart-1)"
+          fill="var(--chart-1)"
           fillOpacity={0.6}
         />
         <Area
           type="monotone"
           dataKey="videos"
           stackId="a"
-          stroke="hsl(var(--chart-2))"
-          fill="hsl(var(--chart-2))"
+          stroke="var(--chart-2)"
+          fill="var(--chart-2)"
           fillOpacity={0.6}
         />
       </AreaChart>

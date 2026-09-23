@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,12 @@ import { Label } from "@/components/ui/label";
 import type { IngestionFetchStats } from "../../../../packages/scraping/src/content-sources/types";
 import { AddSourceForm } from "./components/AddSourceForm";
 import { formatIngestionDurationMs } from "@/src/ui/format-ingestion-duration";
+import {
+  areAllSourcesSelected,
+  deselectAllSourceIds,
+  selectAllSourceIds,
+  toggleSourceId,
+} from "@/src/admin/source-selection";
 
 interface SourceItem {
   id: string;
@@ -41,29 +47,52 @@ export function AdminIngestionClient({
   useSessionAuth?: boolean;
 }) {
   const [token, setToken] = useState("");
-  const [sourceIds, setSourceIds] = useState("");
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [sources, setSources] = useState<SourceItem[]>([]);
   const [result, setResult] = useState<ApiResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  function loadSources() {
+  const availableIds = useMemo(() => sources.map((s) => s.id), [sources]);
+  const allSelected = areAllSourcesSelected(selectedSourceIds, availableIds);
+  const selectedCount = selectedSourceIds.length;
+
+  function loadSources(mode: "select-all" | "preserve" = "preserve") {
     fetch("/api/admin/sources")
       .then((res) => res.json())
       .then((data: { sourceIds?: string[]; sources?: SourceItem[] }) => {
         if (Array.isArray(data.sources)) {
           setSources(data.sources);
         }
-        if (Array.isArray(data.sourceIds) && data.sourceIds.length > 0) {
-          setSourceIds(data.sourceIds.join(", "));
+        const ids = Array.isArray(data.sourceIds)
+          ? data.sourceIds
+          : Array.isArray(data.sources)
+            ? data.sources.map((s) => s.id)
+            : [];
+        if (ids.length === 0) {
+          setSelectedSourceIds([]);
+          return;
         }
+        setSelectedSourceIds((prev) => {
+          if (mode === "select-all" || prev.length === 0) {
+            return selectAllSourceIds(ids);
+          }
+          const available = new Set(ids);
+          return prev.filter((id) => available.has(id));
+        });
       })
       .catch(() => {});
   }
 
   useEffect(() => {
-    loadSources();
+    loadSources("select-all");
   }, []);
+
+  function onToggleAll() {
+    setSelectedSourceIds(
+      allSelected ? deselectAllSourceIds() : selectAllSourceIds(availableIds)
+    );
+  }
 
   async function onTriggerIngestion() {
     setIsLoading(true);
@@ -71,12 +100,14 @@ export function AdminIngestionClient({
     setResult(null);
 
     try {
-      const ids = sourceIds
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
+      if (selectedSourceIds.length === 0) {
+        setError("Selecione ao menos uma fonte para ingerir.");
+        return;
+      }
 
-      const body: { sourceIds: string[]; token?: string } = { sourceIds: ids };
+      const body: { sourceIds: string[]; token?: string } = {
+        sourceIds: selectedSourceIds,
+      };
       if (!useSessionAuth) body.token = token;
 
       const response = await fetch("/api/admin/ingest-news", {
@@ -132,49 +163,98 @@ export function AdminIngestionClient({
             </div>
           ) : null}
 
-          {sources.length > 0 ? (
-            <Card className="border-border bg-muted/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Fontes disponíveis</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <ul className="list-inside space-y-1 text-sm text-muted-foreground">
-                  {sources.map((s) => (
-                    <li key={s.id} className="flex flex-wrap items-center gap-1">
-                      <span className="font-semibold text-foreground">{s.name}</span>
-                      <span className="text-muted-foreground/80">({s.id})</span>
-                      <Badge
-                        variant={s.provider === "youtube" ? "info" : "soft"}
-                        className="text-xs font-normal"
-                      >
-                        {s.provider === "youtube" ? "YouTube" : "RSS"}
-                      </Badge>
-                      {s.provider === "youtube" && s.channelId ? (
-                        <span className="text-xs">Canal: {s.channelId}</span>
-                      ) : null}
-                      {s.provider === "rss" && s.rssUrl ? (
-                        <span className="truncate text-xs opacity-90">{s.rssUrl}</span>
-                      ) : null}
-                    </li>
-                  ))}
+          <Card className="border-border bg-muted/20">
+            <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-base">Fontes para ingestão</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {selectedCount} de {sources.length} selecionada
+                  {selectedCount === 1 ? "" : "s"}
+                </p>
+              </div>
+              {sources.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onToggleAll}
+                  >
+                    {allSelected ? "Desmarcar todas" : "Selecionar todas"}
+                  </Button>
+                </div>
+              ) : null}
+            </CardHeader>
+            <CardContent className="pt-0">
+              {sources.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma fonte ativa encontrada.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border/70">
+                  {sources.map((s) => {
+                    const checked = selectedSourceIds.includes(s.id);
+                    const inputId = `source-${s.id}`;
+                    return (
+                      <li key={s.id} className="py-2.5 first:pt-0 last:pb-0">
+                        <label
+                          htmlFor={inputId}
+                          className="flex cursor-pointer items-start gap-3"
+                        >
+                          <input
+                            id={inputId}
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setSelectedSourceIds((prev) =>
+                                toggleSourceId(prev, s.id)
+                              )
+                            }
+                            className="mt-1 size-4 shrink-0 accent-primary"
+                          />
+                          <span className="min-w-0 flex-1 space-y-1">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-semibold text-foreground">
+                                {s.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                ({s.id})
+                              </span>
+                              <Badge
+                                variant={
+                                  s.provider === "youtube" ? "info" : "soft"
+                                }
+                                className="text-xs font-normal"
+                              >
+                                {s.provider === "youtube" ? "YouTube" : "RSS"}
+                              </Badge>
+                            </span>
+                            {s.provider === "youtube" && s.channelId ? (
+                              <span className="block text-xs text-muted-foreground">
+                                Canal: {s.channelId}
+                              </span>
+                            ) : null}
+                            {s.provider === "rss" && s.rssUrl ? (
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {s.rssUrl}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
                 </ul>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          <div className="space-y-2">
-            <Label htmlFor="sourceIds">IDs das fontes (separados por vírgula)</Label>
-            <Input
-              id="sourceIds"
-              value={sourceIds}
-              onChange={(e) => setSourceIds(e.target.value)}
-              placeholder="Ex: s1, s2, yt-canal-ia"
-            />
-          </div>
+              )}
+            </CardContent>
+          </Card>
 
           <AddSourceForm title="Atalho: criar fonte" onCreated={loadSources} />
 
-          <Button onClick={onTriggerIngestion} disabled={isLoading}>
+          <Button
+            onClick={onTriggerIngestion}
+            disabled={isLoading || selectedSourceIds.length === 0}
+          >
             {isLoading ? "Processando..." : "Buscar e criar notícias"}
           </Button>
         </CardContent>

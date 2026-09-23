@@ -2,6 +2,7 @@ import { createReportRepository } from "../../../../../../../packages/database/s
 import type { ReportType } from "../../../../../../../packages/database/src/report-types";
 import { generateExecutiveSummaryReport } from "../../../../../src/reports/generators/executive-summary";
 import { generateMonthPresentationReport } from "../../../../../src/reports/generators/month-presentation";
+import { computePreviousPeriod } from "../../../../../src/reports/generators/radar-pauta";
 import { generateReportPayload, SUPPORTED_REPORT_TYPES } from "../../../../../src/reports/run-report";
 
 type GenerateBody = {
@@ -116,6 +117,45 @@ export async function POST(request: Request): Promise<Response> {
       const payload = generateReportPayload(
         reportType,
         { articles: [], videos: [], sourceNames: new Map(), subjectCounts },
+        { limit_subjects: options.limit_subjects }
+      );
+      await repo.saveReportResult(reportId, payload);
+    } else if (reportType === "radar_pauta") {
+      const previous = computePreviousPeriod(periodStartFinal, periodEndFinal);
+      const [subjectCounts, previousSubjectCounts] = await Promise.all([
+        repo.getSubjectCountsForReports(periodStartFinal, periodEndFinal, reportFilters),
+        repo.getSubjectCountsForReports(previous.periodStart, previous.periodEnd, reportFilters),
+      ]);
+      const payload = generateReportPayload(
+        reportType,
+        {
+          articles: [],
+          videos: [],
+          sourceNames: new Map(),
+          subjectCounts,
+          previousSubjectCounts,
+          periodStart: periodStartFinal,
+          periodEnd: periodEndFinal,
+        },
+        { limit_subjects: options.limit_subjects }
+      );
+      await repo.saveReportResult(reportId, payload);
+    } else if (reportType === "mapa_tematico") {
+      const subjectCounts = await repo.getSubjectCountsForReports(
+        periodStartFinal,
+        periodEndFinal,
+        reportFilters
+      );
+      const payload = generateReportPayload(
+        reportType,
+        {
+          articles: [],
+          videos: [],
+          sourceNames: new Map(),
+          subjectCounts,
+          periodStart: periodStartFinal,
+          periodEnd: periodEndFinal,
+        },
         { limit_subjects: options.limit_subjects }
       );
       await repo.saveReportResult(reportId, payload);

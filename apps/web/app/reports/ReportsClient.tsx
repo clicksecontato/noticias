@@ -62,6 +62,8 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   activity_by_weekday: "Atividade por dia da semana",
   by_source_detail: "Detalhe por fonte",
   top_subjects: "Top assuntos por período",
+  radar_pauta: "Radar de pauta",
+  mapa_tematico: "Mapa temático",
   executive_summary: "Resumo executivo",
   month_presentation: "Apresentação mensal",
 };
@@ -224,7 +226,11 @@ export function ReportsClient() {
       body.options = { limit_sources: form.limitSources };
     } else if (form.reportType === "by_tags") {
       body.options = { limit_tags: form.limitTags };
-    } else if (form.reportType === "top_subjects") {
+    } else if (
+      form.reportType === "top_subjects" ||
+      form.reportType === "radar_pauta" ||
+      form.reportType === "mapa_tematico"
+    ) {
       body.options = { limit_subjects: form.limitSubjects };
     }
     if (
@@ -303,6 +309,8 @@ export function ReportsClient() {
                     <SelectItem value="top_subjects">
                       Top assuntos por período
                     </SelectItem>
+                    <SelectItem value="radar_pauta">Radar de pauta</SelectItem>
+                    <SelectItem value="mapa_tematico">Mapa temático</SelectItem>
                     <SelectItem value="executive_summary">
                       Resumo executivo
                     </SelectItem>
@@ -463,9 +471,15 @@ export function ReportsClient() {
                     }
                   />
                 </div>
-              ) : form.reportType === "top_subjects" ? (
+              ) : form.reportType === "top_subjects" ||
+                form.reportType === "radar_pauta" ||
+                form.reportType === "mapa_tematico" ? (
                 <div className="space-y-2">
-                    <Label>Limite de assuntos</Label>
+                    <Label>
+                      {form.reportType === "mapa_tematico"
+                        ? "Limite de assuntos por cluster"
+                        : "Limite de assuntos"}
+                    </Label>
                     <Input
                       type="number"
                       min={1}
@@ -627,6 +641,8 @@ export function ReportsClient() {
                     Detalhe por fonte
                   </SelectItem>
                   <SelectItem value="top_subjects">Top assuntos por período</SelectItem>
+                  <SelectItem value="radar_pauta">Radar de pauta</SelectItem>
+                  <SelectItem value="mapa_tematico">Mapa temático</SelectItem>
                   <SelectItem value="executive_summary">Resumo executivo</SelectItem>
                   <SelectItem value="month_presentation">Apresentação mensal</SelectItem>
                 </SelectContent>

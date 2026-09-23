@@ -82,34 +82,34 @@ interface MonthPresentationPayload {
 }
 
 const pieColors = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
+  "var(--chart-1)",
+  "var(--chart-2)",
 ];
 
 const sourceMixConfig = {
-  fontes: { label: "Fontes", color: "hsl(var(--chart-1))" },
-  conteudos: { label: "Conteúdos", color: "hsl(var(--chart-2))" },
+  fontes: { label: "Fontes", color: "var(--chart-1)" },
+  conteudos: { label: "Conteúdos", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
 const monthlyEvolutionConfig = {
-  conteudos: { label: "Conteúdos", color: "hsl(var(--chart-1))" },
-  vinculos: { label: "Vínculos", color: "hsl(var(--chart-2))" },
+  conteudos: { label: "Conteúdos", color: "var(--chart-1)" },
+  vinculos: { label: "Vínculos", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
 const linkQualityConfig = {
-  assuntos: { label: "Assuntos", color: "hsl(var(--chart-1))" },
-  tags: { label: "Tags", color: "hsl(var(--chart-2))" },
-  tipos: { label: "Tipos", color: "hsl(var(--chart-3))" },
+  assuntos: { label: "Assuntos", color: "var(--chart-1)" },
+  tags: { label: "Tags", color: "var(--chart-2)" },
+  tipos: { label: "Tipos", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 
 const cadenceConfig = {
-  rss: { label: "RSS", color: "hsl(var(--chart-1))" },
-  youtube: { label: "YouTube", color: "hsl(var(--chart-2))" },
+  rss: { label: "RSS", color: "var(--chart-1)" },
+  youtube: { label: "YouTube", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
 const newsRelevanceStackConfig = {
-  relevantes: { label: "Relevantes (is_news)", color: "hsl(var(--chart-1))" },
-  genericos: { label: "Genéricos / off-topic", color: "hsl(var(--chart-3))" },
+  relevantes: { label: "Relevantes (is_news)", color: "var(--chart-1)" },
+  genericos: { label: "Genéricos / off-topic", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 
 function peakDayLabel(dias: Array<{ dia: string; conteudos: number }>): { label: string; valor: number } {
@@ -223,7 +223,7 @@ export function MonthPresentationClient({
     return {
       conteudos: {
         label: isYt ? "YouTube" : "RSS",
-        color: isYt ? "hsl(var(--chart-2))" : "hsl(var(--chart-1))",
+        color: isYt ? "var(--chart-2)" : "var(--chart-1)",
       },
     } satisfies ChartConfig;
   }, [selectedCadenceSource?.provider]);

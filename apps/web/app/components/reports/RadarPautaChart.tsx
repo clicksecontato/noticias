@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis, YAxis } from "recharts";
 import {
   ChartConfig,
   ChartContainer,
@@ -8,37 +8,29 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-export interface TopSourcesItem {
-  source_id: string;
-  source_name: string;
-  articles: number;
-  videos: number;
+export interface RadarPautaChartItem {
+  subject_name: string;
+  delta: number;
   total: number;
+  previous_total: number;
+  trend: string;
 }
 
 const chartConfig = {
-  source_name: { label: "Fonte" },
-  articles: {
-    label: "Artigos",
+  subject_name: { label: "Assunto" },
+  delta: {
+    label: "Variação",
     color: "var(--chart-1)",
-  },
-  videos: {
-    label: "Vídeos",
-    color: "var(--chart-2)",
-  },
-  total: {
-    label: "Total",
-    color: "var(--chart-3)",
   },
 } satisfies ChartConfig;
 
 const MAX_BARS = 15;
 
-interface TopSourcesChartProps {
-  data: TopSourcesItem[];
+interface RadarPautaChartProps {
+  data: RadarPautaChartItem[];
 }
 
-export function TopSourcesChart({ data }: TopSourcesChartProps) {
+export function RadarPautaChart({ data }: RadarPautaChartProps) {
   const chartData = data.slice(0, MAX_BARS);
   if (!chartData.length) return null;
 
@@ -53,16 +45,29 @@ export function TopSourcesChart({ data }: TopSourcesChartProps) {
         <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis
           type="category"
-          dataKey="source_name"
+          dataKey="subject_name"
           tickLine={false}
           axisLine={false}
           tickMargin={8}
           width={76}
           tickFormatter={(v) => (v.length > 20 ? `${v.slice(0, 18)}…` : v)}
         />
+        <ReferenceLine x={0} className="stroke-border" />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="articles" fill="var(--chart-1)" radius={[0, 4, 4, 0]} stackId="s" />
-        <Bar dataKey="videos" fill="var(--chart-2)" radius={[0, 4, 4, 0]} stackId="s" />
+        <Bar dataKey="delta" radius={[0, 4, 4, 0]}>
+          {chartData.map((row, index) => (
+            <Cell
+              key={`${row.subject_name}-${index}`}
+              fill={
+                row.delta > 0
+                  ? "var(--chart-1)"
+                  : row.delta < 0
+                    ? "var(--chart-2)"
+                    : "var(--muted-foreground)"
+              }
+            />
+          ))}
+        </Bar>
       </BarChart>
     </ChartContainer>
   );
