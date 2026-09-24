@@ -128,11 +128,14 @@ export function MonthPresentationClient({
   reportPayload,
   periodStart,
   periodEnd,
+  embedded = false,
 }: {
   reportId: string | null;
   reportPayload: Record<string, unknown> | null;
   periodStart: string | null;
   periodEnd: string | null;
+  /** Quando true, omite chrome de página (back link / título) — uso em /admin/reports/[id]. */
+  embedded?: boolean;
 }) {
   const basePayload = useMemo(
     () => (reportPayload as MonthPresentationPayload | null) ?? null,
@@ -313,15 +316,23 @@ export function MonthPresentationClient({
 
   return (
     <section className="space-y-6">
-      <PageBackLink href="/admin">Admin</PageBackLink>
+      {!embedded ? <PageBackLink href="/admin">Admin</PageBackLink> : null}
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Roteiro Visual do Mês (Fontes e Vínculos)</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Leitura editorial do mês com dados reais: quem publicou, como os conteúdos se conectam
-            e quais histórias explicam o período para público leigo e também para quem é do ramo.
-          </p>
+          {!embedded ? (
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight">Roteiro Visual do Mês (Fontes e Vínculos)</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Leitura editorial do mês com dados reais: quem publicou, como os conteúdos se conectam
+                e quais histórias explicam o período para público leigo e também para quem é do ramo.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Dashboard completo deste relatório mensal — KPIs, mix, cadência e roteiro.
+            </p>
+          )}
           {summary.period_start && summary.period_end ? (
             <p className="mt-1 text-xs text-muted-foreground">
               Período do relatório: {summary.period_start} a {summary.period_end}

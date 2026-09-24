@@ -6,22 +6,136 @@ import { RadarPautaChart } from "../components/reports/RadarPautaChart";
 import { MapaTematicoChart } from "../components/reports/MapaTematicoChart";
 import { TopSourcesChart } from "../components/reports/TopSourcesChart";
 import { VolumeChart } from "../components/reports/VolumeChart";
+import { ReportCollapsibleTable } from "../components/reports/ReportCollapsibleTable";
+import {
+  ReportInsight,
+  ReportKpiStrip,
+  ReportSection,
+  ReportTrendBadge,
+} from "../components/reports/ReportShell";
+import {
+  buildExecutiveInsights,
+  buildMapaInsights,
+  buildRadarInsights,
+  buildRankingInsights,
+  buildSourceDetailInsights,
+  buildVolumeInsights,
+  buildWeekdayInsights,
+} from "../../src/reports/report-view-insights";
+import { MonthPresentationClient } from "../admin/month-presentation/MonthPresentationClient";
+import { cn } from "@/lib/utils";
 
 export function formatYMDAsPTBR(value: string): string {
-  // value esperado: "YYYY-MM-DD" (ou ISO completo). Não usar `new Date(value)` porque
-  // isso pode deslocar o dia por fuso horário.
   const ymd = value.includes("T") ? value.slice(0, 10) : value;
   const [y, m, d] = ymd.split("-");
   if (!y || !m || !d) return value;
   return `${d}/${m}/${y}`;
 }
 
+function MixBar({
+  rssPct,
+  youtubePct,
+}: {
+  rssPct: number;
+  youtubePct: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className="bg-[color-mix(in_srgb,var(--primary)_75%,transparent)]"
+          style={{ width: `${Math.max(0, Math.min(100, rssPct))}%` }}
+        />
+        <div
+          className="bg-[color-mix(in_srgb,var(--chart-2)_80%,transparent)]"
+          style={{ width: `${Math.max(0, Math.min(100, youtubePct))}%` }}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {rssPct}% RSS · {youtubePct}% YouTube
+      </p>
+    </div>
+  );
+}
+
+function RankList({
+  items,
+  nameKey,
+}: {
+  items: Array<{ total: number } & Record<string, unknown>>;
+  nameKey: string;
+}) {
+  const max = Math.max(...items.map((i) => i.total), 1);
+  return (
+    <ul className="space-y-2">
+      {items.map((row, i) => {
+        const name = String(row[nameKey] ?? "");
+        return (
+          <li key={`${name}-${i}`} className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="truncate text-foreground">
+                <span className="mr-1.5 tabular-nums text-muted-foreground">{i + 1}.</span>
+                {name}
+              </span>
+              <span className="shrink-0 tabular-nums font-medium">{row.total}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-[color-mix(in_srgb,var(--primary)_70%,transparent)]"
+                style={{ width: `${Math.round((row.total / max) * 100)}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function Podium({
+  items,
+}: {
+  items: Array<{ name: string; total: number; note?: string }>;
+}) {
+  const top = items.slice(0, 3);
+  if (!top.length) return null;
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {top.map((item, idx) => (
+        <div
+          key={item.name}
+          className={cn(
+            "rounded-xl border border-border/70 p-3",
+            idx === 0 &&
+              "bg-[linear-gradient(145deg,rgba(232,196,154,0.18),transparent)] shadow-[inset_0_0_0_1px_rgba(232,196,154,0.25)]"
+          )}
+        >
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            #{idx + 1}
+          </p>
+          <p className="mt-1 truncate font-semibold text-foreground" title={item.name}>
+            {item.name}
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{item.total}</p>
+          {item.note ? <p className="text-xs text-muted-foreground">{item.note}</p> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ReportPayload({
   type,
   payload,
+  reportId,
+  periodStart,
+  periodEnd,
 }: {
   type: string;
   payload: Record<string, unknown>;
+  reportId?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }) {
   if (type === "volume") {
     const rawSeries =
@@ -39,27 +153,22 @@ export function ReportPayload({
       videos: 0,
     };
     const groupBy = (payload.group_by as string) ?? "day";
+    const { kpis, insight } = buildVolumeInsights(rawSeries, totals);
+    const articlesShare =
+      totals.articles + totals.videos > 0
+        ? Math.round((totals.articles / (totals.articles + totals.videos)) * 100)
+        : 0;
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Totais</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <p className="text-muted-foreground">
-            <strong className="text-foreground">{totals.articles}</strong> artigos
-            · <strong className="text-foreground">{totals.videos}</strong> vídeos
-          </p>
-          <h3 className="text-lg font-semibold">
-            Série (
-            {groupBy === "day"
-              ? "por dia"
-              : groupBy === "week"
-                ? "por semana"
-                : "por mês"}
-            )
-          </h3>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <ReportSection
+          title={`Série (${groupBy === "day" ? "por dia" : groupBy === "week" ? "por semana" : "por mês"})`}
+          description="Evolução de artigos e vídeos no período."
+        >
+          <MixBar rssPct={articlesShare} youtubePct={100 - articlesShare} />
           <VolumeChart data={series} groupBy={groupBy} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Série completa" rowCount={series.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -75,16 +184,14 @@ export function ReportPayload({
                     <td className="p-3">{row.date}</td>
                     <td className="p-3 text-right">{row.articles}</td>
                     <td className="p-3 text-right">{row.videos}</td>
-                    <td className="p-3 text-right">
-                      {row.articles + row.videos}
-                    </td>
+                    <td className="p-3 text-right font-medium">{row.total}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
@@ -97,14 +204,24 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
+    const { kpis, insight } = buildRankingInsights(
+      items.map((i) => ({ name: i.source_name, total: i.total })),
+      "fonte"
+    );
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Ranking de fontes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <Podium
+          items={items.map((i) => ({
+            name: i.source_name,
+            total: i.total,
+            note: `${i.articles} art. · ${i.videos} vid.`,
+          }))}
+        />
+        <ReportSection title="Distribuição" description="Ranking completo de fontes no período.">
           <TopSourcesChart data={items} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Ranking completo" rowCount={items.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -127,26 +244,30 @@ export function ReportPayload({
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
   if (type === "by_tags") {
     const items =
       (payload.items as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
+    const { kpis, insight } = buildRankingInsights(
+      items.map((i) => ({ name: i.tag_name, total: i.count })),
+      "tag"
+    );
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Notícias por tag</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Quantidade de notícias (artigos) associadas a cada tag no período. Fontes não exibidas.
-          </p>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <Podium items={items.map((i) => ({ name: i.tag_name, total: i.count }))} />
+        <ReportSection
+          title="Notícias por tag"
+          description="Quantidade de artigos associados a cada tag no período."
+        >
           <TagsChart data={items} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Tags" rowCount={items.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -165,37 +286,36 @@ export function ReportPayload({
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
   if (type === "by_source_detail") {
     const sourceId = (payload.source_id as string) ?? "";
     const sourceName = (payload.source_name as string) ?? sourceId;
+    const articlesTotal = Number(payload.articles_total ?? 0);
+    const videosTotal = Number(payload.videos_total ?? 0);
     const tags =
       (payload.tags as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
-
+    const { kpis, insight } = buildSourceDetailInsights({
+      articles_total: articlesTotal,
+      videos_total: videosTotal,
+      tags,
+    });
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhe por fonte</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Fonte: <span className="font-medium text-foreground">{sourceName}</span>
-            {sourceId && (
-              <span className="ml-1 text-xs text-muted-foreground">
-                ({sourceId})
-              </span>
-            )}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Distribuição de notícias (artigos) desta fonte por tag, no período selecionado.
-          </p>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>
+          <strong className="text-foreground">{sourceName}</strong> — {insight}
+        </ReportInsight>
+        <ReportSection
+          title="Tags da fonte"
+          description="Distribuição de artigos desta fonte por tag no período."
+        >
           <TagsChart data={tags} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Tags da fonte" rowCount={tags.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -214,9 +334,9 @@ export function ReportPayload({
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
@@ -229,17 +349,27 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
+    const { kpis, insight } = buildRankingInsights(
+      items.map((i) => ({ name: i.subject_name, total: i.total })),
+      "assunto"
+    );
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Top assuntos por período</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Assuntos com mais cobertura (artigos e vídeos) no período selecionado.
-          </p>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <Podium
+          items={items.map((i) => ({
+            name: i.subject_name,
+            total: i.total,
+            note: `${i.articles} art. · ${i.videos} vid.`,
+          }))}
+        />
+        <ReportSection
+          title="Top assuntos"
+          description="Assuntos com mais cobertura (artigos e vídeos) no período."
+        >
           <TopSubjectsChart data={items} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Assuntos" rowCount={items.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -262,9 +392,9 @@ export function ReportPayload({
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
@@ -286,27 +416,70 @@ export function ReportPayload({
     const previousPeriod = payload.previous_period as
       | { start: string; end: string }
       | undefined;
-    const trendLabel: Record<string, string> = {
-      up: "Alta",
-      down: "Queda",
-      new: "Novo",
-      stable: "Estável",
-    };
+    const { kpis, topUp, topDown, insight } = buildRadarInsights(items);
+
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Radar de pauta</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Compara o período atual com a janela anterior de mesma duração
-            {previousPeriod
-              ? ` (${formatYMDAsPTBR(previousPeriod.start)} a ${formatYMDAsPTBR(previousPeriod.end)})`
-              : ""}
-            .
-          </p>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="border-emerald-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-emerald-300">Maiores altas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {topUp.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma alta no período.</p>
+              ) : (
+                topUp.map((row) => (
+                  <div
+                    key={row.subject_name}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-emerald-500/5 px-3 py-2"
+                  >
+                    <span className="truncate text-sm font-medium">{row.subject_name}</span>
+                    <span className="shrink-0 tabular-nums text-sm font-semibold text-emerald-300">
+                      +{row.delta}
+                      {row.delta_pct != null ? ` (${row.delta_pct > 0 ? "+" : ""}${row.delta_pct}%)` : ""}
+                    </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+          <Card className="border-rose-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-rose-300">Maiores quedas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {topDown.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma queda no período.</p>
+              ) : (
+                topDown.map((row) => (
+                  <div
+                    key={row.subject_name}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-rose-500/5 px-3 py-2"
+                  >
+                    <span className="truncate text-sm font-medium">{row.subject_name}</span>
+                    <span className="shrink-0 tabular-nums text-sm font-semibold text-rose-300">
+                      {row.delta}
+                      {row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}
+                    </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <ReportSection
+          title="Movimento da pauta"
+          description={
+            previousPeriod
+              ? `Comparado com ${formatYMDAsPTBR(previousPeriod.start)} a ${formatYMDAsPTBR(previousPeriod.end)}.`
+              : "Comparado com a janela anterior de mesma duração."
+          }
+        >
           <RadarPautaChart data={items} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Movimento completo" rowCount={items.length}>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -322,26 +495,35 @@ export function ReportPayload({
               <tbody>
                 {items.map((row) => (
                   <tr key={row.subject_id} className="border-b border-border">
-                    <td className="p-3">{row.rank}</td>
+                    <td className="p-3 tabular-nums">
+                      {row.rank}
+                      {row.previous_rank != null && row.previous_rank !== row.rank ? (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          {row.rank < row.previous_rank ? "↑" : "↓"}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="p-3">{row.subject_name}</td>
                     <td className="p-3 text-right font-semibold">{row.total}</td>
                     <td className="p-3 text-right">{row.previous_total}</td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right tabular-nums">
                       {row.delta > 0 ? `+${row.delta}` : row.delta}
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right tabular-nums">
                       {row.delta_pct == null
                         ? "—"
                         : `${row.delta_pct > 0 ? "+" : ""}${row.delta_pct}%`}
                     </td>
-                    <td className="p-3">{trendLabel[row.trend] ?? row.trend}</td>
+                    <td className="p-3">
+                      <ReportTrendBadge trend={row.trend} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
@@ -368,67 +550,63 @@ export function ReportPayload({
       videos: number;
       total: number;
     }) ?? { articles: 0, videos: 0, total: 0 };
+    const { kpis, insight } = buildMapaInsights(clusters, totals);
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Mapa temático</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Distribuição da cobertura por clusters editoriais (labs, capacidades,
-            regulação, infra, mercado/geopolítica). Totais: {totals.total}{" "}
-            menções ({totals.articles} artigos · {totals.videos} vídeos).
-          </p>
-          <MapaTematicoChart data={clusters} />
-          <div className="space-y-6">
-            {clusters.map((cluster) => (
-              <div key={cluster.cluster_id} className="space-y-2">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h4 className="text-sm font-semibold">
-                    {cluster.cluster_label}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {cluster.total} ({cluster.share_pct}%) · {cluster.articles}{" "}
-                    art. · {cluster.videos} vídeos
-                  </p>
-                </div>
-                {cluster.subjects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sem assuntos.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="p-2 text-left">Assunto</th>
-                          <th className="p-2 text-right">Artigos</th>
-                          <th className="p-2 text-right">Vídeos</th>
-                          <th className="p-2 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cluster.subjects.map((row) => (
-                          <tr
-                            key={row.subject_id}
-                            className="border-b border-border"
-                          >
-                            <td className="p-2">{row.subject_name}</td>
-                            <td className="p-2 text-right">{row.articles}</td>
-                            <td className="p-2 text-right">{row.videos}</td>
-                            <td className="p-2 text-right font-semibold">
-                              {row.total}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <ReportSection title="Share por cluster">
+            <MapaTematicoChart data={clusters} />
+          </ReportSection>
+          <ReportSection title="Concentração">
+            <ul className="space-y-3">
+              {clusters.map((c) => (
+                <li key={c.cluster_id} className="space-y-1.5">
+                  <div className="flex justify-between gap-2 text-sm">
+                    <span className="font-medium">{c.cluster_label}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {c.share_pct}% · {c.total}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-[color-mix(in_srgb,var(--primary)_70%,transparent)]"
+                      style={{ width: `${Math.min(100, c.share_pct)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ReportSection>
+        </div>
+        <div className="space-y-4">
+          {clusters.map((cluster) => (
+            <ReportSection
+              key={cluster.cluster_id}
+              title={cluster.cluster_label}
+              description={`${cluster.total} menções (${cluster.share_pct}%) · ${cluster.articles} art. · ${cluster.videos} vídeos`}
+            >
+              {cluster.subjects.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem assuntos.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {cluster.subjects.map((s) => (
+                    <span
+                      key={s.subject_id}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 px-2.5 py-1.5 text-sm"
+                    >
+                      <span>{s.subject_name}</span>
+                      <span className="tabular-nums text-xs text-muted-foreground">{s.total}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </ReportSection>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -441,18 +619,18 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
+    const { kpis, insight, peakLabel } = buildWeekdayInsights(items);
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Atividade por dia da semana</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-0">
-          <p className="text-sm text-muted-foreground">
-            Quantidade de notícias (artigos) e vídeos publicados em cada dia da semana.
-          </p>
+      <div className="space-y-5">
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <ReportSection
+          title="Cadência semanal"
+          description="Volume de artigos e vídeos por dia da semana."
+        >
           <ActivityWeekdayChart data={items} />
-          <div className="overflow-x-auto">
+          <ReportCollapsibleTable title="Por dia da semana" rowCount={items.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -464,18 +642,24 @@ export function ReportPayload({
               </thead>
               <tbody>
                 {items.map((row) => (
-                  <tr key={row.weekday} className="border-b border-border">
-                    <td className="p-3">{row.label}</td>
+                  <tr
+                    key={row.weekday}
+                    className={cn(
+                      "border-b border-border",
+                      peakLabel === row.label && "bg-[color-mix(in_srgb,var(--primary)_10%,transparent)]"
+                    )}
+                  >
+                    <td className="p-3 font-medium">{row.label}</td>
                     <td className="p-3 text-right">{row.articles}</td>
                     <td className="p-3 text-right">{row.videos}</td>
-                    <td className="p-3 text-right">{row.total}</td>
+                    <td className="p-3 text-right font-semibold">{row.total}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </CardContent>
-      </Card>
+          </ReportCollapsibleTable>
+        </ReportSection>
+      </div>
     );
   }
 
@@ -489,118 +673,112 @@ export function ReportPayload({
     };
 
     const referenceDate = (payload.reference_date as string) ?? "";
-    const last7 = payload.last_7_days as ExecutiveSummaryWindowPayload;
-    const last30 = payload.last_30_days as ExecutiveSummaryWindowPayload;
-    const last90 = payload.last_90_days as ExecutiveSummaryWindowPayload;
+    const emptyWindow: ExecutiveSummaryWindowPayload = {
+      articles: 0,
+      videos: 0,
+      rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
+      top_sources: [],
+      top_subjects: [],
+    };
+    const last7 = (payload.last_7_days as ExecutiveSummaryWindowPayload) ?? emptyWindow;
+    const last30 = (payload.last_30_days as ExecutiveSummaryWindowPayload) ?? emptyWindow;
+    const last90 = (payload.last_90_days as ExecutiveSummaryWindowPayload) ?? emptyWindow;
 
-    const WindowCard = ({
-      title,
-      data,
-    }: {
-      title: string;
-      data: ExecutiveSummaryWindowPayload;
-    }) => (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">{data.articles}</strong> artigos ·{" "}
-            <strong className="text-foreground">{data.videos}</strong> vídeos ·{" "}
-            {data.rss_vs_youtube.rssPct}% RSS / {data.rss_vs_youtube.youtubePct}% YouTube
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <h4 className="mb-2 text-sm font-semibold">Top fontes</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="p-2 text-left">Fonte</th>
-                      <th className="p-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.top_sources ?? []).slice(0, 5).map((row, i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="p-2">{row.source_name}</td>
-                        <td className="p-2 text-right">{row.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div>
-              <h4 className="mb-2 text-sm font-semibold">Top assuntos</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="p-2 text-left">Assunto</th>
-                      <th className="p-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.top_subjects ?? []).slice(0, 5).map((row, i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="p-2">{row.subject_name}</td>
-                        <td className="p-2 text-right">{row.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    const { kpis, insight } = buildExecutiveInsights({
+      last7: {
+        articles: last7.articles,
+        videos: last7.videos,
+        rssPct: last7.rss_vs_youtube.rssPct,
+        youtubePct: last7.rss_vs_youtube.youtubePct,
+      },
+      last30: {
+        articles: last30.articles,
+        videos: last30.videos,
+        rssPct: last30.rss_vs_youtube.rssPct,
+        youtubePct: last30.rss_vs_youtube.youtubePct,
+      },
+      last90: {
+        articles: last90.articles,
+        videos: last90.videos,
+        rssPct: last90.rss_vs_youtube.rssPct,
+        youtubePct: last90.rss_vs_youtube.youtubePct,
+      },
+    });
+
+    const windows: Array<{ title: string; data: ExecutiveSummaryWindowPayload }> = [
+      { title: "Últimos 7 dias", data: last7 },
+      { title: "Últimos 30 dias", data: last30 },
+      { title: "Últimos 90 dias", data: last90 },
+    ];
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Visão consolidada em 7, 30 e 90 dias até a data de referência:{" "}
-          <strong className="text-foreground">{new Date(referenceDate).toLocaleDateString("pt-BR")}</strong>
+          Visão consolidada até{" "}
+          <strong className="text-foreground">
+            {referenceDate
+              ? formatYMDAsPTBR(referenceDate)
+              : "—"}
+          </strong>
         </p>
-        <WindowCard
-          title="Últimos 7 dias"
-          data={
-            last7 ?? {
-              articles: 0,
-              videos: 0,
-              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
-              top_sources: [],
-              top_subjects: [],
-            }
-          }
-        />
-        <WindowCard
-          title="Últimos 30 dias"
-          data={
-            last30 ?? {
-              articles: 0,
-              videos: 0,
-              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
-              top_sources: [],
-              top_subjects: [],
-            }
-          }
-        />
-        <WindowCard
-          title="Últimos 90 dias"
-          data={
-            last90 ?? {
-              articles: 0,
-              videos: 0,
-              rss_vs_youtube: { rssPct: 0, youtubePct: 0 },
-              top_sources: [],
-              top_subjects: [],
-            }
-          }
-        />
+        <ReportKpiStrip items={kpis} />
+        <ReportInsight>{insight}</ReportInsight>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {windows.map(({ title, data }) => (
+            <Card key={title} className="border-border/70">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{title}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Artigos</p>
+                    <p className="text-xl font-semibold tabular-nums">{data.articles}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Vídeos</p>
+                    <p className="text-xl font-semibold tabular-nums">{data.videos}</p>
+                  </div>
+                </div>
+                <MixBar
+                  rssPct={data.rss_vs_youtube.rssPct}
+                  youtubePct={data.rss_vs_youtube.youtubePct}
+                />
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Top fontes
+                  </h4>
+                  <RankList
+                    items={(data.top_sources ?? []).slice(0, 5)}
+                    nameKey="source_name"
+                  />
+                </div>
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Top assuntos
+                  </h4>
+                  <RankList
+                    items={(data.top_subjects ?? []).slice(0, 5)}
+                    nameKey="subject_name"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  if (type === "month_presentation") {
+    return (
+      <MonthPresentationClient
+        embedded
+        reportId={reportId ?? null}
+        reportPayload={payload}
+        periodStart={periodStart ?? null}
+        periodEnd={periodEnd ?? null}
+      />
     );
   }
 
@@ -614,4 +792,3 @@ export function ReportPayload({
     </Card>
   );
 }
-

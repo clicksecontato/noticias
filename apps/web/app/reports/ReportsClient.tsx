@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { PageBackLink } from "../components/PageBackLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,11 @@ import {
   ComboboxItem,
   ComboboxEmpty,
 } from "@/components/ui/combobox";
+import {
+  REPORT_TYPE_LABELS,
+  REPORT_TYPE_ORDER,
+  getReportTypeMeta,
+} from "@/src/reports/report-type-meta";
 
 interface ReportListItem {
   id: string;
@@ -55,19 +61,6 @@ interface SourceItem {
   language: string;
   isActive: boolean;
 }
-
-const REPORT_TYPE_LABELS: Record<string, string> = {
-  volume: "Volume por período",
-  top_sources: "Ranking de fontes",
-  by_tags: "Por tags",
-  activity_by_weekday: "Atividade por dia da semana",
-  by_source_detail: "Detalhe por fonte",
-  top_subjects: "Top assuntos por período",
-  radar_pauta: "Radar de pauta",
-  mapa_tematico: "Mapa temático",
-  executive_summary: "Resumo executivo",
-  month_presentation: "Apresentação mensal",
-};
 
 const MONTH_OPTIONS = [
   { value: "01", label: "Janeiro" },
@@ -279,8 +272,93 @@ export function ReportsClient() {
       <PageBackLink href="/admin">Início</PageBackLink>
       <h2 className="text-2xl font-semibold">Relatórios</h2>
       <p className="text-muted-foreground">
-        Dados sobre publicações (artigos e vídeos) dos principais canais no Brasil.
+        Abra um relatório salvo ou gere um novo para pauta e roteiro.
       </p>
+
+      <Card className="border-border/70">
+        <CardHeader className="space-y-4">
+          <div>
+            <CardTitle>Relatórios gerados</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Clique em um card para abrir a visão completa.
+            </p>
+          </div>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Filtro por tipo"
+          >
+            <TypeFilterChip
+              active={!typeFilter}
+              label="Todos"
+              onClick={() => {
+                setTypeFilter("");
+                setPage(1);
+              }}
+            />
+            {REPORT_TYPE_ORDER.map((key) => {
+              const meta = getReportTypeMeta(key);
+              const Icon = meta.icon;
+              return (
+                <TypeFilterChip
+                  key={key}
+                  active={typeFilter === key}
+                  label={meta.label}
+                  onClick={() => {
+                    setTypeFilter(key);
+                    setPage(1);
+                  }}
+                >
+                  <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                </TypeFilterChip>
+              );
+            })}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {loading ? (
+            <p className="text-muted-foreground">Carregando…</p>
+          ) : items.length === 0 ? (
+            <p className="text-muted-foreground">
+              Nenhum relatório ainda. Gere um abaixo.
+            </p>
+          ) : (
+            <>
+              <div
+                className="report-gallery grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="report-gallery"
+              >
+                {items.map((r) => (
+                  <ReportGalleryCard key={r.id} report={r} />
+                ))}
+              </div>
+              <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Paginação">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Anterior
+                </Button>
+                <span className="px-2 text-sm text-muted-foreground" aria-live="polite">
+                  Página {page} de {totalPages} ({total} total)
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Próxima
+                </Button>
+              </nav>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
@@ -618,105 +696,94 @@ export function ReportsClient() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Relatórios gerados</CardTitle>
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Label className="sr-only">Filtrar por tipo</Label>
-            <Select
-              value={typeFilter}
-              onValueChange={(value) => {
-                setTypeFilter(value ?? "");
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 w-full max-w-xs">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="volume">Volume</SelectItem>
-                  <SelectItem value="top_sources">Ranking de fontes</SelectItem>
-                  <SelectItem value="by_tags">Por tags</SelectItem>
-                  <SelectItem value="activity_by_weekday">
-                    Atividade por dia da semana
-                  </SelectItem>
-                  <SelectItem value="by_source_detail">
-                    Detalhe por fonte
-                  </SelectItem>
-                  <SelectItem value="top_subjects">Top assuntos por período</SelectItem>
-                  <SelectItem value="radar_pauta">Radar de pauta</SelectItem>
-                  <SelectItem value="mapa_tematico">Mapa temático</SelectItem>
-                  <SelectItem value="executive_summary">Resumo executivo</SelectItem>
-                  <SelectItem value="month_presentation">Apresentação mensal</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {loading ? (
-            <p className="text-muted-foreground">Carregando…</p>
-          ) : items.length === 0 ? (
-            <p className="text-muted-foreground">
-              Nenhum relatório ainda. Gere um acima.
-            </p>
-          ) : (
-            <>
-              <ul className="list-none space-y-0 p-0">
-                {items.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex flex-wrap items-center gap-2 border-b border-border py-3 last:border-0"
-                  >
-                    <Link
-                      href={`/admin/reports/${r.id}`}
-                      className="font-semibold text-foreground hover:underline"
-                    >
-                      {REPORT_TYPE_LABELS[r.report_type] ?? r.report_type}
-                    </Link>
-                    <span className="text-sm text-muted-foreground">
-                      {formatYMDAsPTBR(r.period_start)} – {formatYMDAsPTBR(r.period_end)}
-                    </span>
-                    <Badge variant={statusVariant(r.status)} className="font-normal">
-                      {r.status}
-                    </Badge>
-                    {r.generated_at ? (
-                      <span className="text-xs text-muted-foreground">
-                        Gerado em{" "}
-                        {new Date(r.generated_at).toLocaleString("pt-BR")}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-              <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Paginação">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Anterior
-                </Button>
-                <span className="px-2 text-sm text-muted-foreground" aria-live="polite">
-                  Página {page} de {totalPages} ({total} total)
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Próxima
-                </Button>
-              </nav>
-            </>
-          )}
-        </CardContent>
-      </Card>
     </section>
+  );
+}
+
+function TypeFilterChip({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-colors",
+        active
+          ? "border-primary/50 bg-[color-mix(in_srgb,var(--primary)_18%,transparent)] text-foreground"
+          : "border-border/70 bg-card/60 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+      )}
+      aria-pressed={active}
+    >
+      {children}
+      <span className="max-w-[9rem] truncate sm:max-w-none">{label}</span>
+    </button>
+  );
+}
+
+function ReportGalleryCard({ report: r }: { report: ReportListItem }) {
+  const meta = getReportTypeMeta(r.report_type);
+  const Icon = meta.icon;
+
+  return (
+    <Link
+      href={`/admin/reports/${r.id}`}
+      className={cn(
+        "group flex flex-col gap-3 rounded-2xl border p-4 no-underline transition-all",
+        "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        meta.accentClass
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={cn(
+            "inline-flex size-10 shrink-0 items-center justify-center rounded-xl",
+            "bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(0,0,0,0.25))]",
+            "shadow-[0_4px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)]"
+          )}
+        >
+          <Icon className="size-5 text-primary" aria-hidden />
+        </span>
+        <Badge variant={statusVariant(r.status)} className="shrink-0 font-normal capitalize">
+          {r.status === "completed"
+            ? "pronto"
+            : r.status === "failed"
+              ? "falhou"
+              : r.status}
+        </Badge>
+      </div>
+      <div className="min-w-0 space-y-1">
+        <p className="font-semibold leading-snug text-foreground">
+          {meta.label}
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{meta.blurb}</p>
+      </div>
+      <div className="mt-auto flex items-end justify-between gap-2 border-t border-border/40 pt-3">
+        <div className="min-w-0 text-xs text-muted-foreground">
+          <p className="tabular-nums text-foreground/90">
+            {formatYMDAsPTBR(r.period_start)} – {formatYMDAsPTBR(r.period_end)}
+          </p>
+          {r.generated_at ? (
+            <p className="mt-0.5 truncate">
+              {new Date(r.generated_at).toLocaleString("pt-BR")}
+            </p>
+          ) : null}
+        </div>
+        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary opacity-80 transition-opacity group-hover:opacity-100">
+          Abrir
+          <ChevronRight className="size-3.5" aria-hidden />
+        </span>
+      </div>
+    </Link>
   );
 }
 

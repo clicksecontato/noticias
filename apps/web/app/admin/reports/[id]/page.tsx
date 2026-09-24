@@ -83,7 +83,13 @@ export default async function AdminReportDetailPage({
         </Card>
       ) : null}
       {result && report.status === "completed" ? (
-        <ReportPayload type={report.report_type} payload={result as Record<string, unknown>} />
+        <ReportPayload
+          type={report.report_type}
+          payload={result as Record<string, unknown>}
+          reportId={report.id}
+          periodStart={report.period_start}
+          periodEnd={report.period_end}
+        />
       ) : null}
     </section>
   );
