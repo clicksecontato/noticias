@@ -1,9 +1,10 @@
 import { createReportRepository } from "../../../../../../packages/database/src/report-repository";
+import { createContentRepository } from "../../../../../../packages/database/src/content-repository";
 import { PageBackLink } from "../../../components/PageBackLink";
 import { ReportPayload, formatYMDAsPTBR } from "../../../reports/report-detail-renderers";
 import type { ReportWithResult } from "../../../../../../packages/database/src/report-types";
 import type { ReportType } from "../../../../../../packages/database/src/report-types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
@@ -22,6 +23,19 @@ async function getReport(id: string): Promise<ReportWithResult | null> {
   const repo = createReportRepository();
   const report = await repo.getReportById(id);
   return report;
+}
+
+async function loadSourceAvatars(): Promise<Record<string, string | null>> {
+  try {
+    const sources = await createContentRepository().getContentSourcesForIngestion();
+    const map: Record<string, string | null> = {};
+    for (const s of sources) {
+      if (s.imageUrl) map[s.id] = s.imageUrl;
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 export async function generateMetadata({
@@ -45,7 +59,10 @@ export default async function AdminReportDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const report = await getReport(id);
+  const [report, sourceAvatars] = await Promise.all([
+    getReport(id),
+    loadSourceAvatars(),
+  ]);
 
   if (!report) {
     return (
@@ -89,9 +106,9 @@ export default async function AdminReportDetailPage({
           reportId={report.id}
           periodStart={report.period_start}
           periodEnd={report.period_end}
+          sourceAvatars={sourceAvatars}
         />
       ) : null}
     </section>
   );
 }
-

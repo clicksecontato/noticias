@@ -23,6 +23,7 @@ import {
   buildWeekdayInsights,
 } from "../../src/reports/report-view-insights";
 import { MonthPresentationClient } from "../admin/month-presentation/MonthPresentationClient";
+import { SourceAvatar } from "../components/SourceAvatar";
 import { cn } from "@/lib/utils";
 
 export function formatYMDAsPTBR(value: string): string {
@@ -30,6 +31,14 @@ export function formatYMDAsPTBR(value: string): string {
   const [y, m, d] = ymd.split("-");
   if (!y || !m || !d) return value;
   return `${d}/${m}/${y}`;
+}
+
+function avatarFor(
+  sourceAvatars: Record<string, string | null> | undefined,
+  sourceId: string | undefined | null
+): string | null {
+  if (!sourceAvatars || !sourceId) return null;
+  return sourceAvatars[sourceId] ?? null;
 }
 
 function MixBar({
@@ -61,21 +70,30 @@ function MixBar({
 function RankList({
   items,
   nameKey,
+  idKey,
+  sourceAvatars,
 }: {
   items: Array<{ total: number } & Record<string, unknown>>;
   nameKey: string;
+  idKey?: string;
+  sourceAvatars?: Record<string, string | null>;
 }) {
   const max = Math.max(...items.map((i) => i.total), 1);
   return (
     <ul className="space-y-2">
       {items.map((row, i) => {
         const name = String(row[nameKey] ?? "");
+        const id = idKey ? String(row[idKey] ?? "") : "";
+        const imageUrl = avatarFor(sourceAvatars, id);
         return (
           <li key={`${name}-${i}`} className="space-y-1">
             <div className="flex items-baseline justify-between gap-2 text-sm">
-              <span className="truncate text-foreground">
-                <span className="mr-1.5 tabular-nums text-muted-foreground">{i + 1}.</span>
-                {name}
+              <span className="flex min-w-0 items-center gap-2 truncate text-foreground">
+                <span className="shrink-0 tabular-nums text-muted-foreground">{i + 1}.</span>
+                {idKey ? (
+                  <SourceAvatar name={name} imageUrl={imageUrl} size="xs" />
+                ) : null}
+                <span className="truncate">{name}</span>
               </span>
               <span className="shrink-0 tabular-nums font-medium">{row.total}</span>
             </div>
@@ -95,7 +113,7 @@ function RankList({
 function Podium({
   items,
 }: {
-  items: Array<{ name: string; total: number; note?: string }>;
+  items: Array<{ name: string; total: number; note?: string; imageUrl?: string | null }>;
 }) {
   const top = items.slice(0, 3);
   if (!top.length) return null;
@@ -113,9 +131,14 @@ function Podium({
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             #{idx + 1}
           </p>
-          <p className="mt-1 truncate font-semibold text-foreground" title={item.name}>
-            {item.name}
-          </p>
+          <div className="mt-1 flex items-center gap-2">
+            {"imageUrl" in item ? (
+              <SourceAvatar name={item.name} imageUrl={item.imageUrl} size="sm" />
+            ) : null}
+            <p className="truncate font-semibold text-foreground" title={item.name}>
+              {item.name}
+            </p>
+          </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{item.total}</p>
           {item.note ? <p className="text-xs text-muted-foreground">{item.note}</p> : null}
         </div>
@@ -130,12 +153,14 @@ export function ReportPayload({
   reportId,
   periodStart,
   periodEnd,
+  sourceAvatars,
 }: {
   type: string;
   payload: Record<string, unknown>;
   reportId?: string | null;
   periodStart?: string | null;
   periodEnd?: string | null;
+  sourceAvatars?: Record<string, string | null>;
 }) {
   if (type === "volume") {
     const rawSeries =
@@ -217,6 +242,7 @@ export function ReportPayload({
             name: i.source_name,
             total: i.total,
             note: `${i.articles} art. · ${i.videos} vid.`,
+            imageUrl: avatarFor(sourceAvatars, i.source_id),
           }))}
         />
         <ReportSection title="Distribuição" description="Ranking completo de fontes no período.">
@@ -236,7 +262,16 @@ export function ReportPayload({
                 {items.map((row, i) => (
                   <tr key={row.source_id} className="border-b border-border">
                     <td className="p-3">{i + 1}</td>
-                    <td className="p-3">{row.source_name}</td>
+                    <td className="p-3">
+                      <span className="inline-flex items-center gap-2">
+                        <SourceAvatar
+                          name={row.source_name}
+                          imageUrl={avatarFor(sourceAvatars, row.source_id)}
+                          size="xs"
+                        />
+                        {row.source_name}
+                      </span>
+                    </td>
                     <td className="p-3 text-right">{row.articles}</td>
                     <td className="p-3 text-right">{row.videos}</td>
                     <td className="p-3 text-right font-semibold">{row.total}</td>
@@ -308,7 +343,15 @@ export function ReportPayload({
       <div className="space-y-5">
         <ReportKpiStrip items={kpis} />
         <ReportInsight>
-          <strong className="text-foreground">{sourceName}</strong> — {insight}
+          <span className="inline-flex items-center gap-2">
+            <SourceAvatar
+              name={sourceName}
+              imageUrl={avatarFor(sourceAvatars, sourceId)}
+              size="sm"
+            />
+            <strong className="text-foreground">{sourceName}</strong>
+          </span>{" "}
+          — {insight}
         </ReportInsight>
         <ReportSection
           title="Tags da fonte"
@@ -668,7 +711,13 @@ export function ReportPayload({
       articles: number;
       videos: number;
       rss_vs_youtube: { rssPct: number; youtubePct: number };
-      top_sources: Array<{ source_name: string; articles: number; videos: number; total: number }>;
+      top_sources: Array<{
+        source_id: string;
+        source_name: string;
+        articles: number;
+        videos: number;
+        total: number;
+      }>;
       top_subjects: Array<{ subject_name: string; articles: number; videos: number; total: number }>;
     };
 
@@ -751,6 +800,8 @@ export function ReportPayload({
                   <RankList
                     items={(data.top_sources ?? []).slice(0, 5)}
                     nameKey="source_name"
+                    idKey="source_id"
+                    sourceAvatars={sourceAvatars}
                   />
                 </div>
                 <div>
@@ -778,6 +829,7 @@ export function ReportPayload({
         reportPayload={payload}
         periodStart={periodStart ?? null}
         periodEnd={periodEnd ?? null}
+        sourceAvatars={sourceAvatars}
       />
     );
   }

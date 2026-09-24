@@ -21,7 +21,7 @@ export async function GET(
   const client = getSupabaseClient();
   const { data, error } = await client
     .from("sources")
-    .select("id,name,base_url,rss_url,language,trust_score,is_active,provider,channel_id")
+    .select("id,name,base_url,rss_url,language,trust_score,is_active,provider,channel_id,image_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -42,6 +42,7 @@ export async function GET(
     isActive: data.is_active,
     provider: data.provider,
     channelId: data.channel_id ?? undefined,
+    imageUrl: data.image_url ?? undefined,
   });
 }
 

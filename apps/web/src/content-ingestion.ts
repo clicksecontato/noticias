@@ -1,3 +1,4 @@
+import { recordYoutubeApiCall } from "./admin/youtube-api-quota-repository";
 import { createContentRepository } from "../../../packages/database/src/content-repository";
 import { runContentIngestion } from "../../../packages/scraping/src/content-ingestion-orchestrator";
 import { createContentFetcher } from "../../../packages/scraping/src/fetchers/content-fetcher-factory";
@@ -39,7 +40,12 @@ export async function executeContentIngestion(
   const getFetcher = (provider: ContentSource["provider"]) =>
     createContentFetcher(provider, {
       rss: {},
-      youtube: { apiKey: youtubeApiKey }
+      youtube: {
+        apiKey: youtubeApiKey,
+        onApiCall: (method) => {
+          void recordYoutubeApiCall(method, "ingestao");
+        },
+      },
     });
 
   const getPersister = (provider: ContentSource["provider"]) =>

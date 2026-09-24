@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
   LayoutDashboard,
   Download,
   Rss,
@@ -17,10 +25,12 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { createPortal } from "react-dom";
 
 export interface AdminMenuItem {
   path: string;
@@ -41,6 +51,7 @@ const ADMIN_MENU_GROUPS: AdminMenuGroup[] = [
       { path: "/admin", label: "Hub", icon: LayoutDashboard, exact: true },
       { path: "/admin/ingestao", label: "Atualizar Fontes", icon: Download },
       { path: "/admin/fontes", label: "Fontes", icon: Rss },
+      { path: "/admin/youtube-api", label: "API YouTube", icon: Gauge },
     ],
   },
   {
@@ -123,27 +134,85 @@ function SidebarTooltip({
 }: {
   label: string;
   show: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const tipId = useId();
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
+    null
+  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateCoords = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setCoords({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 12,
+    });
+  }, []);
+
+  function handleEnter() {
+    if (!show) return;
+    updateCoords();
+    setOpen(true);
+  }
+
+  function handleLeave() {
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onScrollOrResize() {
+      updateCoords();
+    }
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open, updateCoords]);
+
+  const tooltip =
+    mounted && show && open && coords
+      ? createPortal(
+          <span
+            id={tipId}
+            role="tooltip"
+            className={cn(
+              "pointer-events-none fixed z-[100] -translate-y-1/2",
+              "whitespace-nowrap rounded-xl border border-[color-mix(in_srgb,var(--primary)_28%,transparent)]",
+              "bg-[#2a2826]/95 px-3 py-1.5 text-xs font-medium text-[#f3f0eb] shadow-[0_8px_24px_rgba(0,0,0,0.55)] backdrop-blur-md",
+              "after:absolute after:right-full after:top-1/2 after:-mt-1 after:border-4 after:border-transparent",
+              "after:border-r-[#2a2826]/95"
+            )}
+            style={{ top: coords.top, left: coords.left }}
+          >
+            {label}
+          </span>,
+          document.body
+        )
+      : null;
+
   return (
-    <div className="group/tip relative">
+    <div
+      ref={triggerRef}
+      className="relative"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onFocus={handleEnter}
+      onBlur={handleLeave}
+    >
       {children}
-      {show ? (
-        <span
-          role="tooltip"
-          className={cn(
-            "pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2",
-            "whitespace-nowrap rounded-xl border border-[color-mix(in_srgb,var(--primary)_28%,transparent)]",
-            "bg-[#2a2826]/95 px-3 py-1.5 text-xs font-medium text-[#f3f0eb] shadow-[0_8px_24px_rgba(0,0,0,0.55)] backdrop-blur-md",
-            "opacity-0 translate-x-1 transition-all duration-150",
-            "group-hover/tip:translate-x-0 group-hover/tip:opacity-100",
-            "after:absolute after:right-full after:top-1/2 after:-mt-1 after:border-4 after:border-transparent",
-            "after:border-r-[#2a2826]/95"
-          )}
-        >
-          {label}
-        </span>
-      ) : null}
+      {tooltip}
     </div>
   );
 }
@@ -165,12 +234,26 @@ export function AdminSidebar({
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 bottom-0 z-40 flex flex-col border-r border-border/80",
-        "bg-[#161514]/95 text-card-foreground shadow-[8px_0_32px_rgba(0,0,0,0.35)] backdrop-blur-xl",
+        "admin-sidebar-surface fixed left-0 top-0 bottom-0 z-40 flex flex-col",
+        "border-r border-border/80 text-card-foreground",
+        "shadow-[8px_0_32px_rgba(0,0,0,0.4)]",
         "transition-[width] duration-200 ease-out",
         collapsed ? "w-16" : "w-56"
       )}
     >
+      {/* Brilho gold na base — referência exemplo-layout-final */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      >
+        <div
+          className={cn(
+            "sidebar-glow absolute inset-x-0 bottom-0 h-40",
+            "bg-[radial-gradient(ellipse_90%_80%_at_50%_120%,rgba(212,165,116,0.28)_0%,rgba(166,124,82,0.08)_42%,transparent_70%)]"
+          )}
+        />
+      </div>
+
       <button
         type="button"
         onClick={() => onCollapsedChange(!collapsed)}
@@ -179,7 +262,7 @@ export function AdminSidebar({
         className={cn(
           "group/rail absolute top-1/2 z-50 flex h-14 w-3.5 -translate-y-1/2 items-center justify-center",
           "rounded-r-md border border-l-0 border-border/80",
-          "bg-[#1c1b19]/95 text-primary shadow-[4px_0_12px_rgba(0,0,0,0.35)] backdrop-blur-sm",
+          "bg-[#1c1b19] text-primary shadow-[4px_0_12px_rgba(0,0,0,0.45)]",
           "transition-colors hover:bg-primary-soft hover:text-primary-dark",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
           "right-0 translate-x-full"
@@ -202,7 +285,7 @@ export function AdminSidebar({
 
       <div
         className={cn(
-          "flex h-16 shrink-0 items-center border-b border-border/60",
+          "relative z-10 flex h-16 shrink-0 items-center border-b border-border/60",
           collapsed ? "justify-center px-2" : "px-4"
         )}
       >
@@ -227,7 +310,7 @@ export function AdminSidebar({
       </div>
 
       <nav
-        className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-2.5"
+        className="relative z-10 flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-2.5"
         aria-label="Menu admin"
       >
         {ADMIN_MENU_GROUPS.map((group) => (
@@ -269,7 +352,7 @@ export function AdminSidebar({
       </nav>
 
       {onLogout ? (
-        <div className="shrink-0 border-t border-border/60 p-2.5">
+        <div className="relative z-10 shrink-0 border-t border-border/60 p-2.5">
           <SidebarTooltip label="Sair" show={collapsed}>
             <Button
               variant="ghost"

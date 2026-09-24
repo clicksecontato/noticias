@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminPageTitle } from "../components/AdminPageTitle";
+import { SourceAvatar } from "../../components/SourceAvatar";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 import {
@@ -31,6 +34,7 @@ interface VideoRow {
   is_news: boolean;
   sourceId: string;
   sourceName: string;
+  sourceImageUrl?: string | null;
   url: string;
   subjectNames: string[];
   tagNames: string[];
@@ -40,6 +44,7 @@ interface VideoRow {
 interface SourceOption {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
@@ -211,7 +216,7 @@ export function VideosClient() {
     <div className="space-y-6">
       {dialogs}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Vídeos</h1>
+        <AdminPageTitle icon={Video}>Vídeos</AdminPageTitle>
       </div>
       <p className="text-muted-foreground">
         Liste, edite ou exclua vídeos do YouTube. Use Atualizar Fontes para trazer novos vídeos dos canais.
@@ -236,7 +241,17 @@ export function VideosClient() {
                 <SelectContent>
                   <SelectItem value="__all__">Todos os canais</SelectItem>
                   {sources.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    <SelectItem key={s.id} value={s.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <SourceAvatar
+                          name={s.name}
+                          imageUrl={s.imageUrl}
+                          provider="youtube"
+                          size="xs"
+                        />
+                        {s.name}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -326,15 +341,11 @@ export function VideosClient() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Listagem</CardTitle>
-          <p className="text-sm font-normal text-muted-foreground">
-            {total} vídeo{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          {total} vídeo{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
+        </p>
+        {loading ? (
             <p className="text-muted-foreground">Carregando…</p>
           ) : list.length === 0 ? (
             <p className="text-muted-foreground">
@@ -342,7 +353,7 @@ export function VideosClient() {
             </p>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-md border border-border/60">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border">
@@ -375,7 +386,19 @@ export function VideosClient() {
                             {togglingId === v.id ? "…" : v.is_news ? "Sim" : "Não"}
                           </Button>
                         </td>
-                        <td className="p-2 text-muted-foreground">{v.sourceName || v.sourceId || "—"}</td>
+                        <td className="p-2 text-muted-foreground">
+                          <span className="inline-flex items-center gap-2">
+                            <SourceAvatar
+                              name={v.sourceName || v.sourceId || "?"}
+                              imageUrl={v.sourceImageUrl}
+                              provider="youtube"
+                              size="xs"
+                            />
+                            <span className="truncate">
+                              {v.sourceName || v.sourceId || "—"}
+                            </span>
+                          </span>
+                        </td>
                         <td className="p-2 text-muted-foreground">{formatDate(v.published_at)}</td>
                         <td className="p-2">
                           <div className="flex flex-wrap gap-1">
@@ -437,8 +460,7 @@ export function VideosClient() {
               ) : null}
             </>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

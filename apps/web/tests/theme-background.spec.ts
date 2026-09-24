@@ -8,14 +8,15 @@ const globalsCss = readFileSync(
 );
 
 describe("theme background (exemplo-layout-final)", () => {
-  it("define fundo dark carvão profundo do modelo final", () => {
+  it("define fundo dark principal #242625", () => {
     const darkBlock = globalsCss.match(/\.dark\s*\{([\s\S]*?)\n  \}/)?.[1];
     expect(darkBlock).toBeTruthy();
-    expect(darkBlock).toMatch(/--background:\s*#1a1a1a\b/);
+    expect(darkBlock).toMatch(/--background:\s*#242625\b/);
   });
 
-  it("define degradê de página carvão", () => {
-    expect(globalsCss).toMatch(/--grad-page:\s*[^;]*#1a1a1a/);
+  it("define degradê #594f46 → #242625 antes da metade", () => {
+    expect(globalsCss).toMatch(/--grad-page:[\s\S]*?#594f46[\s\S]*?#242625/);
+    expect(globalsCss).toMatch(/--grad-sidebar:[\s\S]*?#594f46[\s\S]*?#242625/);
   });
 
   it("aplica o degradê de página no body dark", () => {

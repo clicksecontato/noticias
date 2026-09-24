@@ -23,6 +23,7 @@ export interface VideoListRow {
   is_news: boolean;
   sourceId: string;
   sourceName: string;
+  sourceImageUrl: string | null;
   url: string;
   subjectNames: string[];
   tagNames: string[];
@@ -46,6 +47,7 @@ export interface VideoEditRow {
 export interface SourceOption {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 export interface ListVideosFilters {
@@ -62,12 +64,18 @@ export const videosRepository = {
   async listSources(): Promise<SourceOption[]> {
     const { data, error } = await getClient()
       .from("sources")
-      .select("id,name")
+      .select("id,name,image_url")
       .eq("is_active", true)
       .eq("provider", "youtube")
       .order("name");
     if (error) throw new Error(error.message);
-    return (data ?? []) as SourceOption[];
+    return ((data ?? []) as Array<{ id: string; name: string; image_url: string | null }>).map(
+      (s) => ({
+        id: s.id,
+        name: s.name,
+        imageUrl: s.image_url ?? null,
+      })
+    );
   },
 
   async countVideos(filters: ListVideosFilters = {}): Promise<number> {
@@ -148,16 +156,21 @@ export const videosRepository = {
 
     const ids = videos.map((v) => v.id);
     const [sourcesRows, yvs, yvt, yvtype] = await Promise.all([
-      client.from("sources").select("id,name"),
+      client.from("sources").select("id,name,image_url"),
       client.from("youtube_video_subjects").select("youtube_video_id, subjects(name)").in("youtube_video_id", ids),
       client.from("youtube_video_tags").select("youtube_video_id, tags(name)").in("youtube_video_id", ids),
       client.from("youtube_video_types").select("youtube_video_id, types(name)").in("youtube_video_id", ids),
     ]);
 
-    const sourceNameById = new Map(
-      ((sourcesRows as { data?: Array<{ id: string; name: string }> } | null)?.data ?? []).map(
-        (s) => [s.id, s.name]
-      )
+    const sourceMetaById = new Map(
+      (
+        (sourcesRows as {
+          data?: Array<{ id: string; name: string; image_url: string | null }>;
+        } | null)?.data ?? []
+      ).map((s) => [
+        s.id,
+        { name: s.name, imageUrl: s.image_url ?? null },
+      ])
     );
     const addNames = (
       list: Array<{ youtube_video_id: string; subjects?: { name: string }; tags?: { name: string }; types?: { name: string } }>,
@@ -178,19 +191,23 @@ export const videosRepository = {
     const tagNamesByVideo = addNames((yvt.data ?? []) as never[], "tags");
     const typeNamesByVideo = addNames((yvtype.data ?? []) as never[], "types");
 
-    return videos.map((v) => ({
-      id: v.id,
-      title: v.title,
-      description: v.description,
-      published_at: v.published_at,
-      is_news: v.is_news ?? true,
-      sourceId: v.source_id,
-      sourceName: sourceNameById.get(v.source_id) ?? "",
-      url: v.url,
-      subjectNames: subjectNamesByVideo.get(v.id) ?? [],
-      tagNames: tagNamesByVideo.get(v.id) ?? [],
-      typeNames: typeNamesByVideo.get(v.id) ?? [],
-    }));
+    return videos.map((v) => {
+      const meta = sourceMetaById.get(v.source_id);
+      return {
+        id: v.id,
+        title: v.title,
+        description: v.description,
+        published_at: v.published_at,
+        is_news: v.is_news ?? true,
+        sourceId: v.source_id,
+        sourceName: meta?.name ?? "",
+        sourceImageUrl: meta?.imageUrl ?? null,
+        url: v.url,
+        subjectNames: subjectNamesByVideo.get(v.id) ?? [],
+        tagNames: tagNamesByVideo.get(v.id) ?? [],
+        typeNames: typeNamesByVideo.get(v.id) ?? [],
+      };
+    });
   },
 
   async getVideoById(id: string): Promise<VideoEditRow | null> {

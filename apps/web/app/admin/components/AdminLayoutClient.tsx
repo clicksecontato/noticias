@@ -47,7 +47,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="relative flex min-h-screen w-full bg-transparent">
       <AdminSidebar
         collapsed={ready ? collapsed : true}
         onCollapsedChange={handleCollapsedChange}
@@ -55,7 +55,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       />
       <main
         className={cn(
-          "min-h-screen min-w-0 flex-1 overflow-y-auto overflow-x-auto transition-[padding] duration-200 ease-out",
+          "relative z-0 min-h-screen min-w-0 flex-1 overflow-y-auto overflow-x-auto bg-transparent transition-[padding] duration-200 ease-out",
           collapsed ? "pl-16" : "pl-56"
         )}
       >

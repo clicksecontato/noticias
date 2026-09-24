@@ -35,6 +35,9 @@ import {
 } from "@/components/ui/chart";
 import { PIE_COLORS } from "@/src/ui/chart-gradients";
 import { NeoChartContainer } from "@/src/ui/NeoChartContainer";
+import { Presentation } from "lucide-react";
+import { AdminPageTitle } from "../components/AdminPageTitle";
+import { SourceAvatar } from "../../components/SourceAvatar";
 
 interface MonthPresentationPayload {
   summary: {
@@ -129,6 +132,7 @@ export function MonthPresentationClient({
   periodStart,
   periodEnd,
   embedded = false,
+  sourceAvatars: sourceAvatarsProp,
 }: {
   reportId: string | null;
   reportPayload: Record<string, unknown> | null;
@@ -136,6 +140,7 @@ export function MonthPresentationClient({
   periodEnd: string | null;
   /** Quando true, omite chrome de página (back link / título) — uso em /admin/reports/[id]. */
   embedded?: boolean;
+  sourceAvatars?: Record<string, string | null>;
 }) {
   const basePayload = useMemo(
     () => (reportPayload as MonthPresentationPayload | null) ?? null,
@@ -145,7 +150,7 @@ export function MonthPresentationClient({
   const [filterProvider, setFilterProvider] = useState<"all" | "rss" | "youtube">("all");
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [adminSources, setAdminSources] = useState<
-    Array<{ id: string; name: string; provider: string }>
+    Array<{ id: string; name: string; provider: string; imageUrl?: string | null }>
   >([]);
   const [filterLoading, setFilterLoading] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
@@ -158,11 +163,28 @@ export function MonthPresentationClient({
   useEffect(() => {
     fetch("/api/admin/sources")
       .then((r) => r.json())
-      .then((d: { sources?: Array<{ id: string; name: string; provider: string }> }) => {
-        if (Array.isArray(d.sources)) setAdminSources(d.sources);
-      })
+      .then(
+        (d: {
+          sources?: Array<{
+            id: string;
+            name: string;
+            provider: string;
+            imageUrl?: string;
+          }>;
+        }) => {
+          if (Array.isArray(d.sources)) setAdminSources(d.sources);
+        }
+      )
       .catch(() => {});
   }, []);
+
+  const sourceAvatars = useMemo(() => {
+    const map: Record<string, string | null> = { ...(sourceAvatarsProp ?? {}) };
+    for (const s of adminSources) {
+      if (s.imageUrl && !map[s.id]) map[s.id] = s.imageUrl;
+    }
+    return map;
+  }, [sourceAvatarsProp, adminSources]);
 
   const payload = filteredPayload ?? basePayload;
   const sourceMix = payload?.source_mix ?? [];
@@ -322,7 +344,9 @@ export function MonthPresentationClient({
         <div>
           {!embedded ? (
             <>
-              <h1 className="text-2xl font-semibold tracking-tight">Roteiro Visual do Mês (Fontes e Vínculos)</h1>
+              <AdminPageTitle icon={Presentation}>
+                Roteiro Visual do Mês (Fontes e Vínculos)
+              </AdminPageTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 Leitura editorial do mês com dados reais: quem publicou, como os conteúdos se conectam
                 e quais histórias explicam o período para público leigo e também para quem é do ramo.
@@ -734,7 +758,17 @@ export function MonthPresentationClient({
                   <tbody>
                     {newsRelevance.by_source.map((row) => (
                       <tr key={row.source_id} className="border-b border-border last:border-0">
-                        <td className="px-3 py-2 font-medium">{row.source_name}</td>
+                        <td className="px-3 py-2 font-medium">
+                          <span className="inline-flex items-center gap-2">
+                            <SourceAvatar
+                              name={row.source_name}
+                              imageUrl={sourceAvatars[row.source_id]}
+                              provider={row.provider}
+                              size="xs"
+                            />
+                            {row.source_name}
+                          </span>
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">
                           {row.provider === "youtube" ? "YouTube" : "RSS"}
                         </td>
@@ -813,9 +847,19 @@ export function MonthPresentationClient({
                     <SelectContent>
                       {cadenceBySource.map((s) => (
                         <SelectItem key={s.source_id} value={s.source_id}>
-                          {s.source_name}{" "}
-                          <span className="text-muted-foreground">
-                            ({s.provider === "youtube" ? "YouTube" : "RSS"} · {s.total})
+                          <span className="inline-flex items-center gap-2">
+                            <SourceAvatar
+                              name={s.source_name}
+                              imageUrl={sourceAvatars[s.source_id]}
+                              provider={s.provider}
+                              size="xs"
+                            />
+                            <span>
+                              {s.source_name}{" "}
+                              <span className="text-muted-foreground">
+                                ({s.provider === "youtube" ? "YouTube" : "RSS"} · {s.total})
+                              </span>
+                            </span>
                           </span>
                         </SelectItem>
                       ))}
@@ -879,7 +923,17 @@ export function MonthPresentationClient({
                             s.source_id === selectedCadenceSource?.source_id ? "bg-muted/30" : ""
                           }`}
                         >
-                          <td className="px-3 py-2 font-medium">{s.source_name}</td>
+                          <td className="px-3 py-2 font-medium">
+                            <span className="inline-flex items-center gap-2">
+                              <SourceAvatar
+                                name={s.source_name}
+                                imageUrl={sourceAvatars[s.source_id]}
+                                provider={s.provider}
+                                size="xs"
+                              />
+                              {s.source_name}
+                            </span>
+                          </td>
                           <td className="px-3 py-2 text-muted-foreground">
                             {s.provider === "youtube" ? "YouTube" : "RSS"}
                           </td>

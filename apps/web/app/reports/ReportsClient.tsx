@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { BarChart3, ChevronRight } from "lucide-react";
 import { PageBackLink } from "../components/PageBackLink";
+import { AdminPageTitle } from "../admin/components/AdminPageTitle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -270,7 +271,9 @@ export function ReportsClient() {
   return (
     <section className="space-y-6">
       <PageBackLink href="/admin">Início</PageBackLink>
-      <h2 className="text-2xl font-semibold">Relatórios</h2>
+      <AdminPageTitle icon={BarChart3} as="h2">
+        Relatórios
+      </AdminPageTitle>
       <p className="text-muted-foreground">
         Abra um relatório salvo ou gere um novo para pauta e roteiro.
       </p>

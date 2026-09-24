@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageTitle } from "../components/AdminPageTitle";
 
 export function EnriquecimentoClient() {
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export function EnriquecimentoClient() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Enriquecimento</h1>
+      <AdminPageTitle icon={Sparkles}>Enriquecimento</AdminPageTitle>
       <p className="text-muted-foreground">
         Reaplica o vínculo de artigos e vídeos com assuntos, tags e tipos (catálogo atual).
         Use após adicionar novos itens ao catálogo.

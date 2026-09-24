@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdminPageTitle } from "../components/AdminPageTitle";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
@@ -89,17 +91,18 @@ export function TiposClient() {
   return (
     <div className="space-y-6">
       {dialogs}
-      <h1 className="text-2xl font-semibold">Tipos</h1>
-      <p className="text-muted-foreground">Catálogo de tipos para enriquecimento.</p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1.5">
+          <AdminPageTitle icon={Layers}>Tipos</AdminPageTitle>
+          <p className="text-muted-foreground">Catálogo de tipos para enriquecimento.</p>
+        </div>
+        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? "Cancelar" : "Novo tipo"}
+        </Button>
+      </header>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Listagem</CardTitle>
-          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? "Cancelar" : "Novo tipo"}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           {showForm ? (
             <form onSubmit={handleCreate} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">

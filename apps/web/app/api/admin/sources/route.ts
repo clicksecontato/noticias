@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createContentRepository } from "../../../../../../packages/database/src/content-repository";
+import { fetchYoutubeChannelProfile } from "../../../../src/admin/youtube-channel-avatar";
+import { recordYoutubeApiCall } from "../../../../src/admin/youtube-api-quota-repository";
 
 function getSupabaseClient() {
   const url = process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -16,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
     const { data: rows, error } = await client
       .from("sources")
       .select(
-        "id,name,language,provider,rss_url,channel_id,is_active,last_ingested_at,last_ingestion_duration_ms"
+        "id,name,language,provider,rss_url,channel_id,image_url,is_active,last_ingested_at,last_ingestion_duration_ms"
       )
       .order("name");
     if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -28,6 +30,7 @@ export async function GET(request: Request): Promise<Response> {
         provider: string | null;
         rss_url: string | null;
         channel_id: string | null;
+        image_url: string | null;
         is_active: boolean;
         last_ingested_at: string | null;
         last_ingestion_duration_ms: number | null;
@@ -39,6 +42,7 @@ export async function GET(request: Request): Promise<Response> {
       isActive: r.is_active ?? true,
       provider: (r.provider === "youtube" ? "youtube" : "rss") as "rss" | "youtube",
       channelId: r.channel_id ?? undefined,
+      imageUrl: r.image_url ?? undefined,
       lastIngestedAt: r.last_ingested_at ?? undefined,
       lastIngestionDurationMs:
         typeof r.last_ingestion_duration_ms === "number"
@@ -61,6 +65,7 @@ export async function GET(request: Request): Promise<Response> {
       isActive: s.isActive,
       provider: s.provider,
       channelId: s.channelId ?? undefined,
+      imageUrl: s.imageUrl ?? undefined,
       lastIngestedAt: s.lastIngestedAt ?? undefined,
       lastIngestionDurationMs: s.lastIngestionDurationMs ?? undefined
     }))
@@ -128,6 +133,7 @@ async function resolveYoutubeChannelId(apiKey: string, urlOrHandle: string): Pro
   channelsUrl.searchParams.set("part", "id");
   channelsUrl.searchParams.set("forHandle", handle);
   channelsUrl.searchParams.set("key", apiKey);
+  void recordYoutubeApiCall("channels.list", `resolve-handle:@${handle}`);
   const channelsRes = await fetch(channelsUrl.toString());
   const channelsData = (await channelsRes.json()) as {
     items?: Array<{ id?: string }>;
@@ -145,6 +151,7 @@ async function resolveYoutubeChannelId(apiKey: string, urlOrHandle: string): Pro
   searchUrl.searchParams.set("q", `@${handle}`);
   searchUrl.searchParams.set("key", apiKey);
   searchUrl.searchParams.set("maxResults", "1");
+  void recordYoutubeApiCall("search.list", `resolve-handle-fallback:@${handle}`);
   const searchRes = await fetch(searchUrl.toString());
   const searchData = (await searchRes.json()) as {
     items?: Array<{ id?: { kind?: string; channelId?: string } }>;
@@ -180,6 +187,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const provider = body.provider === "youtube" ? "youtube" : "rss";
   let channelIdToSave: string | null = null;
+  let imageUrlToSave: string | null = null;
   let youtubeHandle: string | null = null;
   if (provider === "youtube") {
     const channelInput = (body.channel_url ?? body.channel_id)?.trim();
@@ -205,6 +213,16 @@ export async function POST(request: Request): Promise<Response> {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return Response.json({ error: msg }, { status: 400 });
+      }
+    }
+
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (apiKey && channelIdToSave) {
+      try {
+        const profile = await fetchYoutubeChannelProfile(apiKey, channelIdToSave);
+        imageUrlToSave = profile.imageUrl;
+      } catch {
+        /* avatar opcional — cadastro segue sem imagem */
       }
     }
   } else {
@@ -246,11 +264,12 @@ export async function POST(request: Request): Promise<Response> {
         trust_score: trust_score ?? 50,
         provider,
         channel_id: provider === "youtube" ? channelIdToSave : null,
+        image_url: provider === "youtube" ? imageUrlToSave : null,
         updated_at: now
       },
       { onConflict: "id" }
     )
-    .select("id,name,rss_url,language,base_url,is_active,trust_score,provider,channel_id")
+    .select("id,name,rss_url,language,base_url,is_active,trust_score,provider,channel_id,image_url")
     .single();
 
   if (error) {
@@ -267,7 +286,8 @@ export async function POST(request: Request): Promise<Response> {
       isActive: data.is_active,
       trustScore: data.trust_score,
       provider: data.provider,
-      channelId: data.channel_id ?? undefined
+      channelId: data.channel_id ?? undefined,
+      imageUrl: data.image_url ?? undefined
     },
     { status: 201 }
   );

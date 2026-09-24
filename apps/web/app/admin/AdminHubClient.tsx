@@ -6,6 +6,7 @@ import {
   BarChart3,
   Download,
   Filter,
+  LayoutDashboard,
   Newspaper,
   Radar,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { AdminPageTitle } from "./components/AdminPageTitle";
 import {
   isSourceStale,
   selectStaleSourceIds,
@@ -115,9 +117,7 @@ export function AdminHubClient() {
   return (
     <div className="space-y-8">
       <header className="space-y-1.5 border-b border-border/70 pb-4">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Hub operacional
-        </h1>
+        <AdminPageTitle icon={LayoutDashboard}>Hub operacional</AdminPageTitle>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

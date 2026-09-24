@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { recordYoutubeApiCall } from "../../../../../src/admin/youtube-api-quota-repository";
 
 function extractHandle(urlOrHandle: string): string | null {
   const t = urlOrHandle.trim();
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
   url.searchParams.set("part", "id");
   url.searchParams.set("forHandle", handle);
   url.searchParams.set("key", apiKey);
+  void recordYoutubeApiCall("channels.list", `resolve-channel:@${handle}`);
   const res = await fetch(url.toString());
   const data = (await res.json()) as {
     items?: Array<{ id?: string }>;

@@ -20,6 +20,7 @@ export interface HomeCard {
 export interface NewsSourceFilter {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 /** Card de vídeo para a seção Vídeos (YouTube). */
@@ -27,6 +28,7 @@ export interface YoutubeVideoCard {
   id: string;
   sourceId: string;
   sourceName: string;
+  sourceImageUrl?: string | null;
   videoId: string;
   title: string;
   description: string;
@@ -301,6 +303,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         id: v.id,
         sourceId: v.sourceId,
         sourceName: v.sourceName,
+        ...(v.sourceImageUrl && { sourceImageUrl: v.sourceImageUrl }),
         videoId: v.videoId,
         title: v.title,
         description: v.description,
@@ -316,7 +319,11 @@ export function createRouteContentProvider(): RouteContentProvider {
     async getYoutubeSourceFilters() {
       const sources = await repository.getContentSourcesForIngestion();
       const youtubeSources = sources.filter((s) => s.provider === "youtube");
-      return youtubeSources.map((s) => ({ id: s.id, name: s.name }));
+      return youtubeSources.map((s) => ({
+        id: s.id,
+        name: s.name,
+        ...(s.imageUrl && { imageUrl: s.imageUrl }),
+      }));
     },
     async getNewsCardsForSubjectSlug(slug: string, limit = 12) {
       const subjects = await repository.getSubjects();
@@ -354,6 +361,7 @@ export function createRouteContentProvider(): RouteContentProvider {
         id: v.id,
         sourceId: v.sourceId,
         sourceName: v.sourceName,
+        ...(v.sourceImageUrl && { sourceImageUrl: v.sourceImageUrl }),
         videoId: v.videoId,
         title: v.title,
         description: v.description,

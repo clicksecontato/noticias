@@ -31,7 +31,7 @@ describe("admin shell — exemplo-layout-final", () => {
   it("primary UI é gold/bronze do modelo (não azul sky)", () => {
     const darkBlock = globalsCss.match(/\.dark\s*\{([\s\S]*?)\n  \}/)?.[1] ?? "";
     expect(darkBlock).toMatch(/--primary:\s*#d4a574\b/);
-    expect(darkBlock).toMatch(/--background:\s*#1a1a1a\b/);
+    expect(darkBlock).toMatch(/--background:\s*#242625\b/);
     expect(darkBlock).not.toMatch(/--primary:\s*#0ea5e9\b/);
   });
 

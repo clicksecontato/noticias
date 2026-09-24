@@ -13,6 +13,8 @@ export interface ContentSourceRecord {
   provider: SourceProvider;
   rssUrl?: string | null;
   channelId?: string | null;
+  /** Avatar/logo (YouTube channel thumbnail ou futuro RSS). */
+  imageUrl?: string | null;
   isActive: boolean;
   /** ISO timestamp da última tentativa de ingestão. */
   lastIngestedAt?: string | null;
@@ -45,6 +47,8 @@ export interface YoutubeVideoDisplay {
   id: string;
   sourceId: string;
   sourceName: string;
+  /** Avatar da fonte (canal YouTube). */
+  sourceImageUrl?: string | null;
   videoId: string;
   title: string;
   description: string;

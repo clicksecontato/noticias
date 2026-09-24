@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminPageTitle } from "../components/AdminPageTitle";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 import {
@@ -210,7 +212,7 @@ export function NoticiasClient() {
     <div className="space-y-6">
       {dialogs}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Notícias</h1>
+        <AdminPageTitle icon={Newspaper}>Notícias</AdminPageTitle>
         <Link href="/admin/noticias/nova">
           <Button size="sm">Nova notícia</Button>
         </Link>
@@ -328,15 +330,11 @@ export function NoticiasClient() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Listagem</CardTitle>
-          <p className="text-sm font-normal text-muted-foreground">
-            {total} notícia{total !== 1 ? "s" : ""} encontrada{total !== 1 ? "s" : ""}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          {total} notícia{total !== 1 ? "s" : ""} encontrada{total !== 1 ? "s" : ""}
+        </p>
+        {loading ? (
             <p className="text-muted-foreground">Carregando…</p>
           ) : list.length === 0 ? (
             <p className="text-muted-foreground">
@@ -344,7 +342,7 @@ export function NoticiasClient() {
             </p>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-md border border-border/60">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border">
@@ -439,8 +437,7 @@ export function NoticiasClient() {
               ) : null}
             </>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

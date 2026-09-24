@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { IngestionFetchStats } from "../../../../packages/scraping/src/content-sources/types";
+import { SourceAvatar } from "../components/SourceAvatar";
 import { AddSourceForm } from "./components/AddSourceForm";
+import { AdminPageTitle } from "./components/AdminPageTitle";
 import { formatIngestionDurationMs } from "@/src/ui/format-ingestion-duration";
 import {
   areAllSourcesSelected,
@@ -27,6 +30,7 @@ interface SourceItem {
   isActive: boolean;
   provider?: "rss" | "youtube";
   channelId?: string;
+  imageUrl?: string;
   lastIngestedAt?: string;
   lastIngestionDurationMs?: number;
 }
@@ -158,9 +162,7 @@ export function AdminIngestionClient({
   return (
     <div className="space-y-6">
       <header className="space-y-1.5 border-b border-border/70 pb-4">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Atualizar Fontes
-        </h1>
+        <AdminPageTitle icon={Download}>Atualizar Fontes</AdminPageTitle>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Busque e traga artigos/vídeos das fontes ativas. Cadastro em{" "}
           <Link
@@ -245,6 +247,13 @@ export function AdminIngestionClient({
                               )
                             }
                             className="mt-1 size-4 shrink-0 accent-primary"
+                          />
+                          <SourceAvatar
+                            name={s.name}
+                            imageUrl={s.imageUrl}
+                            provider={s.provider}
+                            size="sm"
+                            className="mt-0.5"
                           />
                           <span className="min-w-0 flex-1 space-y-1">
                             <span className="flex flex-wrap items-center gap-1.5">

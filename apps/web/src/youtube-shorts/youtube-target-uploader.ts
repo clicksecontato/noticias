@@ -1,6 +1,7 @@
 import { createReadStream } from "node:fs";
 import { google } from "googleapis";
 import type { YoutubeShortUploadConfig } from "./youtube-short-upload-config";
+import { recordYoutubeApiCall } from "../admin/youtube-api-quota-repository";
 
 export interface UploadVideoToYoutubeChannelInput {
   config: Pick<
@@ -50,6 +51,7 @@ export async function uploadVideoToYoutubeChannel(
   });
 
   const tags = clipTags(input.tags);
+  void recordYoutubeApiCall("videos.insert", "shorts-upload");
   const res = await youtube.videos.insert({
     part: ["snippet", "status"],
     requestBody: {

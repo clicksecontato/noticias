@@ -494,7 +494,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
     const { data, error } = await readClient
       .from("sources")
       .select(
-        "id,name,language,provider,rss_url,channel_id,is_active,last_ingested_at,last_ingestion_duration_ms"
+        "id,name,language,provider,rss_url,channel_id,image_url,is_active,last_ingested_at,last_ingestion_duration_ms"
       )
       .eq("is_active", true)
       .in("language", ["pt-BR", "pt"])
@@ -511,6 +511,7 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       provider: (row.provider === "youtube" ? "youtube" : "rss") as ContentSourceRecord["provider"],
       rssUrl: row.rss_url ?? null,
       channelId: row.channel_id ?? null,
+      imageUrl: row.image_url ?? null,
       isActive: row.is_active,
       lastIngestedAt: row.last_ingested_at ?? null,
       lastIngestionDurationMs:
@@ -773,16 +774,19 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       const sourceIds = [...new Set(rows.map((r) => r.source_id))];
       const [sourcesResult, yvs, yvt, yvtype] = await Promise.all([
         sourceIds.length > 0
-          ? readClient.from("sources").select("id, name").in("id", sourceIds)
-          : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
+          ? readClient.from("sources").select("id, name, image_url").in("id", sourceIds)
+          : Promise.resolve({ data: [] as Array<{ id: string; name: string; image_url: string | null }> }),
         readClient.from("youtube_video_subjects").select("youtube_video_id, subjects(name)").in("youtube_video_id", videoIds),
         readClient.from("youtube_video_tags").select("youtube_video_id, tags(name)").in("youtube_video_id", videoIds),
         readClient.from("youtube_video_types").select("youtube_video_id, types(name)").in("youtube_video_id", videoIds)
       ]);
 
-      const sourceNames = new Map<string, string>();
+      const sourceMeta = new Map<string, { name: string; imageUrl: string | null }>();
       for (const s of sourcesResult.data || []) {
-        sourceNames.set(s.id, s.name);
+        sourceMeta.set(s.id, {
+          name: s.name,
+          imageUrl: s.image_url ?? null,
+        });
       }
 
       const videoEntityMap = new Map<
@@ -811,10 +815,12 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
 
       return rows.map((row) => {
         const entities = videoEntityMap.get(row.id) ?? { subjectNames: [], tagNames: [], typeNames: [] };
+        const meta = sourceMeta.get(row.source_id);
         return {
           id: row.id,
           sourceId: row.source_id,
-          sourceName: sourceNames.get(row.source_id) ?? "YouTube",
+          sourceName: meta?.name ?? "YouTube",
+          sourceImageUrl: meta?.imageUrl ?? null,
           videoId: row.video_id,
           title: row.title,
           description: row.description ?? "",

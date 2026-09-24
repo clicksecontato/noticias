@@ -5,6 +5,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EntityChips } from "./EntityChips";
+import { SourceAvatar } from "./SourceAvatar";
 import { cn } from "@/lib/utils";
 
 export interface VideoCardData {
@@ -14,6 +15,7 @@ export interface VideoCardData {
   url: string;
   thumbnailUrl?: string | null;
   sourceName: string;
+  sourceImageUrl?: string | null;
   publishedAt: string;
   subjectNames?: string[];
   tagNames?: string[];
@@ -77,7 +79,15 @@ export function VideoCard({ video, className }: VideoCardProps) {
       </CardHeader>
       <CardContent className="flex flex-col gap-2 pt-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/80">{video.sourceName}</span>
+          <span className="inline-flex items-center gap-1.5 font-medium text-foreground/80">
+            <SourceAvatar
+              name={video.sourceName}
+              imageUrl={video.sourceImageUrl}
+              provider="youtube"
+              size="xs"
+            />
+            {video.sourceName}
+          </span>
           <span aria-hidden className="text-border">
             ·
           </span>

@@ -5,6 +5,8 @@ export interface YoutubeFetcherDeps {
   apiKey: string;
   fetch?: typeof globalThis.fetch;
   maxResults?: number;
+  /** Chamado a cada request à YouTube Data API (para tracking de cota). */
+  onApiCall?: (method: "playlistItems.list") => void;
 }
 
 /**
@@ -43,7 +45,7 @@ interface PlaylistItemsResponse {
 }
 
 export function createYoutubeContentFetcher(deps: YoutubeFetcherDeps): IContentFetcher {
-  const { apiKey, fetch: fetchFn = fetch, maxResults = 15 } = deps;
+  const { apiKey, fetch: fetchFn = fetch, maxResults = 15, onApiCall } = deps;
 
   return {
     async fetch(source: ContentSource): Promise<ContentFetchOutcome> {
@@ -61,6 +63,7 @@ export function createYoutubeContentFetcher(deps: YoutubeFetcherDeps): IContentF
       url.searchParams.set("maxResults", String(maxResults));
       url.searchParams.set("key", apiKey);
 
+      onApiCall?.("playlistItems.list");
       const response = await fetchFn(url.toString());
       const data = (await response.json()) as PlaylistItemsResponse;
 

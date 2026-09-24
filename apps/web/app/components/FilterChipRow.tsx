@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { SourceAvatar } from "./SourceAvatar";
 import { cn } from "@/lib/utils";
 
 export interface FilterChipItem {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 interface FilterChipRowProps {
@@ -31,7 +33,13 @@ export function FilterChipRow({
       </Link>
       {items.map((item) => (
         <Link key={item.id} href={buildHref(item.id)}>
-          <Badge variant={activeId === item.id ? "default" : "outline"} className="font-normal">
+          <Badge
+            variant={activeId === item.id ? "default" : "outline"}
+            className="inline-flex items-center gap-1.5 font-normal"
+          >
+            {item.imageUrl ? (
+              <SourceAvatar name={item.name} imageUrl={item.imageUrl} size="xs" />
+            ) : null}
             {item.name}
           </Badge>
         </Link>

@@ -64,21 +64,21 @@
 
   .dark {
     /* Dark premium — exemplo-layout-final.jpg (carvão + gold) */
-    --background: #1a1a1a;
+    --background: #242625;
     --foreground: #f3f0eb;
-    --card: #242220;
+    --card: #2c2e2d;
     --card-foreground: #f3f0eb;
-    --popover: #2a2826;
+    --popover: #323433;
     --popover-foreground: #f3f0eb;
     --primary: #d4a574;
     --primary-foreground: #1a1410;
     --primary-soft: #2a2218;
     --primary-dark: #e8c49a;
-    --secondary: #2e2c2a;
+    --secondary: #333534;
     --secondary-foreground: #c4bdb4;
-    --muted: #262422;
+    --muted: #2c2e2d;
     --muted-foreground: #9a9288;
-    --accent: #2e2c2a;
+    --accent: #333534;
     --accent-foreground: #e8c49a;
     --destructive: #ff4d4d;
     --destructive-foreground: #1a1410;
@@ -118,11 +118,22 @@
     --grad-cool: linear-gradient(180deg, #00e5c8 0%, #00c853 50%, #007a3d 100%);
     --grad-amber: linear-gradient(180deg, #f0d4a8 0%, #d4a574 100%);
     --grad-brand: linear-gradient(135deg, #e8c49a 0%, #d4a574 52%, #a67c52 100%);
-    /* Página: carvão profundo com leve vignette */
-    --grad-page:
-      radial-gradient(ellipse 80% 50% at 70% 0%, #2a2622 0%, transparent 55%),
-      radial-gradient(ellipse 50% 40% at 0% 100%, #1c1a18 0%, transparent 45%),
-      linear-gradient(165deg, #1e1e1e 0%, #1a1a1a 48%, #141414 100%);
+    /* Página: #594f46 no canto superior esquerdo → #242625 antes da metade */
+    --grad-page: linear-gradient(
+      155deg,
+      #594f46 0%,
+      #3f3b37 18%,
+      #242625 42%,
+      #242625 100%
+    );
+    /* Sidebar: mesmo eixo (topo esquerdo → fundo principal) */
+    --grad-sidebar: linear-gradient(
+      165deg,
+      #594f46 0%,
+      #3f3b37 20%,
+      #242625 45%,
+      #242625 100%
+    );
   }
 
   * {
@@ -228,6 +239,18 @@
         transparent 55%
       ),
       linear-gradient(155deg, #2e2c2a 0%, #242220 42%, #1e1c1a 100%);
+  }
+
+  /* Menu lateral — degradê carvão + aura (exemplo-layout-final) */
+  .admin-sidebar-surface {
+    background-color: #242625;
+    background-image: var(--grad-sidebar);
+    background-attachment: local;
+  }
+
+  html:not(.dark) .admin-sidebar-surface {
+    background-color: #f4f4f4;
+    background-image: var(--grad-page);
   }
 
   html:not(.dark) .surface-brand {

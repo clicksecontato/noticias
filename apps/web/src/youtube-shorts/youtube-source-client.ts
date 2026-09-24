@@ -1,4 +1,5 @@
 import type { YoutubeVideoSnapshot } from "./contracts";
+import { recordYoutubeApiCall } from "../admin/youtube-api-quota-repository";
 
 interface YoutubeVideoDetailsResponse {
   items?: Array<{
@@ -24,6 +25,7 @@ export async function getYoutubeVideoSnapshot(
   url.searchParams.set("id", videoId);
   url.searchParams.set("key", apiKey);
 
+  void recordYoutubeApiCall("videos.list", `shorts-snapshot:${videoId}`);
   const response = await fetch(url.toString(), { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Falha ao consultar YouTube API: ${response.status}`);
