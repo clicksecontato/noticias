@@ -1,26 +1,19 @@
 import Link from "next/link";
 import { createRouteContentProvider } from "../../src/content-provider";
+import {
+  buildVideosQueryPath,
+  parseVideosListParams,
+  resolveVideosDateRange,
+  toggleSourceId,
+} from "../../src/videos-list-query";
 import { FilterChipRow } from "../components/FilterChipRow";
 import { PageBackLink } from "../components/PageBackLink";
 import { PaginationNav } from "../components/PaginationNav";
 import { SectionHeader } from "../components/SectionHeader";
 import { VideoCard } from "../components/VideoCard";
+import { VideosPeriodFilter } from "../components/VideosPeriodFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-
-function parseVideosParams(searchParams: { page?: string; source?: string }) {
-  const pageParam = Number.parseInt(searchParams.page || "1", 10);
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-  const sourceId = (searchParams.source || "").trim();
-  return { page, sourceId };
-}
-
-function buildVideosPath(page: number, sourceId: string, basePath = "/videos") {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  if (sourceId) params.set("source", sourceId);
-  return `${basePath}?${params.toString()}`;
-}
 
 export const metadata = {
   title: "Vídeos",
@@ -31,26 +24,45 @@ export const metadata = {
 export default async function VideosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ page?: string; source?: string }>;
+  searchParams?: Promise<{
+    page?: string;
+    source?: string;
+    from?: string;
+    to?: string;
+    period?: string;
+  }>;
 }) {
-  const resolved = parseVideosParams((await searchParams) ?? {});
-  const { page: currentPage, sourceId } = resolved;
+  const params = parseVideosListParams((await searchParams) ?? {});
+  const { page: currentPage, sourceIds, period, dateFrom, dateTo } = params;
+  const range = resolveVideosDateRange(params);
   const pageSize = 12;
+
+  const listFilters = {
+    ...(sourceIds.length > 0 && { sourceIds }),
+    ...range,
+  };
 
   const provider = createRouteContentProvider();
   const [filters, total, videos] = await Promise.all([
     provider.getYoutubeSourceFilters(),
-    provider.getYoutubeVideosTotal(sourceId || undefined),
-    provider.getPaginatedYoutubeVideos(
-      currentPage,
-      pageSize,
-      sourceId || undefined
-    ),
+    provider.getYoutubeVideosTotal(listFilters),
+    provider.getPaginatedYoutubeVideos(currentPage, pageSize, listFilters),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = currentPage < totalPages ? currentPage + 1 : null;
+
+  const buildPath = (page: number, nextSourceIds: string[]) =>
+    buildVideosQueryPath({
+      page,
+      sourceIds: nextSourceIds,
+      period,
+      dateFrom,
+      dateTo,
+    });
+
+  const hasFilters = sourceIds.length > 0 || Boolean(period || dateFrom || dateTo);
 
   return (
     <section className="space-y-6">
@@ -62,12 +74,27 @@ export default async function VideosPage({
       />
 
       <Card className="border-border/80 shadow-sm">
-        <CardContent className="pt-4">
-          <p className="mb-2 text-sm font-medium text-muted-foreground">Canal</p>
-          <FilterChipRow
-            items={filters}
-            activeId={sourceId || null}
-            buildHref={(id) => buildVideosPath(1, id)}
+        <CardContent className="space-y-5 pt-4">
+          <div>
+            <p className="mb-2 text-sm font-medium text-muted-foreground">
+              Canal
+              <span className="ml-1.5 font-normal text-muted-foreground/80">
+                (seleção múltipla)
+              </span>
+            </p>
+            <FilterChipRow
+              items={filters}
+              activeIds={sourceIds}
+              buildHref={(id) =>
+                buildPath(1, id ? toggleSourceId(sourceIds, id) : [])
+              }
+            />
+          </div>
+          <VideosPeriodFilter
+            sourceIds={sourceIds}
+            period={period}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
           />
         </CardContent>
       </Card>
@@ -76,7 +103,9 @@ export default async function VideosPage({
         <Card className="border-dashed border-border/80">
           <CardContent className="px-6 py-10 text-center">
             <p className="mb-4 text-muted-foreground">
-              Nenhum vídeo encontrado. Use Atualizar Fontes no admin para popular esta seção.
+              {hasFilters
+                ? "Nenhum vídeo com estes filtros. Ajuste canais ou período."
+                : "Nenhum vídeo encontrado. Use Atualizar Fontes no admin para popular esta seção."}
             </p>
             <Link href="/videos" className={buttonVariants({ variant: "default" })}>
               Ver todos
@@ -96,8 +125,8 @@ export default async function VideosPage({
         nextPage={nextPage}
         currentPage={currentPage}
         totalPages={totalPages}
-        buildPrevHref={() => buildVideosPath(prevPage!, sourceId)}
-        buildNextHref={() => buildVideosPath(nextPage!, sourceId)}
+        buildPrevHref={() => buildPath(prevPage!, sourceIds)}
+        buildNextHref={() => buildPath(nextPage!, sourceIds)}
       />
     </section>
   );

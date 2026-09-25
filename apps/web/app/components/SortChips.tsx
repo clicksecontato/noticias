@@ -20,7 +20,10 @@ export function SortChips({ currentSort, buildHref, className }: SortChipsProps)
     <div className={cn("flex flex-wrap gap-2", className)}>
       {SORT_OPTIONS.map(({ value, label }) => (
         <Link key={value} href={buildHref(value)}>
-          <Badge variant={currentSort === value ? "default" : "outline"} className="font-normal">
+          <Badge
+            variant={currentSort === value ? "default" : "outline"}
+            className="h-8 min-h-8 rounded-full px-3 text-xs font-medium leading-none"
+          >
             {label}
           </Badge>
         </Link>

@@ -49,11 +49,14 @@ describe("admin shell — exemplo-layout-final", () => {
     expect(buttonTsx).not.toMatch(/inset_0_1px_0_rgba\(255,255,255,0\.(3|4|5)/);
   });
 
-  it("sidebar retrátil com Notícias IA e tooltip", () => {
-    expect(sidebar).toMatch(/Notícias/);
+  it("sidebar retrátil com marca Conhecimento Ampliado, logo e tooltip", () => {
+    expect(sidebar).toMatch(/SiteBrand|SITE_NAME/);
+    expect(sidebar).toMatch(/stylizedTitle/);
+    expect(sidebar).toMatch(/compact=\{collapsed\}/);
     expect(sidebar).toMatch(/collapsed|setCollapsed|isCollapsed/);
     expect(sidebar).toMatch(/tooltip|title=|group-hover:opacity/i);
     expect(sidebar).not.toMatch(/>Admin</);
+    expect(sidebar).not.toMatch(/Notícias IA/);
   });
 
   it("root shell omite nav/footer no admin; layout sem top-16", () => {

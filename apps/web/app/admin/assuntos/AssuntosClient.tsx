@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminPageTitle } from "../components/AdminPageTitle";
+import { CATALOG_GLOSSARY } from "@/src/admin/catalog-glossary";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
@@ -97,7 +98,9 @@ export function AssuntosClient() {
       {dialogs}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1.5">
-          <AdminPageTitle icon={Bookmark}>Assuntos</AdminPageTitle>
+          <AdminPageTitle icon={Bookmark} hint={CATALOG_GLOSSARY.subject}>
+            Assuntos
+          </AdminPageTitle>
           <p className="text-muted-foreground">Catálogo de assuntos para enriquecimento e relatórios.</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteBrand } from "./SiteBrand";
 
 const FOOTER_LINKS = [
   { href: "/", label: "Início" },
@@ -15,11 +16,7 @@ export function Footer() {
       role="contentinfo"
     >
       <div className="mx-auto flex max-w-[960px] flex-col gap-4 px-4 py-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p className="text-base font-bold text-foreground">
-          <Link href="/" className="no-underline hover:no-underline">
-            Notícias <span className="gradient-text">IA</span>
-          </Link>
-        </p>
+        <SiteBrand href="/" logoSize={28} textClassName="text-base" />
         <nav className="flex flex-wrap gap-6" aria-label="Rodapé">
           {FOOTER_LINKS.map(({ href, label }) => (
             <Link
@@ -31,7 +28,7 @@ export function Footer() {
             </Link>
           ))}
         </nav>
-        <p>Portal de notícias de inteligência artificial.</p>
+        <p>Agregação e pauta de inteligência artificial.</p>
       </div>
     </footer>
   );

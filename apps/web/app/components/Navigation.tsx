@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SiteBrand } from "./SiteBrand";
 
 const NAV_ITEMS = [
   { href: "/", label: "Início" },
@@ -49,13 +50,12 @@ export function Navigation() {
         aria-label="Menu principal"
       >
         <div className="mx-auto flex h-16 max-w-[960px] items-center justify-between px-4">
-          <Link
+          <SiteBrand
             href="/"
-            className="text-xl font-bold text-foreground no-underline hover:no-underline"
+            logoSize={36}
+            textClassName="text-lg"
             onClick={() => setMobileOpen(false)}
-          >
-            Notícias <span className="gradient-text">IA</span>
-          </Link>
+          />
 
           <ul className="hidden items-center gap-1 md:flex">
             {NAV_ITEMS.map((item) => (

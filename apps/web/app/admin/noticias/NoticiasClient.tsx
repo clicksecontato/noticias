@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Newspaper } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminPageTitle } from "../components/AdminPageTitle";
+import { EntityChips } from "../../components/EntityChips";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 import {
@@ -378,17 +378,22 @@ export function NoticiasClient() {
                         <td className="p-2 text-muted-foreground">{a.sourceName || a.sourceId || "—"}</td>
                         <td className="p-2 text-muted-foreground">{formatDate(a.published_at)}</td>
                         <td className="p-2">
-                          <div className="flex flex-wrap gap-1">
-                            {a.subjectNames.slice(0, 2).map((n) => (
-                              <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
-                            ))}
-                            {a.tagNames.slice(0, 2).map((n) => (
-                              <Badge key={n} variant="outline" className="text-xs">{n}</Badge>
-                            ))}
-                            {(a.subjectNames.length + a.tagNames.length + a.typeNames.length) > 4 ? (
-                              <span className="text-muted-foreground text-xs">+mais</span>
-                            ) : null}
-                          </div>
+                          <EntityChips
+                            className="mt-0"
+                            subjectNames={a.subjectNames.slice(0, 2)}
+                            tagNames={a.tagNames.slice(0, 2)}
+                            typeNames={
+                              a.subjectNames.length + a.tagNames.length < 4
+                                ? a.typeNames.slice(0, 2)
+                                : []
+                            }
+                          />
+                          {a.subjectNames.length +
+                            a.tagNames.length +
+                            a.typeNames.length >
+                          4 ? (
+                            <span className="text-muted-foreground text-xs">+mais</span>
+                          ) : null}
                         </td>
                         <td className="p-2 text-right">
                           <Link href={`/admin/noticias/${a.id}`}>

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Video } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { AdminPageTitle } from "../components/AdminPageTitle";
 import { SourceAvatar } from "../../components/SourceAvatar";
+import { EntityChips } from "../../components/EntityChips";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 import {
@@ -401,17 +401,22 @@ export function VideosClient() {
                         </td>
                         <td className="p-2 text-muted-foreground">{formatDate(v.published_at)}</td>
                         <td className="p-2">
-                          <div className="flex flex-wrap gap-1">
-                            {v.subjectNames.slice(0, 2).map((n) => (
-                              <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
-                            ))}
-                            {v.tagNames.slice(0, 2).map((n) => (
-                              <Badge key={n} variant="outline" className="text-xs">{n}</Badge>
-                            ))}
-                            {(v.subjectNames.length + v.tagNames.length + v.typeNames.length) > 4 ? (
-                              <span className="text-muted-foreground text-xs">+mais</span>
-                            ) : null}
-                          </div>
+                          <EntityChips
+                            className="mt-0"
+                            subjectNames={v.subjectNames.slice(0, 2)}
+                            tagNames={v.tagNames.slice(0, 2)}
+                            typeNames={
+                              v.subjectNames.length + v.tagNames.length < 4
+                                ? v.typeNames.slice(0, 2)
+                                : []
+                            }
+                          />
+                          {v.subjectNames.length +
+                            v.tagNames.length +
+                            v.typeNames.length >
+                          4 ? (
+                            <span className="text-muted-foreground text-xs">+mais</span>
+                          ) : null}
                         </td>
                         <td className="p-2 text-right">
                           <Link href={`/admin/videos/${v.id}`}>

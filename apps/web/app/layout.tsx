@@ -8,8 +8,8 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata = {
   title: {
-    default: "Notícias IA",
-    template: "%s | Notícias IA",
+    default: "Conhecimento Ampliado",
+    template: "%s | Conhecimento Ampliado",
   },
   description:
     "Ferramenta pessoal de agregação e pauta de inteligência artificial.",

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminPageTitle } from "../components/AdminPageTitle";
+import { CATALOG_GLOSSARY } from "@/src/admin/catalog-glossary";
 import { useSystemDialogs } from "../../components/useSystemDialogs";
 import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 
@@ -93,7 +94,9 @@ export function TiposClient() {
       {dialogs}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1.5">
-          <AdminPageTitle icon={Layers}>Tipos</AdminPageTitle>
+          <AdminPageTitle icon={Layers} hint={CATALOG_GLOSSARY.type}>
+            Tipos
+          </AdminPageTitle>
           <p className="text-muted-foreground">Catálogo de tipos para enriquecimento.</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>

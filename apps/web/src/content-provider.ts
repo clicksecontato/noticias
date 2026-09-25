@@ -93,9 +93,19 @@ export interface RouteContentProvider {
   getPaginatedYoutubeVideos(
     page: number,
     pageSize: number,
-    sourceId?: string
+    filters?: {
+      sourceId?: string;
+      sourceIds?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    }
   ): Promise<YoutubeVideoCard[]>;
-  getYoutubeVideosTotal(sourceId?: string): Promise<number>;
+  getYoutubeVideosTotal(filters?: {
+    sourceId?: string;
+    sourceIds?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<number>;
   getYoutubeSourceFilters(): Promise<NewsSourceFilter[]>;
   /** Notícias vinculadas ao assunto (por nome enriquecido ou match no título/resumo). */
   getNewsCardsForSubjectSlug(slug: string, limit?: number): Promise<HomeCard[]>;
@@ -290,14 +300,26 @@ export function createRouteContentProvider(): RouteContentProvider {
         name: source.name
       }));
     },
-    async getPaginatedYoutubeVideos(page: number, pageSize: number, sourceId?: string) {
+    async getPaginatedYoutubeVideos(
+      page: number,
+      pageSize: number,
+      filters?: {
+        sourceId?: string;
+        sourceIds?: string[];
+        dateFrom?: string;
+        dateTo?: string;
+      }
+    ) {
       const safePage = Math.max(1, page);
       const safePageSize = Math.max(1, pageSize);
       const offset = (safePage - 1) * safePageSize;
       const videos = await repository.getYoutubeVideos({
         limit: safePageSize,
         offset,
-        sourceId
+        sourceId: filters?.sourceId,
+        sourceIds: filters?.sourceIds,
+        dateFrom: filters?.dateFrom,
+        dateTo: filters?.dateTo,
       });
       return videos.map((v) => ({
         id: v.id,
@@ -313,8 +335,13 @@ export function createRouteContentProvider(): RouteContentProvider {
         ...mapEntityNames(v),
       }));
     },
-    async getYoutubeVideosTotal(sourceId?: string) {
-      return repository.getYoutubeVideosTotal(sourceId);
+    async getYoutubeVideosTotal(filters?: {
+      sourceId?: string;
+      sourceIds?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    }) {
+      return repository.getYoutubeVideosTotal(filters);
     },
     async getYoutubeSourceFilters() {
       const sources = await repository.getContentSourcesForIngestion();

@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createPortal } from "react-dom";
+import { SiteBrand, SITE_NAME } from "../../components/SiteBrand";
 
 export interface AdminMenuItem {
   path: string;
@@ -286,26 +287,17 @@ export function AdminSidebar({
       <div
         className={cn(
           "relative z-10 flex h-16 shrink-0 items-center border-b border-border/60",
-          collapsed ? "justify-center px-2" : "px-4"
+          collapsed ? "justify-center px-2" : "px-3"
         )}
       >
-        <SidebarTooltip label="Notícias IA" show={collapsed}>
-          <Link
+        <SidebarTooltip label={SITE_NAME} show={collapsed}>
+          <SiteBrand
             href="/admin"
-            className={cn(
-              "min-w-0 font-semibold tracking-tight no-underline hover:no-underline",
-              collapsed ? "px-1 text-center text-sm" : "text-base"
-            )}
-            aria-label="Notícias IA"
-          >
-            {collapsed ? (
-              <span className="gradient-text">IA</span>
-            ) : (
-              <span className="text-foreground">
-                Notícias <span className="gradient-text">IA</span>
-              </span>
-            )}
-          </Link>
+            compact={collapsed}
+            stylizedTitle
+            logoSize={collapsed ? 28 : 32}
+            className={collapsed ? "justify-center" : "min-w-0"}
+          />
         </SidebarTooltip>
       </div>
 

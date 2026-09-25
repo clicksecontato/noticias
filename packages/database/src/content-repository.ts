@@ -113,8 +113,16 @@ export interface ContentRepository {
     limit?: number;
     offset?: number;
     sourceId?: string;
+    sourceIds?: string[];
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<YoutubeVideoDisplay[]>;
-  getYoutubeVideosTotal(sourceId?: string): Promise<number>;
+  getYoutubeVideosTotal(options?: {
+    sourceId?: string;
+    sourceIds?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<number>;
   /** Catálogo (id, name, slug) para enriquecimento de artigos/vídeos. */
   getCatalogsForEnrichment(): Promise<EnrichmentCatalog>;
   /** Vincula um artigo a subjects, tags, types (enriquecimento). */
@@ -744,6 +752,9 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
       limit?: number;
       offset?: number;
       sourceId?: string;
+      sourceIds?: string[];
+      dateFrom?: string;
+      dateTo?: string;
     }): Promise<YoutubeVideoDisplay[]> {
       const limit = options?.limit ?? 24;
       const offset = options?.offset ?? 0;
@@ -753,8 +764,24 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         .eq("is_news", true)
         .order("published_at", { ascending: false })
         .range(offset, offset + limit - 1);
-      if (options?.sourceId) {
-        query = query.eq("source_id", options.sourceId);
+      const ids =
+        options?.sourceIds && options.sourceIds.length > 0
+          ? options.sourceIds
+          : options?.sourceId
+            ? [options.sourceId]
+            : [];
+      if (ids.length === 1) {
+        query = query.eq("source_id", ids[0]);
+      } else if (ids.length > 1) {
+        query = query.in("source_id", ids);
+      }
+      if (options?.dateFrom) {
+        query = query.gte("published_at", `${options.dateFrom}T00:00:00.000Z`);
+      }
+      if (options?.dateTo) {
+        const end = new Date(`${options.dateTo}T00:00:00.000Z`);
+        end.setUTCDate(end.getUTCDate() + 1);
+        query = query.lt("published_at", end.toISOString());
       }
       const { data, error } = await query;
       if (error) {
@@ -833,10 +860,34 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         };
       });
     },
-    async getYoutubeVideosTotal(sourceId?: string): Promise<number> {
-      let query = readClient.from("youtube_videos").select("id", { count: "exact", head: true });
-      if (sourceId) {
-        query = query.eq("source_id", sourceId);
+    async getYoutubeVideosTotal(options?: {
+      sourceId?: string;
+      sourceIds?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<number> {
+      let query = readClient
+        .from("youtube_videos")
+        .select("id", { count: "exact", head: true })
+        .eq("is_news", true);
+      const ids =
+        options?.sourceIds && options.sourceIds.length > 0
+          ? options.sourceIds
+          : options?.sourceId
+            ? [options.sourceId]
+            : [];
+      if (ids.length === 1) {
+        query = query.eq("source_id", ids[0]);
+      } else if (ids.length > 1) {
+        query = query.in("source_id", ids);
+      }
+      if (options?.dateFrom) {
+        query = query.gte("published_at", `${options.dateFrom}T00:00:00.000Z`);
+      }
+      if (options?.dateTo) {
+        const end = new Date(`${options.dateTo}T00:00:00.000Z`);
+        end.setUTCDate(end.getUTCDate() + 1);
+        query = query.lt("published_at", end.toISOString());
       }
       const { count, error } = await query;
       if (error) {

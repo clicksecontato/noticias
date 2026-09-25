@@ -8,6 +8,9 @@ export interface EntityChipsProps {
   className?: string;
 }
 
+const chipClass =
+  "h-6 min-h-6 rounded-full px-2.5 text-[11px] font-medium leading-none tracking-normal";
+
 export function EntityChips({
   subjectNames,
   tagNames,
@@ -26,17 +29,17 @@ export function EntityChips({
       aria-label="Assuntos, tags e tipos"
     >
       {(subjectNames ?? []).map((name) => (
-        <Badge key={`subject-${name}`} variant="soft" className="text-xs font-normal">
+        <Badge key={`subject-${name}`} variant="soft" className={chipClass}>
           {name}
         </Badge>
       ))}
       {(tagNames ?? []).map((name) => (
-        <Badge key={`tag-${name}`} variant="secondary" className="text-xs font-normal">
+        <Badge key={`tag-${name}`} variant="secondary" className={chipClass}>
           {name}
         </Badge>
       ))}
       {(typeNames ?? []).map((name) => (
-        <Badge key={`type-${name}`} variant="info" className="text-xs font-normal">
+        <Badge key={`type-${name}`} variant="info" className={chipClass}>
           {name}
         </Badge>
       ))}
