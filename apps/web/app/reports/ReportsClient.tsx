@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BarChart3, ChevronRight } from "lucide-react";
 import { PageBackLink } from "../components/PageBackLink";
+import { useSystemDialogs } from "../components/useSystemDialogs";
+import { buildDeleteConfirmCopy } from "@/src/ui/confirm-dialog";
 import { AdminPageTitle } from "../admin/components/AdminPageTitle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ const statusVariant = (status: string): "default" | "secondary" | "destructive" 
 };
 
 export function ReportsClient() {
+  const { showAlert, showConfirm, dialogs } = useSystemDialogs();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type")?.trim() || "volume";
 
@@ -140,6 +142,29 @@ export function ReportsClient() {
       })
       .catch(() => setSources([]));
   }, []);
+
+  function deleteReport(id: string) {
+    const item = items.find((report) => report.id === id);
+    const label = item ? getReportTypeMeta(item.report_type).label : "relatório";
+    const copy = buildDeleteConfirmCopy({
+      entity: "relatório",
+      name: label,
+      consequence: "O resultado também é removido.",
+    });
+    showConfirm({
+      ...copy,
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/reports/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          showAlert("Não foi possível apagar o relatório.", "Erro");
+          return;
+        }
+        setItems((current) => current.filter((report) => report.id !== id));
+        setTotal((count) => Math.max(0, count - 1));
+      },
+    });
+  }
 
   function loadReports() {
     setLoading(true);
@@ -270,6 +295,7 @@ export function ReportsClient() {
 
   return (
     <section className="space-y-6">
+      {dialogs}
       <PageBackLink href="/admin">Início</PageBackLink>
       <AdminPageTitle icon={BarChart3} as="h2">
         Relatórios
@@ -332,7 +358,7 @@ export function ReportsClient() {
                 data-testid="report-gallery"
               >
                 {items.map((r) => (
-                  <ReportGalleryCard key={r.id} report={r} />
+                  <ReportGalleryCard key={r.id} report={r} onDelete={deleteReport} />
                 ))}
               </div>
               <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Paginação">
@@ -396,6 +422,11 @@ export function ReportsClient() {
                     </SelectItem>
                     <SelectItem value="radar_pauta">Radar de pauta</SelectItem>
                     <SelectItem value="mapa_tematico">Mapa temático</SelectItem>
+                    <SelectItem value="youtube_formato">Formato do YouTube</SelectItem>
+                    <SelectItem value="thumb_analysis">Análise de thumbs</SelectItem>
+                    <SelectItem value="perspectivas">Perspectivas</SelectItem>
+                    <SelectItem value="em_portugues">Em português</SelectItem>
+                    <SelectItem value="by_types">Por tipo</SelectItem>
                     <SelectItem value="executive_summary">
                       Resumo executivo
                     </SelectItem>
@@ -732,17 +763,22 @@ function TypeFilterChip({
   );
 }
 
-function ReportGalleryCard({ report: r }: { report: ReportListItem }) {
+function ReportGalleryCard({
+  report: r,
+  onDelete,
+}: {
+  report: ReportListItem;
+  onDelete: (id: string) => void;
+}) {
+  const router = useRouter();
   const meta = getReportTypeMeta(r.report_type);
   const Icon = meta.icon;
 
   return (
-    <Link
-      href={`/admin/reports/${r.id}`}
+    <article
       className={cn(
-        "group flex flex-col gap-3 rounded-2xl border p-4 no-underline transition-all",
+        "group flex flex-col gap-3 rounded-2xl border p-4 transition-all",
         "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         meta.accentClass
       )}
     >
@@ -781,12 +817,17 @@ function ReportGalleryCard({ report: r }: { report: ReportListItem }) {
             </p>
           ) : null}
         </div>
-        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary opacity-80 transition-opacity group-hover:opacity-100">
-          Abrir
-          <ChevronRight className="size-3.5" aria-hidden />
+        <span className="inline-flex shrink-0 items-center gap-2">
+          <Button type="button" size="sm" variant="destructive" onClick={() => onDelete(r.id)}>
+            Apagar
+          </Button>
+          <Button type="button" size="sm" onClick={() => router.push(`/admin/reports/${r.id}`)}>
+            Abrir
+            <ChevronRight className="size-3.5" aria-hidden />
+          </Button>
         </span>
       </div>
-    </Link>
+    </article>
   );
 }
 

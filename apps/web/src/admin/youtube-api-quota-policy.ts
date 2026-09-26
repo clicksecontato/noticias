@@ -43,7 +43,7 @@ export const YOUTUBE_API_METHOD_CATALOG: readonly YoutubeApiMethodMeta[] = [
   {
     method: "videos.list",
     units: 1,
-    usedIn: "Metadados do vídeo de origem (shorts)",
+    usedIn: "Metadados públicos na ingestão e snapshot de shorts",
     auth: "api_key",
   },
   {

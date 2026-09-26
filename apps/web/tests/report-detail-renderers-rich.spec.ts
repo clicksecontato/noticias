@@ -6,6 +6,10 @@ const renderers = readFileSync(
   resolve(__dirname, "../app/reports/report-detail-renderers.tsx"),
   "utf8"
 );
+const mapaChart = readFileSync(
+  resolve(__dirname, "../app/components/reports/MapaTematicoChart.tsx"),
+  "utf8"
+);
 const shell = readFileSync(
   resolve(__dirname, "../app/components/reports/ReportShell.tsx"),
   "utf8"
@@ -23,12 +27,34 @@ describe("report detail rich UI", () => {
     expect(insights).toMatch(/buildExecutiveInsights/);
   });
 
-  it("radar e executivo usam shell rico", () => {
-    expect(renderers).toMatch(/ReportKpiStrip/);
-    expect(renderers).toMatch(/ReportInsight/);
+  it("radar, executivo e top assuntos usam o palco de apresentação", () => {
+    expect(renderers).toMatch(/PresentationStage/);
+    expect(renderers).toMatch(/kicker="Radar de pauta"/);
+    expect(renderers).toMatch(/kicker="Resumo executivo"/);
+    expect(renderers).toMatch(/kicker="Top assuntos"/);
+    expect(renderers).toMatch(/kicker="Canais do YouTube"/);
     expect(renderers).toMatch(/buildRadarInsights/);
     expect(renderers).toMatch(/buildExecutiveInsights/);
     expect(renderers).toMatch(/topUp|Em alta/);
+  });
+
+  it("mapa temático nomeia as cores e lista assuntos por cluster", () => {
+    expect(mapaChart).toMatch(/Legenda dos clusters/);
+    expect(mapaChart).toMatch(/cluster_label/);
+    expect(renderers).toMatch(/clusters\.map\(\(cluster/);
+    expect(renderers).not.toMatch(/flex flex-wrap gap-2/);
+  });
+
+  it("gráfico de notícias por tag abre a lista no modal", () => {
+    expect(renderers).toMatch(/TagNewsChart/);
+    expect(renderers).toMatch(/dateFrom=\{periodStart\}/);
+    const chart = readFileSync(
+      resolve(__dirname, "../app/components/reports/TagNewsChart.tsx"),
+      "utf8"
+    );
+    expect(chart).toMatch(/AlertDialog/);
+    expect(chart).toMatch(/tagId/);
+    expect(chart).toMatch(/onTagClick/);
   });
 
   it("volume, mapa, rankings e weekday usam insights", () => {

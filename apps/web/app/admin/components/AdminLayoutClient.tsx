@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { PanelLeft } from "lucide-react";
 import { createClient } from "@/src/lib/supabase/client";
+import { AdminStageModeProvider, useAdminStageMode } from "@/src/admin/admin-stage-mode";
 import { AdminSidebar } from "./AdminSidebar";
 import { cn } from "@/lib/utils";
 
@@ -47,19 +49,73 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full bg-transparent">
-      <AdminSidebar
+    <AdminStageModeProvider>
+      <AdminShell
         collapsed={ready ? collapsed : true}
         onCollapsedChange={handleCollapsedChange}
         onLogout={handleLogout}
-      />
+      >
+        {children}
+      </AdminShell>
+    </AdminStageModeProvider>
+  );
+}
+
+function AdminShell({
+  collapsed,
+  onCollapsedChange,
+  onLogout,
+  children,
+}: {
+  collapsed: boolean;
+  onCollapsedChange: (next: boolean) => void;
+  onLogout: () => void;
+  children: React.ReactNode;
+}) {
+  const { active: stageMode } = useAdminStageMode();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!stageMode) setMenuOpen(false);
+  }, [stageMode]);
+
+  const showSidebar = !stageMode || menuOpen;
+
+  return (
+    <div className="relative flex min-h-screen w-full bg-transparent">
+      {showSidebar ? (
+        <AdminSidebar
+          collapsed={stageMode ? false : collapsed}
+          onCollapsedChange={stageMode ? () => setMenuOpen(false) : onCollapsedChange}
+          onLogout={onLogout}
+        />
+      ) : null}
+      {stageMode ? (
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? "Ocultar menu" : "Abrir menu"}
+          title={menuOpen ? "Ocultar menu" : "Abrir menu"}
+          className="fixed right-4 top-4 z-50 inline-flex size-10 items-center justify-center rounded-full border border-border/80 bg-background/90 text-foreground shadow-md backdrop-blur-sm"
+        >
+          <PanelLeft className="size-5" aria-hidden />
+        </button>
+      ) : null}
+      {stageMode && menuOpen ? (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          className="fixed inset-0 z-30 bg-black/40"
+          onClick={() => setMenuOpen(false)}
+        />
+      ) : null}
       <main
         className={cn(
           "relative z-0 min-h-screen min-w-0 flex-1 overflow-y-auto overflow-x-auto bg-transparent transition-[padding] duration-200 ease-out",
-          collapsed ? "pl-16" : "pl-56"
+          stageMode ? "pl-0" : collapsed ? "pl-16" : "pl-56"
         )}
       >
-        <div className="mx-auto max-w-6xl px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+        <div className={cn(stageMode ? "" : "mx-auto max-w-6xl px-5 py-7 sm:px-8 lg:px-10 lg:py-9")}>
           {children}
         </div>
       </main>

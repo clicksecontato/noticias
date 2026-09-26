@@ -21,6 +21,8 @@ describe("videos-list-query", () => {
       dateFrom: "2026-09-01",
       dateTo: "2026-09-24",
       period: "",
+      duration: "",
+      lang: "",
     });
   });
 
@@ -33,6 +35,8 @@ describe("videos-list-query", () => {
       dateFrom: "",
       dateTo: "",
       period: "",
+      duration: "",
+      lang: "",
     });
   });
 
@@ -50,9 +54,11 @@ describe("videos-list-query", () => {
         dateFrom: "2026-09-01",
         dateTo: "2026-09-10",
         period: "",
+        duration: "long",
+        lang: "pt",
         basePath: "/videos",
       })
-    ).toBe("/videos?page=1&source=x%2Cy&from=2026-09-01&to=2026-09-10");
+    ).toBe("/videos?page=1&source=x%2Cy&from=2026-09-01&to=2026-09-10&duration=long&lang=pt");
   });
 
   it("toggleSourceId adiciona e remove canal", () => {

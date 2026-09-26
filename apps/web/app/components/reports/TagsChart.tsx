@@ -26,14 +26,19 @@ const MAX_BARS = 20;
 
 interface TagsChartProps {
   data: ByTagsItem[];
+  fill?: boolean;
+  onTagClick?: (item: ByTagsItem) => void;
 }
 
-export function TagsChart({ data }: TagsChartProps) {
+export function TagsChart({ data, fill = false, onTagClick }: TagsChartProps) {
   const chartData = data.slice(0, MAX_BARS);
   if (!chartData.length) return null;
 
   return (
-    <NeoChartContainer config={chartConfig} className="min-h-[300px] w-full">
+    <NeoChartContainer
+      config={chartConfig}
+      className={fill ? "aspect-auto h-full min-h-0 w-full" : "min-h-[300px] w-full"}
+    >
       {({ defs, fillWarm }) => (
         <BarChart
           data={chartData}
@@ -53,7 +58,17 @@ export function TagsChart({ data }: TagsChartProps) {
             tickFormatter={(v) => (v.length > 22 ? `${v.slice(0, 20)}…` : v)}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="count" fill={fillWarm} radius={[0, 8, 8, 0]} />
+          <Bar
+            dataKey="count"
+            fill={fillWarm}
+            radius={[0, 8, 8, 0]}
+            style={onTagClick ? { cursor: "pointer" } : undefined}
+            onClick={(bar) => {
+              const raw = bar as (ByTagsItem & { payload?: ByTagsItem }) | undefined;
+              const row = raw?.payload?.tag_id ? raw.payload : raw;
+              if (row?.tag_id) onTagClick?.(row);
+            }}
+          />
         </BarChart>
       )}
     </NeoChartContainer>

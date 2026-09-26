@@ -31,11 +31,17 @@ interface ActivityWeekdayChartProps {
   data: ActivityWeekdayItem[];
 }
 
-export function ActivityWeekdayChart({ data }: ActivityWeekdayChartProps) {
+export function ActivityWeekdayChart({
+  data,
+  fill = false,
+}: ActivityWeekdayChartProps & { fill?: boolean }) {
   if (!data.length) return null;
 
   return (
-    <NeoChartContainer config={chartConfig} className="min-h-[260px] w-full">
+    <NeoChartContainer
+      config={chartConfig}
+      className={fill ? "aspect-auto h-full min-h-0 w-full" : "min-h-[260px] w-full"}
+    >
       {({ defs, fillWarm, fillCool }) => (
         <BarChart data={data} margin={{ left: 12, right: 12, top: 8 }}>
           {defs}

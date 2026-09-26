@@ -7,6 +7,13 @@ import { generateActivityByWeekdayReport } from "./generators/activity-by-weekda
 import { generateTopSubjectsReport } from "./generators/top-subjects";
 import { generateRadarPautaReport } from "./generators/radar-pauta";
 import { generateMapaTematicoReport } from "./generators/mapa-tematico";
+import { generateYoutubeFormatoReport } from "./generators/youtube-formato";
+import { buildThumbsPayload } from "./generators/thumbs";
+import {
+  buildByTypesPayload,
+  buildEmPortuguesPayload,
+  buildPerspectivasPayload,
+} from "./generators/editorial-pautas";
 
 export interface ReportDataInput {
   articles: ArticleRow[];
@@ -32,6 +39,10 @@ export interface ReportDataInput {
   }>;
   periodStart?: string;
   periodEnd?: string;
+  coverageHits?: Parameters<typeof buildPerspectivasPayload>[0];
+  portugueseVideos?: Parameters<typeof buildEmPortuguesPayload>[0]["videos"];
+  portugueseSubjects?: Parameters<typeof buildEmPortuguesPayload>[0]["subjects"];
+  typeCounts?: Parameters<typeof buildByTypesPayload>[0];
 }
 
 export interface GenerateReportOptions {
@@ -114,6 +125,37 @@ export function generateReportPayload(
         }
       ) as unknown as Record<string, unknown>;
     }
+    case "youtube_formato":
+      return generateYoutubeFormatoReport(
+        videos.map((video) => ({
+          durationSeconds: video.duration_seconds ?? null,
+          defaultAudioLanguage: video.default_audio_language ?? null,
+          liveBroadcastContent: video.live_broadcast_content ?? null,
+          hasCaptions: video.has_captions ?? null,
+          creatorTags: video.creator_tags ?? [],
+          topicCategories: video.topic_categories ?? [],
+          youtubeCategoryId: video.youtube_category_id ?? null,
+        }))
+      ) as unknown as Record<string, unknown>;
+    case "thumb_analysis":
+      return buildThumbsPayload(videos, sourceNames) as unknown as Record<string, unknown>;
+    case "perspectivas": {
+      if (!periodStart || !periodEnd) {
+        throw new Error("perspectivas requer periodStart e periodEnd nos dados");
+      }
+      return buildPerspectivasPayload(data.coverageHits ?? [], {
+        periodStart,
+        periodEnd,
+      }) as unknown as Record<string, unknown>;
+    }
+    case "em_portugues":
+      return buildEmPortuguesPayload({
+        videos: data.portugueseVideos ?? [],
+        subjects: data.portugueseSubjects ?? [],
+        sourceNames,
+      }) as unknown as Record<string, unknown>;
+    case "by_types":
+      return buildByTypesPayload(data.typeCounts ?? []) as unknown as Record<string, unknown>;
     case "mapa_tematico": {
       if (!periodStart || !periodEnd) {
         throw new Error("mapa_tematico requer periodStart e periodEnd nos dados");
@@ -138,6 +180,11 @@ export const SUPPORTED_REPORT_TYPES: ReportType[] = [
   "top_subjects",
   "radar_pauta",
   "mapa_tematico",
+  "youtube_formato",
+  "thumb_analysis",
+  "perspectivas",
+  "em_portugues",
+  "by_types",
   "executive_summary",
   "month_presentation",
 ];

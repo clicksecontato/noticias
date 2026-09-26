@@ -38,12 +38,15 @@ interface TopSourcesChartProps {
   data: TopSourcesItem[];
 }
 
-export function TopSourcesChart({ data }: TopSourcesChartProps) {
+export function TopSourcesChart({ data, fill = false }: TopSourcesChartProps & { fill?: boolean }) {
   const chartData = data.slice(0, MAX_BARS);
   if (!chartData.length) return null;
 
   return (
-    <NeoChartContainer config={chartConfig} className="min-h-[300px] w-full">
+    <NeoChartContainer
+      config={chartConfig}
+      className={fill ? "aspect-auto h-full min-h-0 w-full" : "min-h-[300px] w-full"}
+    >
       {({ defs, fillWarm, fillCool }) => (
         <BarChart
           data={chartData}

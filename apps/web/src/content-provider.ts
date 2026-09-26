@@ -35,6 +35,9 @@ export interface YoutubeVideoCard {
   publishedAt: string;
   thumbnailUrl: string | null;
   url: string;
+  durationSeconds?: number | null;
+  defaultAudioLanguage?: string | null;
+  hasCaptions?: boolean | null;
   /** Assuntos, tags e tipos vinculados (enriquecimento). */
   subjectNames?: string[];
   tagNames?: string[];
@@ -98,6 +101,8 @@ export interface RouteContentProvider {
       sourceIds?: string[];
       dateFrom?: string;
       dateTo?: string;
+      durationBand?: "short" | "medium" | "long";
+      audioLanguage?: "pt" | "en";
     }
   ): Promise<YoutubeVideoCard[]>;
   getYoutubeVideosTotal(filters?: {
@@ -105,6 +110,8 @@ export interface RouteContentProvider {
     sourceIds?: string[];
     dateFrom?: string;
     dateTo?: string;
+    durationBand?: "short" | "medium" | "long";
+    audioLanguage?: "pt" | "en";
   }): Promise<number>;
   getYoutubeSourceFilters(): Promise<NewsSourceFilter[]>;
   /** Notícias vinculadas ao assunto (por nome enriquecido ou match no título/resumo). */
@@ -308,6 +315,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceIds?: string[];
         dateFrom?: string;
         dateTo?: string;
+        durationBand?: "short" | "medium" | "long";
+        audioLanguage?: "pt" | "en";
       }
     ) {
       const safePage = Math.max(1, page);
@@ -320,6 +329,8 @@ export function createRouteContentProvider(): RouteContentProvider {
         sourceIds: filters?.sourceIds,
         dateFrom: filters?.dateFrom,
         dateTo: filters?.dateTo,
+        durationBand: filters?.durationBand,
+        audioLanguage: filters?.audioLanguage,
       });
       return videos.map((v) => ({
         id: v.id,
@@ -332,6 +343,9 @@ export function createRouteContentProvider(): RouteContentProvider {
         publishedAt: v.publishedAt,
         thumbnailUrl: v.thumbnailUrl,
         url: v.url,
+        durationSeconds: v.durationSeconds ?? null,
+        defaultAudioLanguage: v.defaultAudioLanguage ?? null,
+        hasCaptions: v.hasCaptions ?? null,
         ...mapEntityNames(v),
       }));
     },
@@ -340,6 +354,8 @@ export function createRouteContentProvider(): RouteContentProvider {
       sourceIds?: string[];
       dateFrom?: string;
       dateTo?: string;
+      durationBand?: "short" | "medium" | "long";
+      audioLanguage?: "pt" | "en";
     }) {
       return repository.getYoutubeVideosTotal(filters);
     },

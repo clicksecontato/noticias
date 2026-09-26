@@ -4,6 +4,11 @@ import { generateExecutiveSummaryReport } from "../../../../../src/reports/gener
 import { generateMonthPresentationReport } from "../../../../../src/reports/generators/month-presentation";
 import { computePreviousPeriod } from "../../../../../src/reports/generators/radar-pauta";
 import { generateReportPayload, SUPPORTED_REPORT_TYPES } from "../../../../../src/reports/run-report";
+import {
+  loadByTypesPayload,
+  loadEmPortuguesPayload,
+  loadPerspectivasPayload,
+} from "../../../../../src/reports/editorial-pauta-loader";
 
 type GenerateBody = {
   reportType: ReportType;
@@ -196,6 +201,15 @@ export async function POST(request: Request): Promise<Response> {
         ...(mp?.provider && mp.provider !== "all" ? { provider: mp.provider } : {}),
         ...(mp?.sourceIds?.length ? { sourceIds: mp.sourceIds } : {}),
       });
+      await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
+    } else if (reportType === "perspectivas") {
+      const payload = await loadPerspectivasPayload(periodStartFinal, periodEndFinal);
+      await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
+    } else if (reportType === "em_portugues") {
+      const payload = await loadEmPortuguesPayload(periodStartFinal, periodEndFinal);
+      await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
+    } else if (reportType === "by_types") {
+      const payload = await loadByTypesPayload(periodStartFinal, periodEndFinal);
       await repo.saveReportResult(reportId, payload as unknown as Record<string, unknown>);
     } else {
       const [articles, videos, sourceNames] = await Promise.all([

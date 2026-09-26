@@ -14,7 +14,12 @@ export const REPORT_TYPES = [
   "by_source_detail",
   "top_subjects",
   "radar_pauta",
-  "mapa_tematico"
+  "mapa_tematico",
+  "youtube_formato",
+  "thumb_analysis",
+  "perspectivas",
+  "em_portugues",
+  "by_types"
 ] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];
@@ -56,6 +61,17 @@ export interface ArticleRowForReport {
 
 /** Dado bruto para geradores: vídeo no período. */
 export interface VideoRowForReport {
+  id?: string;
+  video_id?: string | null;
+  title?: string | null;
+  thumbnail_url?: string | null;
   published_at: string;
   source_id: string;
+  duration_seconds?: number | null;
+  default_audio_language?: string | null;
+  live_broadcast_content?: string | null;
+  has_captions?: boolean | null;
+  creator_tags?: string[] | null;
+  topic_categories?: string[] | null;
+  youtube_category_id?: string | null;
 }

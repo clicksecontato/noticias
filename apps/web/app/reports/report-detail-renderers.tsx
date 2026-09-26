@@ -1,18 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityWeekdayChart } from "../components/reports/ActivityWeekdayChart";
-import { TagsChart } from "../components/reports/TagsChart";
+import { TagNewsChart } from "../components/reports/TagNewsChart";
 import { TopSubjectsChart } from "../components/reports/TopSubjectsChart";
 import { RadarPautaChart } from "../components/reports/RadarPautaChart";
 import { MapaTematicoChart } from "../components/reports/MapaTematicoChart";
 import { TopSourcesChart } from "../components/reports/TopSourcesChart";
 import { VolumeChart } from "../components/reports/VolumeChart";
 import { ReportCollapsibleTable } from "../components/reports/ReportCollapsibleTable";
-import {
-  ReportInsight,
-  ReportKpiStrip,
-  ReportSection,
-  ReportTrendBadge,
-} from "../components/reports/ReportShell";
+import { ReportTrendBadge } from "../components/reports/ReportShell";
+import { PIE_COLORS } from "@/src/ui/chart-gradients";
 import {
   buildExecutiveInsights,
   buildMapaInsights,
@@ -22,7 +18,22 @@ import {
   buildVolumeInsights,
   buildWeekdayInsights,
 } from "../../src/reports/report-view-insights";
+import { PresentationStage, Slide } from "../components/reports/PresentationStage";
 import { MonthPresentationClient } from "../admin/month-presentation/MonthPresentationClient";
+import { YoutubeFormatoView } from "./YoutubeFormatoView";
+import { ThumbsReportView } from "../components/reports/ThumbsReportView";
+import {
+  ByTypesView,
+  EmPortuguesView,
+  PerspectivasView,
+} from "../components/reports/EditorialPautaViews";
+import type { YoutubeFormatoPayload } from "@/src/reports/generators/youtube-formato";
+import type { ThumbsPayload } from "@/src/reports/generators/thumbs";
+import type {
+  ByTypesPayload,
+  EmPortuguesPayload,
+  PerspectivasPayload,
+} from "@/src/reports/generators/editorial-pautas";
 import { SourceAvatar } from "../components/SourceAvatar";
 import { cn } from "@/lib/utils";
 
@@ -139,7 +150,7 @@ function Podium({
               {item.name}
             </p>
           </div>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{item.total}</p>
+          <p className="mt-1 text-5xl font-semibold tabular-nums tracking-tight">{item.total}</p>
           {item.note ? <p className="text-xs text-muted-foreground">{item.note}</p> : null}
         </div>
       ))}
@@ -178,22 +189,38 @@ export function ReportPayload({
       videos: 0,
     };
     const groupBy = (payload.group_by as string) ?? "day";
-    const { kpis, insight } = buildVolumeInsights(rawSeries, totals);
+    const { insight } = buildVolumeInsights(rawSeries, totals);
     const articlesShare =
       totals.articles + totals.videos > 0
         ? Math.round((totals.articles / (totals.articles + totals.videos)) * 100)
         : 0;
+    const periodLabel = groupBy === "day" ? "por dia" : groupBy === "week" ? "por semana" : "por mês";
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <ReportSection
-          title={`Série (${groupBy === "day" ? "por dia" : groupBy === "week" ? "por semana" : "por mês"})`}
-          description="Evolução de artigos e vídeos no período."
-        >
-          <MixBar rssPct={articlesShare} youtubePct={100 - articlesShare} />
-          <VolumeChart data={series} groupBy={groupBy} />
-          <ReportCollapsibleTable title="Série completa" rowCount={series.length}>
+      <PresentationStage kicker="Volume">
+        <Slide title="Vídeos no período">
+          <div className="grid h-full content-center gap-6 sm:grid-cols-2">
+            <div>
+              <p className="text-base text-muted-foreground">Vídeos dos canais</p>
+              <p className="text-7xl font-semibold tabular-nums tracking-tight">{totals.videos}</p>
+            </div>
+            <div>
+              <p className="text-base text-muted-foreground">Artigos RSS</p>
+              <p className="text-7xl font-semibold tabular-nums tracking-tight">{totals.articles}</p>
+            </div>
+            <p className="text-lg text-muted-foreground sm:col-span-2">{insight}</p>
+          </div>
+        </Slide>
+        <Slide title={`Série ${periodLabel}`}>
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            <MixBar rssPct={articlesShare} youtubePct={100 - articlesShare} />
+            <div className="min-h-0 flex-1">
+              <VolumeChart data={series} groupBy={groupBy} fill />
+            </div>
+          </div>
+        </Slide>
+        <Slide title="Série completa">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Série completa" rowCount={series.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -215,8 +242,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -229,25 +257,39 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
-    const { kpis, insight } = buildRankingInsights(
-      items.map((i) => ({ name: i.source_name, total: i.total })),
+    const channels = items
+      .filter((item) => item.videos > 0)
+      .sort((a, b) => b.videos - a.videos);
+    const { insight } = buildRankingInsights(
+      channels.map((i) => ({ name: i.source_name, total: i.videos })),
       "fonte"
     );
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <Podium
-          items={items.map((i) => ({
-            name: i.source_name,
-            total: i.total,
-            note: `${i.articles} art. · ${i.videos} vid.`,
-            imageUrl: avatarFor(sourceAvatars, i.source_id),
-          }))}
-        />
-        <ReportSection title="Distribuição" description="Ranking completo de fontes no período.">
-          <TopSourcesChart data={items} />
-          <ReportCollapsibleTable title="Ranking completo" rowCount={items.length}>
+      <PresentationStage kicker="Canais do YouTube">
+        <Slide title="Canais em destaque">
+          <div className="flex h-full min-h-0 flex-col justify-center gap-6">
+            <p className="text-lg text-muted-foreground">{insight}</p>
+            <Podium
+              items={channels.map((i) => ({
+                name: i.source_name,
+                total: i.videos,
+                note: "vídeos no período",
+                imageUrl: avatarFor(sourceAvatars, i.source_id),
+              }))}
+            />
+          </div>
+        </Slide>
+        <Slide title="Vídeos por canal">
+          <div className="min-h-0 flex-1">
+            <TopSourcesChart
+              data={channels.map((item) => ({ ...item, articles: 0, total: item.videos }))}
+              fill
+            />
+          </div>
+        </Slide>
+        <Slide title="Ranking dos canais">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Ranking completo" rowCount={channels.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -259,7 +301,7 @@ export function ReportPayload({
                 </tr>
               </thead>
               <tbody>
-                {items.map((row, i) => (
+                {channels.map((row, i) => (
                   <tr key={row.source_id} className="border-b border-border">
                     <td className="p-3">{i + 1}</td>
                     <td className="p-3">
@@ -280,29 +322,35 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
   if (type === "by_tags") {
     const items =
       (payload.items as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
-    const { kpis, insight } = buildRankingInsights(
+    const { insight } = buildRankingInsights(
       items.map((i) => ({ name: i.tag_name, total: i.count })),
       "tag"
     );
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <Podium items={items.map((i) => ({ name: i.tag_name, total: i.count }))} />
-        <ReportSection
-          title="Notícias por tag"
-          description="Quantidade de artigos associados a cada tag no período."
-        >
-          <TagsChart data={items} />
-          <ReportCollapsibleTable title="Tags" rowCount={items.length}>
+      <PresentationStage kicker="Tags">
+        <Slide title="Tags em destaque">
+          <div className="flex h-full min-h-0 flex-col justify-center gap-6">
+            <p className="text-lg text-muted-foreground">{insight}</p>
+            <Podium items={items.map((i) => ({ name: i.tag_name, total: i.count }))} />
+          </div>
+        </Slide>
+        <Slide title="Notícias por tag">
+          <div className="min-h-0 flex-1">
+            <TagNewsChart data={items} fill dateFrom={periodStart} dateTo={periodEnd} />
+          </div>
+        </Slide>
+        <Slide title="Lista de tags">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Tags" rowCount={items.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -322,8 +370,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -334,31 +383,42 @@ export function ReportPayload({
     const videosTotal = Number(payload.videos_total ?? 0);
     const tags =
       (payload.tags as Array<{ tag_id: string; tag_name: string; count: number }>) ?? [];
-    const { kpis, insight } = buildSourceDetailInsights({
+    const { insight } = buildSourceDetailInsights({
       articles_total: articlesTotal,
       videos_total: videosTotal,
       tags,
     });
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>
-          <span className="inline-flex items-center gap-2">
+      <PresentationStage kicker="Canal">
+        <Slide title={sourceName}>
+          <div className="flex h-full items-center gap-6">
             <SourceAvatar
               name={sourceName}
               imageUrl={avatarFor(sourceAvatars, sourceId)}
-              size="sm"
+              size="md"
+              className="size-24"
             />
-            <strong className="text-foreground">{sourceName}</strong>
-          </span>{" "}
-          — {insight}
-        </ReportInsight>
-        <ReportSection
-          title="Tags da fonte"
-          description="Distribuição de artigos desta fonte por tag no período."
-        >
-          <TagsChart data={tags} />
-          <ReportCollapsibleTable title="Tags da fonte" rowCount={tags.length}>
+            <div>
+              <p className="text-base text-muted-foreground">Vídeos no período</p>
+              <p className="text-7xl font-semibold tabular-nums tracking-tight">{videosTotal}</p>
+              <p className="mt-3 max-w-xl text-lg text-muted-foreground">{insight}</p>
+            </div>
+          </div>
+        </Slide>
+        <Slide title="Tags do canal">
+          <div className="min-h-0 flex-1">
+            <TagNewsChart
+              data={tags}
+              fill
+              dateFrom={periodStart}
+              dateTo={periodEnd}
+              sourceId={sourceId}
+            />
+          </div>
+        </Slide>
+        <Slide title="Lista de tags">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Tags da fonte" rowCount={tags.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -378,8 +438,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -392,27 +453,36 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
-    const { kpis, insight } = buildRankingInsights(
-      items.map((i) => ({ name: i.subject_name, total: i.total })),
+    const byVideos = [...items].sort((a, b) => b.videos - a.videos || b.total - a.total);
+    const { insight } = buildRankingInsights(
+      byVideos.map((i) => ({ name: i.subject_name, total: i.videos })),
       "assunto"
     );
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <Podium
-          items={items.map((i) => ({
-            name: i.subject_name,
-            total: i.total,
-            note: `${i.articles} art. · ${i.videos} vid.`,
-          }))}
-        />
-        <ReportSection
-          title="Top assuntos"
-          description="Assuntos com mais cobertura (artigos e vídeos) no período."
-        >
-          <TopSubjectsChart data={items} />
-          <ReportCollapsibleTable title="Assuntos" rowCount={items.length}>
+      <PresentationStage kicker="Top assuntos">
+        <Slide title="Assuntos nos canais">
+          <div className="flex h-full min-h-0 flex-col justify-center gap-6">
+            <p className="text-lg text-muted-foreground">{insight}</p>
+            <Podium
+              items={byVideos.map((i) => ({
+                name: i.subject_name,
+                total: i.videos,
+                note: "vídeos no período",
+              }))}
+            />
+          </div>
+        </Slide>
+        <Slide title="Vídeos por assunto">
+          <div className="min-h-0 flex-1">
+            <TopSubjectsChart
+              data={byVideos.map((item) => ({ ...item, articles: 0, total: item.videos }))}
+              fill
+            />
+          </div>
+        </Slide>
+        <Slide title="Lista de assuntos">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Assuntos" rowCount={byVideos.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -424,7 +494,7 @@ export function ReportPayload({
                 </tr>
               </thead>
               <tbody>
-                {items.map((row, i) => (
+                {byVideos.map((row, i) => (
                   <tr key={row.subject_id} className="border-b border-border">
                     <td className="p-3">{i + 1}</td>
                     <td className="p-3">{row.subject_name}</td>
@@ -436,8 +506,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -456,21 +527,15 @@ export function ReportPayload({
         rank: number;
         previous_rank: number | null;
       }>) ?? [];
-    const previousPeriod = payload.previous_period as
-      | { start: string; end: string }
-      | undefined;
-    const { kpis, topUp, topDown, insight } = buildRadarInsights(items);
+    const { topUp, topDown, insight } = buildRadarInsights(items);
 
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="border-emerald-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-emerald-300">Maiores altas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+      <PresentationStage kicker="Radar de pauta">
+        <Slide title="Leitura do período">
+          <p className="max-w-4xl text-3xl leading-relaxed">{insight}</p>
+        </Slide>
+        <Slide title="Maiores altas">
+          <div className="theme-scrollbar flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-y-auto">
               {topUp.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma alta no período.</p>
               ) : (
@@ -479,21 +544,18 @@ export function ReportPayload({
                     key={row.subject_name}
                     className="flex items-center justify-between gap-3 rounded-lg bg-emerald-500/5 px-3 py-2"
                   >
-                    <span className="truncate text-sm font-medium">{row.subject_name}</span>
-                    <span className="shrink-0 tabular-nums text-sm font-semibold text-emerald-300">
+                    <span className="truncate text-2xl font-medium">{row.subject_name}</span>
+                    <span className="shrink-0 tabular-nums text-2xl font-semibold text-emerald-300">
                       +{row.delta}
                       {row.delta_pct != null ? ` (${row.delta_pct > 0 ? "+" : ""}${row.delta_pct}%)` : ""}
                     </span>
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
-          <Card className="border-rose-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-rose-300">Maiores quedas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          </div>
+        </Slide>
+        <Slide title="Maiores quedas">
+          <div className="theme-scrollbar flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-y-auto">
               {topDown.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma queda no período.</p>
               ) : (
@@ -502,27 +564,24 @@ export function ReportPayload({
                     key={row.subject_name}
                     className="flex items-center justify-between gap-3 rounded-lg bg-rose-500/5 px-3 py-2"
                   >
-                    <span className="truncate text-sm font-medium">{row.subject_name}</span>
-                    <span className="shrink-0 tabular-nums text-sm font-semibold text-rose-300">
+                    <span className="truncate text-2xl font-medium">{row.subject_name}</span>
+                    <span className="shrink-0 tabular-nums text-2xl font-semibold text-rose-300">
                       {row.delta}
                       {row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}
                     </span>
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
-        </div>
-        <ReportSection
-          title="Movimento da pauta"
-          description={
-            previousPeriod
-              ? `Comparado com ${formatYMDAsPTBR(previousPeriod.start)} a ${formatYMDAsPTBR(previousPeriod.end)}.`
-              : "Comparado com a janela anterior de mesma duração."
-          }
-        >
-          <RadarPautaChart data={items} />
-          <ReportCollapsibleTable title="Movimento completo" rowCount={items.length}>
+          </div>
+        </Slide>
+        <Slide title="Movimento da pauta">
+          <div className="min-h-0 flex-1">
+            <RadarPautaChart data={items} fill />
+          </div>
+        </Slide>
+        <Slide title="Movimento completo">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <ReportCollapsibleTable title="Movimento completo" rowCount={items.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-border">
@@ -565,8 +624,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -593,63 +653,58 @@ export function ReportPayload({
       videos: number;
       total: number;
     }) ?? { articles: 0, videos: 0, total: 0 };
-    const { kpis, insight } = buildMapaInsights(clusters, totals);
+    const { insight } = buildMapaInsights(clusters, totals);
 
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <ReportSection title="Share por cluster">
-            <MapaTematicoChart data={clusters} />
-          </ReportSection>
-          <ReportSection title="Concentração">
-            <ul className="space-y-3">
-              {clusters.map((c) => (
-                <li key={c.cluster_id} className="space-y-1.5">
-                  <div className="flex justify-between gap-2 text-sm">
-                    <span className="font-medium">{c.cluster_label}</span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {c.share_pct}% · {c.total}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-[color-mix(in_srgb,var(--primary)_70%,transparent)]"
-                      style={{ width: `${Math.min(100, c.share_pct)}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </ReportSection>
-        </div>
-        <div className="space-y-4">
-          {clusters.map((cluster) => (
-            <ReportSection
-              key={cluster.cluster_id}
-              title={cluster.cluster_label}
-              description={`${cluster.total} menções (${cluster.share_pct}%) · ${cluster.articles} art. · ${cluster.videos} vídeos`}
-            >
-              {cluster.subjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sem assuntos.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {cluster.subjects.map((s) => (
-                    <span
-                      key={s.subject_id}
-                      className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 px-2.5 py-1.5 text-sm"
-                    >
-                      <span>{s.subject_name}</span>
-                      <span className="tabular-nums text-xs text-muted-foreground">{s.total}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </ReportSection>
-          ))}
-        </div>
-      </div>
+      <PresentationStage kicker="Mapa temático">
+        <Slide title="Leitura do mapa">
+          <p className="max-w-4xl text-3xl leading-relaxed">{insight}</p>
+        </Slide>
+        <Slide title="Share por cluster">
+          <div className="min-h-0 flex-1">
+            <MapaTematicoChart data={clusters} fill />
+          </div>
+        </Slide>
+        {clusters.map((cluster, index) => {
+          const subjects = [...cluster.subjects].sort(
+            (a, b) => b.videos - a.videos || b.total - a.total
+          );
+          const color = PIE_COLORS[index % PIE_COLORS.length];
+          return (
+            <Slide key={cluster.cluster_id} title={cluster.cluster_label}>
+              <div className="flex h-full min-h-0 flex-col gap-6">
+                <p className="flex items-center gap-3 text-2xl text-muted-foreground">
+                  <span
+                    className="size-4 shrink-0 rounded-full"
+                    style={{ backgroundColor: color }}
+                    aria-hidden
+                  />
+                  {cluster.share_pct}% do período · {cluster.videos} vídeos
+                </p>
+                {subjects.length === 0 ? (
+                  <p className="text-xl text-muted-foreground">Nenhum assunto neste grupo.</p>
+                ) : (
+                  <ul className="theme-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto">
+                    {subjects.map((subject, subjectIndex) => (
+                      <li
+                        key={subject.subject_id}
+                        className="flex items-baseline justify-between gap-6 border-b border-border/60 py-3"
+                      >
+                        <span className="text-2xl font-medium">
+                          {subjectIndex + 1}. {subject.subject_name}
+                        </span>
+                        <span className="shrink-0 text-2xl tabular-nums text-muted-foreground">
+                          {subject.videos} vídeos
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </Slide>
+          );
+        })}
+      </PresentationStage>
     );
   }
 
@@ -662,17 +717,24 @@ export function ReportPayload({
         videos: number;
         total: number;
       }>) ?? [];
-    const { kpis, insight, peakLabel } = buildWeekdayInsights(items);
+    const { insight, peakLabel } = buildWeekdayInsights(items);
 
     return (
-      <div className="space-y-5">
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <ReportSection
-          title="Cadência semanal"
-          description="Volume de artigos e vídeos por dia da semana."
-        >
-          <ActivityWeekdayChart data={items} />
+      <PresentationStage kicker="Dia da semana">
+        <Slide title="Pico da semana">
+          <div className="flex h-full flex-col justify-center gap-4">
+            <p className="text-base text-muted-foreground">Dia de pico</p>
+            <p className="text-7xl font-semibold tracking-tight">{peakLabel}</p>
+            <p className="max-w-3xl text-2xl text-muted-foreground">{insight}</p>
+          </div>
+        </Slide>
+        <Slide title="Publicações por dia">
+          <div className="min-h-0 flex-1">
+            <ActivityWeekdayChart data={items} fill />
+          </div>
+        </Slide>
+        <Slide title="Por dia da semana">
+          <div className="theme-scrollbar min-h-0 flex-1 overflow-y-auto">
           <ReportCollapsibleTable title="Por dia da semana" rowCount={items.length} defaultOpen>
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -701,8 +763,9 @@ export function ReportPayload({
               </tbody>
             </table>
           </ReportCollapsibleTable>
-        </ReportSection>
-      </div>
+          </div>
+        </Slide>
+      </PresentationStage>
     );
   }
 
@@ -733,7 +796,7 @@ export function ReportPayload({
     const last30 = (payload.last_30_days as ExecutiveSummaryWindowPayload) ?? emptyWindow;
     const last90 = (payload.last_90_days as ExecutiveSummaryWindowPayload) ?? emptyWindow;
 
-    const { kpis, insight } = buildExecutiveInsights({
+    const { insight } = buildExecutiveInsights({
       last7: {
         articles: last7.articles,
         videos: last7.videos,
@@ -761,64 +824,88 @@ export function ReportPayload({
     ];
 
     return (
-      <div className="space-y-5">
-        <p className="text-sm text-muted-foreground">
-          Visão consolidada até{" "}
-          <strong className="text-foreground">
-            {referenceDate
-              ? formatYMDAsPTBR(referenceDate)
-              : "—"}
-          </strong>
-        </p>
-        <ReportKpiStrip items={kpis} />
-        <ReportInsight>{insight}</ReportInsight>
-        <div className="grid gap-4 lg:grid-cols-3">
-          {windows.map(({ title, data }) => (
-            <Card key={title} className="border-border/70">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-muted/40 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Artigos</p>
-                    <p className="text-xl font-semibold tabular-nums">{data.articles}</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/40 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Vídeos</p>
-                    <p className="text-xl font-semibold tabular-nums">{data.videos}</p>
-                  </div>
-                </div>
-                <MixBar
-                  rssPct={data.rss_vs_youtube.rssPct}
-                  youtubePct={data.rss_vs_youtube.youtubePct}
-                />
+      <PresentationStage kicker="Resumo executivo">
+        <Slide title="Visão geral">
+          <div className="flex h-full flex-col justify-center gap-4">
+            <p className="text-base text-muted-foreground">
+              Até {referenceDate ? formatYMDAsPTBR(referenceDate) : "—"}
+            </p>
+            <p className="max-w-4xl text-3xl leading-relaxed">{insight}</p>
+          </div>
+        </Slide>
+        {windows.map(({ title, data }) => {
+          const channels = (data.top_sources ?? [])
+            .filter((source) => source.videos > 0)
+            .sort((a, b) => b.videos - a.videos)
+            .slice(0, 5)
+            .map((source) => ({ ...source, total: source.videos }));
+          const subjects = [...(data.top_subjects ?? [])]
+            .sort((a, b) => b.videos - a.videos)
+            .slice(0, 5)
+            .map((subject) => ({ ...subject, total: subject.videos }));
+          return (
+            <Slide key={title} title={title}>
+              <div className="grid h-full min-h-0 content-center gap-8 lg:grid-cols-[auto_1fr_1fr]">
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Top fontes
-                  </h4>
+                  <p className="text-base text-muted-foreground">Vídeos dos canais</p>
+                  <p className="text-7xl font-semibold tabular-nums tracking-tight">{data.videos}</p>
+                </div>
+                <div>
+                  <h3 className="mb-3 text-lg font-medium">Canais</h3>
                   <RankList
-                    items={(data.top_sources ?? []).slice(0, 5)}
+                    items={channels}
                     nameKey="source_name"
                     idKey="source_id"
                     sourceAvatars={sourceAvatars}
                   />
                 </div>
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Top assuntos
-                  </h4>
-                  <RankList
-                    items={(data.top_subjects ?? []).slice(0, 5)}
-                    nameKey="subject_name"
-                  />
+                  <h3 className="mb-3 text-lg font-medium">Assuntos</h3>
+                  <RankList items={subjects} nameKey="subject_name" />
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+              </div>
+            </Slide>
+          );
+        })}
+      </PresentationStage>
     );
+  }
+
+  if (type === "youtube_formato") {
+    return (
+      <YoutubeFormatoView payload={payload as unknown as YoutubeFormatoPayload} />
+    );
+  }
+
+  if (type === "thumb_analysis") {
+    return (
+      <ThumbsReportView
+        payload={payload as unknown as ThumbsPayload}
+        sourceAvatars={sourceAvatars}
+      />
+    );
+  }
+
+  if (type === "perspectivas") {
+    return (
+      <PerspectivasView
+        payload={payload as unknown as PerspectivasPayload}
+        sourceAvatars={sourceAvatars}
+      />
+    );
+  }
+
+  if (type === "em_portugues") {
+    return (
+      <EmPortuguesView
+        payload={payload as unknown as EmPortuguesPayload}
+        sourceAvatars={sourceAvatars}
+      />
+    );
+  }
+
+  if (type === "by_types") {
+    return <ByTypesView payload={payload as unknown as ByTypesPayload} />;
   }
 
   if (type === "month_presentation") {

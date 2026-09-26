@@ -48,6 +48,8 @@ export interface ReportRepository {
   ): Promise<void>;
   saveReportResult(reportId: string, payload: Record<string, unknown>): Promise<void>;
   getReportById(id: string): Promise<ReportWithResult | null>;
+  /** Remove o relatório. report_results cai em cascata. */
+  deleteReport(id: string): Promise<boolean>;
   listReports(input: ListReportsInput): Promise<ListReportsOutput>;
   getArticlesForReports(
     periodStart: string,
@@ -169,6 +171,12 @@ function createSupabaseReportRepository(): ReportRepository {
       };
     },
 
+    async deleteReport(id) {
+      const { data, error } = await client.from("reports").delete().eq("id", id).select("id");
+      if (error) throw new Error(`Failed to delete report: ${error.message}`);
+      return (data?.length ?? 0) > 0;
+    },
+
     async listReports(input) {
       const page = Math.max(1, input.page ?? 1);
       const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
@@ -258,7 +266,9 @@ function createSupabaseReportRepository(): ReportRepository {
       const endExclusive = periodEndExclusive(periodEnd);
       const { data: videos, error } = await client
         .from("youtube_videos")
-        .select("id, published_at, source_id")
+        .select(
+          "id, video_id, title, thumbnail_url, published_at, source_id, duration_seconds, default_audio_language, live_broadcast_content, has_captions, creator_tags, topic_categories, youtube_category_id"
+        )
         .eq("is_news", true)
         .gte("published_at", start)
         .lt("published_at", endExclusive);
@@ -291,8 +301,19 @@ function createSupabaseReportRepository(): ReportRepository {
       }
 
       return list.map((row) => ({
+        id: row.id,
+        video_id: row.video_id ?? null,
+        title: row.title ?? null,
+        thumbnail_url: row.thumbnail_url ?? null,
         published_at: row.published_at,
-        source_id: row.source_id
+        source_id: row.source_id,
+        duration_seconds: row.duration_seconds ?? null,
+        default_audio_language: row.default_audio_language ?? null,
+        live_broadcast_content: row.live_broadcast_content ?? null,
+        has_captions: row.has_captions ?? null,
+        creator_tags: row.creator_tags ?? [],
+        topic_categories: row.topic_categories ?? [],
+        youtube_category_id: row.youtube_category_id ?? null,
       }));
     },
 
@@ -559,6 +580,9 @@ function createMemoryReportRepository(): ReportRepository {
     async saveReportResult() {},
     async getReportById() {
       return null;
+    },
+    async deleteReport() {
+      return true;
     },
     async listReports() {
       return { items: [], total: 0 };

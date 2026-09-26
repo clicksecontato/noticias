@@ -3,13 +3,50 @@ import { createHash } from "node:crypto";
 import { getDatabaseConfig, type DatabaseConfig } from "./config";
 import { extractEntityIdsFromText } from "./enrichment";
 import { extractEntitiesWithGemini, isEnrichmentAiEnabled } from "./enrichment-ai";
-import type {
-  ContentSourceRecord,
-  SourceIngestionTimingUpdate,
-  YoutubeVideoItem,
-  SaveYoutubeVideosResult,
-  YoutubeVideoDisplay
+import {
+  youtubeMetadataToRow,
+  type ContentSourceRecord,
+  type SourceIngestionTimingUpdate,
+  type YoutubeVideoItem,
+  type SaveYoutubeVideosResult,
+  type YoutubeVideoDisplay,
+  type YoutubeVideoListOptions
 } from "./content-source-types";
+
+function applyYoutubeListFilters<Q extends {
+  eq: (column: string, value: string) => Q;
+  in: (column: string, values: string[]) => Q;
+  gte: (column: string, value: string | number) => Q;
+  gt: (column: string, value: string | number) => Q;
+  lte: (column: string, value: string | number) => Q;
+  lt: (column: string, value: string) => Q;
+  ilike: (column: string, pattern: string) => Q;
+}>(query: Q, options?: YoutubeVideoListOptions): Q {
+  const ids =
+    options?.sourceIds && options.sourceIds.length > 0
+      ? options.sourceIds
+      : options?.sourceId
+        ? [options.sourceId]
+        : [];
+  if (ids.length === 1) query = query.eq("source_id", ids[0]);
+  else if (ids.length > 1) query = query.in("source_id", ids);
+  if (options?.dateFrom) {
+    query = query.gte("published_at", `${options.dateFrom}T00:00:00.000Z`);
+  }
+  if (options?.dateTo) {
+    const end = new Date(`${options.dateTo}T00:00:00.000Z`);
+    end.setUTCDate(end.getUTCDate() + 1);
+    query = query.lt("published_at", end.toISOString());
+  }
+  if (options?.durationBand === "short") query = query.lte("duration_seconds", 60);
+  if (options?.durationBand === "medium") {
+    query = query.gt("duration_seconds", 60).lte("duration_seconds", 20 * 60);
+  }
+  if (options?.durationBand === "long") query = query.gt("duration_seconds", 20 * 60);
+  if (options?.audioLanguage === "pt") query = query.ilike("default_audio_language", "pt%");
+  if (options?.audioLanguage === "en") query = query.ilike("default_audio_language", "en%");
+  return query;
+}
 
 export interface NewsArticleRecord {
   slug: string;
@@ -109,20 +146,8 @@ export interface ContentRepository {
     items: YoutubeVideoItem[]
   ): Promise<SaveYoutubeVideosResult>;
   /** Lista vídeos para a seção Vídeos (ordenado por published_at desc). */
-  getYoutubeVideos(options?: {
-    limit?: number;
-    offset?: number;
-    sourceId?: string;
-    sourceIds?: string[];
-    dateFrom?: string;
-    dateTo?: string;
-  }): Promise<YoutubeVideoDisplay[]>;
-  getYoutubeVideosTotal(options?: {
-    sourceId?: string;
-    sourceIds?: string[];
-    dateFrom?: string;
-    dateTo?: string;
-  }): Promise<number>;
+  getYoutubeVideos(options?: YoutubeVideoListOptions): Promise<YoutubeVideoDisplay[]>;
+  getYoutubeVideosTotal(options?: YoutubeVideoListOptions): Promise<number>;
   /** Catálogo (id, name, slug) para enriquecimento de artigos/vídeos. */
   getCatalogsForEnrichment(): Promise<EnrichmentCatalog>;
   /** Vincula um artigo a subjects, tags, types (enriquecimento). */
@@ -698,6 +723,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           .limit(1)
           .maybeSingle();
 
+        const metadataRow = youtubeMetadataToRow(item.youtube);
+
         if (existing) {
           skippedItems.push({ sourceId, title: item.title, url: item.url });
           continue;
@@ -713,7 +740,8 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
             published_at: item.publishedAt,
             thumbnail_url: item.thumbnailUrl ?? null,
             url: item.url,
-            is_news: true
+            is_news: true,
+            ...metadataRow
           })
           .select("id")
           .single();
@@ -748,42 +776,18 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
 
       return { created, skipped: skippedItems.length, skippedItems };
     },
-    async getYoutubeVideos(options?: {
-      limit?: number;
-      offset?: number;
-      sourceId?: string;
-      sourceIds?: string[];
-      dateFrom?: string;
-      dateTo?: string;
-    }): Promise<YoutubeVideoDisplay[]> {
+    async getYoutubeVideos(options?: YoutubeVideoListOptions): Promise<YoutubeVideoDisplay[]> {
       const limit = options?.limit ?? 24;
       const offset = options?.offset ?? 0;
       let query = readClient
         .from("youtube_videos")
-        .select("id, source_id, video_id, title, description, published_at, thumbnail_url, url")
+        .select(
+          "id, source_id, video_id, title, description, published_at, thumbnail_url, url, duration_seconds, default_audio_language, has_captions"
+        )
         .eq("is_news", true)
-        .order("published_at", { ascending: false })
-        .range(offset, offset + limit - 1);
-      const ids =
-        options?.sourceIds && options.sourceIds.length > 0
-          ? options.sourceIds
-          : options?.sourceId
-            ? [options.sourceId]
-            : [];
-      if (ids.length === 1) {
-        query = query.eq("source_id", ids[0]);
-      } else if (ids.length > 1) {
-        query = query.in("source_id", ids);
-      }
-      if (options?.dateFrom) {
-        query = query.gte("published_at", `${options.dateFrom}T00:00:00.000Z`);
-      }
-      if (options?.dateTo) {
-        const end = new Date(`${options.dateTo}T00:00:00.000Z`);
-        end.setUTCDate(end.getUTCDate() + 1);
-        query = query.lt("published_at", end.toISOString());
-      }
-      const { data, error } = await query;
+        .order("published_at", { ascending: false });
+      query = applyYoutubeListFilters(query, options);
+      const { data, error } = await query.range(offset, offset + limit - 1);
       if (error) {
         throw new Error(`Failed to fetch youtube videos: ${error.message}`);
       }
@@ -796,6 +800,9 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
         published_at: string;
         thumbnail_url: string | null;
         url: string;
+        duration_seconds: number | null;
+        default_audio_language: string | null;
+        has_captions: boolean | null;
       }>;
       const videoIds = rows.map((r) => r.id);
       const sourceIds = [...new Set(rows.map((r) => r.source_id))];
@@ -854,41 +861,21 @@ function createSupabaseContentRepository(config: DatabaseConfig): ContentReposit
           publishedAt: row.published_at,
           thumbnailUrl: row.thumbnail_url,
           url: row.url,
+          durationSeconds: row.duration_seconds ?? null,
+          defaultAudioLanguage: row.default_audio_language ?? null,
+          hasCaptions: row.has_captions ?? null,
           ...(entities.subjectNames.length > 0 && { subjectNames: entities.subjectNames }),
           ...(entities.tagNames.length > 0 && { tagNames: entities.tagNames }),
           ...(entities.typeNames.length > 0 && { typeNames: entities.typeNames })
         };
       });
     },
-    async getYoutubeVideosTotal(options?: {
-      sourceId?: string;
-      sourceIds?: string[];
-      dateFrom?: string;
-      dateTo?: string;
-    }): Promise<number> {
+    async getYoutubeVideosTotal(options?: YoutubeVideoListOptions): Promise<number> {
       let query = readClient
         .from("youtube_videos")
         .select("id", { count: "exact", head: true })
         .eq("is_news", true);
-      const ids =
-        options?.sourceIds && options.sourceIds.length > 0
-          ? options.sourceIds
-          : options?.sourceId
-            ? [options.sourceId]
-            : [];
-      if (ids.length === 1) {
-        query = query.eq("source_id", ids[0]);
-      } else if (ids.length > 1) {
-        query = query.in("source_id", ids);
-      }
-      if (options?.dateFrom) {
-        query = query.gte("published_at", `${options.dateFrom}T00:00:00.000Z`);
-      }
-      if (options?.dateTo) {
-        const end = new Date(`${options.dateTo}T00:00:00.000Z`);
-        end.setUTCDate(end.getUTCDate() + 1);
-        query = query.lt("published_at", end.toISOString());
-      }
+      query = applyYoutubeListFilters(query, options);
       const { count, error } = await query;
       if (error) {
         throw new Error(`Failed to count youtube videos: ${error.message}`);

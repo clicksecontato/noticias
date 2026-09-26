@@ -3,6 +3,8 @@
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export type VideosPeriodPreset = "" | "today" | "7d" | "30d" | "90d";
+export type VideosDurationBand = "" | "short" | "medium" | "long";
+export type VideosAudioLanguage = "" | "pt" | "en";
 
 export interface VideosListParams {
   page: number;
@@ -10,6 +12,8 @@ export interface VideosListParams {
   dateFrom: string;
   dateTo: string;
   period: VideosPeriodPreset;
+  duration: VideosDurationBand;
+  lang: VideosAudioLanguage;
 }
 
 export interface BuildVideosQueryInput extends VideosListParams {
@@ -30,6 +34,8 @@ function formatYmdUtc(d: Date): string {
 }
 
 const PERIOD_VALUES = new Set<VideosPeriodPreset>(["today", "7d", "30d", "90d"]);
+const DURATION_VALUES = new Set<VideosDurationBand>(["short", "medium", "long"]);
+const LANG_VALUES = new Set<VideosAudioLanguage>(["pt", "en"]);
 
 /** Parseia `source=a,b,c` (ou valor único) em lista estável sem duplicatas. */
 export function parseSourceIdsParam(raw: string | undefined | null): string[] {
@@ -61,6 +67,8 @@ export function parseVideosListParams(searchParams: {
   from?: string;
   to?: string;
   period?: string;
+  duration?: string;
+  lang?: string;
 }): VideosListParams {
   const pageParam = Number.parseInt(searchParams.page || "1", 10);
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -71,6 +79,8 @@ export function parseVideosListParams(searchParams: {
   const period: VideosPeriodPreset = PERIOD_VALUES.has(rawPeriod)
     ? rawPeriod
     : "";
+  const rawDuration = (searchParams.duration || "").trim() as VideosDurationBand;
+  const rawLang = (searchParams.lang || "").trim() as VideosAudioLanguage;
 
   return {
     page,
@@ -78,6 +88,8 @@ export function parseVideosListParams(searchParams: {
     dateFrom: isYmd(rawFrom) ? rawFrom : "",
     dateTo: isYmd(rawTo) ? rawTo : "",
     period,
+    duration: DURATION_VALUES.has(rawDuration) ? rawDuration : "",
+    lang: LANG_VALUES.has(rawLang) ? rawLang : "",
   };
 }
 
@@ -128,6 +140,8 @@ export function buildVideosQueryPath(input: BuildVideosQueryInput): string {
     if (input.dateFrom) params.set("from", input.dateFrom);
     if (input.dateTo) params.set("to", input.dateTo);
   }
+  if (input.duration) params.set("duration", input.duration);
+  if (input.lang) params.set("lang", input.lang);
   return `${basePath}?${params.toString()}`;
 }
 

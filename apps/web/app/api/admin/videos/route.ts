@@ -15,13 +15,40 @@ export async function GET(request: Request): Promise<Response> {
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
     const sourceId = searchParams.get("sourceId")?.trim() || undefined;
+    const sourceIds = (searchParams.get("sourceIds") ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
     const dateFrom = searchParams.get("dateFrom")?.trim() || undefined;
     const dateTo = searchParams.get("dateTo")?.trim() || undefined;
+    const tagId = searchParams.get("tagId")?.trim() || undefined;
+    const subjectId = searchParams.get("subjectId")?.trim() || undefined;
+    const creatorTag = searchParams.get("creatorTag")?.trim() || undefined;
+    const topic = searchParams.get("topic")?.trim() || undefined;
+    const durationBand = searchParams.get("durationBand")?.trim() || undefined;
+    const language = searchParams.get("language")?.trim() || undefined;
+    const categoryId = searchParams.get("categoryId")?.trim() || undefined;
+    const broadcast = searchParams.get("broadcast")?.trim() || undefined;
     const isNews = pautaFilterToIsNews(parsePautaFilter(searchParams.get("pauta")));
     const withoutSubject = parseWithoutSubject(searchParams.get("semAssunto"));
 
     const offset = (page - 1) * limit;
-    const filters = { sourceId, dateFrom, dateTo, isNews, withoutSubject };
+    const filters = {
+      sourceId,
+      sourceIds: sourceIds.length > 0 ? sourceIds : undefined,
+      dateFrom,
+      dateTo,
+      isNews,
+      withoutSubject,
+      tagId,
+      subjectId,
+      creatorTag,
+      topic,
+      durationBand,
+      language,
+      categoryId,
+      broadcast,
+    };
 
     const [items, total] = await Promise.all([
       videosRepository.listVideos(limit, offset, filters),

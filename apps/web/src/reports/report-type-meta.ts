@@ -7,8 +7,13 @@ import {
   LayoutDashboard,
   Map,
   Presentation,
+  Clapperboard,
+  Images,
+  Languages,
+  MessagesSquare,
   Radar,
   Rss,
+  Shapes,
   Tags,
 } from "lucide-react";
 
@@ -21,6 +26,11 @@ export type ReportTypeKey =
   | "top_subjects"
   | "radar_pauta"
   | "mapa_tematico"
+  | "youtube_formato"
+  | "thumb_analysis"
+  | "perspectivas"
+  | "em_portugues"
+  | "by_types"
   | "executive_summary"
   | "month_presentation";
 
@@ -90,6 +100,41 @@ export const REPORT_TYPE_META: Record<ReportTypeKey, ReportTypeMeta> = {
     accentClass:
       "border-emerald-500/30 bg-emerald-500/10",
   },
+  youtube_formato: {
+    key: "youtube_formato",
+    label: "Formato do YouTube",
+    blurb: "Duração, idioma, legenda, tags do criador e tópicos",
+    icon: Clapperboard,
+    accentClass: "border-violet-500/30 bg-violet-500/10",
+  },
+  thumb_analysis: {
+    key: "thumb_analysis",
+    label: "Análise de thumbs",
+    blurb: "Grade de miniaturas por canal do YouTube",
+    icon: Images,
+    accentClass: "border-amber-500/30 bg-amber-500/10",
+  },
+  perspectivas: {
+    key: "perspectivas",
+    label: "Perspectivas",
+    blurb: "Assuntos cobertos por várias fontes",
+    icon: MessagesSquare,
+    accentClass: "border-teal-500/30 bg-teal-500/10",
+  },
+  em_portugues: {
+    key: "em_portugues",
+    label: "Em português",
+    blurb: "Vídeos em português por canal e assunto",
+    icon: Languages,
+    accentClass: "border-lime-500/30 bg-lime-500/10",
+  },
+  by_types: {
+    key: "by_types",
+    label: "Por tipo",
+    blurb: "Tipos editoriais dos vídeos e das notícias",
+    icon: Shapes,
+    accentClass: "border-orange-500/30 bg-orange-500/10",
+  },
   mapa_tematico: {
     key: "mapa_tematico",
     label: "Mapa temático",
@@ -121,6 +166,11 @@ export const REPORT_TYPE_ORDER: ReportTypeKey[] = [
   "executive_summary",
   "month_presentation",
   "mapa_tematico",
+  "youtube_formato",
+  "thumb_analysis",
+  "perspectivas",
+  "em_portugues",
+  "by_types",
   "volume",
   "top_subjects",
   "top_sources",

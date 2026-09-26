@@ -42,11 +42,14 @@ interface VolumeChartProps {
   groupBy: string;
 }
 
-export function VolumeChart({ data, groupBy }: VolumeChartProps) {
+export function VolumeChart({ data, groupBy, fill = false }: VolumeChartProps & { fill?: boolean }) {
   if (!data.length) return null;
 
   return (
-    <NeoChartContainer config={chartConfig} className="min-h-[280px] w-full">
+    <NeoChartContainer
+      config={chartConfig}
+      className={fill ? "aspect-auto h-full min-h-0 w-full" : "min-h-[280px] w-full"}
+    >
       {({ defs, fillWarm, fillCool, strokeWarm, strokeCool }) => (
         <AreaChart data={data} margin={{ left: 12, right: 12 }}>
           {defs}

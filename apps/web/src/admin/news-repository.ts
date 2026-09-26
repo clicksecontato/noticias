@@ -75,6 +75,7 @@ export interface ListArticlesFilters {
   isNews?: boolean;
   /** Só artigos sem vínculo em article_subjects. */
   withoutSubject?: boolean;
+  tagId?: string;
 }
 
 export const newsRepository = {
@@ -90,7 +91,7 @@ export const newsRepository = {
 
   async countArticles(filters: ListArticlesFilters = {}): Promise<number> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject, tagId } = filters;
 
     let query = client.from("articles").select("id", { count: "exact", head: true });
     if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
@@ -104,6 +105,17 @@ export const newsRepository = {
         .eq("source_id", sourceId);
       if (linkError) throw new Error(linkError.message);
       const articleIds = (linkRows ?? []).map((r: { article_id: string }) => r.article_id);
+      if (articleIds.length === 0) return 0;
+      query = query.in("id", articleIds);
+    }
+
+    if (tagId) {
+      const { data: tagRows, error: tagError } = await client
+        .from("article_tags")
+        .select("article_id")
+        .eq("tag_id", tagId);
+      if (tagError) throw new Error(tagError.message);
+      const articleIds = (tagRows ?? []).map((r: { article_id: string }) => r.article_id);
       if (articleIds.length === 0) return 0;
       query = query.in("id", articleIds);
     }
@@ -128,7 +140,7 @@ export const newsRepository = {
 
   async listArticles(limit = 100, offset = 0, filters: Omit<ListArticlesFilters, "limit" | "offset"> = {}): Promise<ArticleListRow[]> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
+    const { sourceId, dateFrom, dateTo, isNews, withoutSubject, tagId } = filters;
 
     let query = client
       .from("articles")
@@ -146,6 +158,17 @@ export const newsRepository = {
         .eq("source_id", sourceId);
       if (linkError) throw new Error(linkError.message);
       const articleIds = (linkRows ?? []).map((r: { article_id: string }) => r.article_id);
+      if (articleIds.length === 0) return [];
+      query = query.in("id", articleIds);
+    }
+
+    if (tagId) {
+      const { data: tagRows, error: tagError } = await client
+        .from("article_tags")
+        .select("article_id")
+        .eq("tag_id", tagId);
+      if (tagError) throw new Error(tagError.message);
+      const articleIds = (tagRows ?? []).map((r: { article_id: string }) => r.article_id);
       if (articleIds.length === 0) return [];
       query = query.in("id", articleIds);
     }

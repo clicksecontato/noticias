@@ -19,7 +19,16 @@ const items: FetchedContentItem[] = [
     url: "https://www.youtube.com/watch?v=abc123",
     publishedAt: "2026-03-10T12:00:00Z",
     imageUrl: "https://img.youtube.com/vi/abc123/mqdefault.jpg",
-    contentType: "video"
+    contentType: "video",
+    youtube: {
+      durationSeconds: 90,
+      creatorTags: ["ia"],
+      liveBroadcastContent: "none",
+      defaultAudioLanguage: "pt",
+      hasCaptions: false,
+      topicCategories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"],
+      youtubeCategoryId: "28"
+    }
   }
 ];
 
@@ -54,7 +63,16 @@ describe("YouTube Content Persister", () => {
       description: "Descricao do video",
       url: "https://www.youtube.com/watch?v=abc123",
       publishedAt: "2026-03-10T12:00:00Z",
-      thumbnailUrl: "https://img.youtube.com/vi/abc123/mqdefault.jpg"
+      thumbnailUrl: "https://img.youtube.com/vi/abc123/mqdefault.jpg",
+      youtube: {
+        durationSeconds: 90,
+        creatorTags: ["ia"],
+        liveBroadcastContent: "none",
+        defaultAudioLanguage: "pt",
+        hasCaptions: false,
+        topicCategories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"],
+        youtubeCategoryId: "28"
+      }
     });
     expect(result).toEqual({ created: 1, skipped: 0, skippedItems: [] });
   });

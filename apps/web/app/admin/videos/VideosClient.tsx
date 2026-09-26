@@ -25,12 +25,15 @@ import {
   parseWithoutSubject,
   type PautaFilter,
 } from "@/src/admin/list-filters";
+import { formatDurationSeconds, formatLiveBroadcast } from "@/src/admin/youtube-video-labels";
 
 interface VideoRow {
   id: string;
   title: string;
   description: string | null;
   published_at: string;
+  duration_seconds?: number | null;
+  live_broadcast_content?: string | null;
   is_news: boolean;
   sourceId: string;
   sourceName: string;
@@ -58,6 +61,8 @@ export function VideosClient() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [backfillLoading, setBackfillLoading] = useState(false);
+  const [backfillMessage, setBackfillMessage] = useState<string | null>(null);
   const [sources, setSources] = useState<SourceOption[]>([]);
 
   const [page, setPage] = useState(1);
@@ -71,6 +76,37 @@ export function VideosClient() {
   const [semAssunto, setSemAssunto] = useState(() =>
     parseWithoutSubject(searchParams.get("semAssunto"))
   );
+
+  async function onBackfillMetadata() {
+    setBackfillLoading(true);
+    setBackfillMessage(null);
+    try {
+      const response = await fetch("/api/admin/youtube-metadata-backfill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        pending?: number;
+        updated?: number;
+        missingOnYoutube?: number;
+      };
+      if (!response.ok) {
+        setBackfillMessage(data.error || "Falha ao completar metadados.");
+        return;
+      }
+      const missing = data.missingOnYoutube ?? 0;
+      setBackfillMessage(
+        `Pendentes: ${data.pending ?? 0}. Atualizados: ${data.updated ?? 0}. Sem retorno no YouTube: ${missing}.`
+      );
+      load();
+    } catch {
+      setBackfillMessage("Erro ao chamar a API de metadados.");
+    } finally {
+      setBackfillLoading(false);
+    }
+  }
 
   function buildQuery() {
     const params = new URLSearchParams();
@@ -221,6 +257,14 @@ export function VideosClient() {
       <p className="text-muted-foreground">
         Liste, edite ou exclua vídeos do YouTube. Use Atualizar Fontes para trazer novos vídeos dos canais.
       </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" onClick={onBackfillMetadata} disabled={backfillLoading}>
+          {backfillLoading ? "Completando metadados…" : "Completar metadados dos vídeos salvos"}
+        </Button>
+        {backfillMessage ? (
+          <p className="text-sm text-muted-foreground">{backfillMessage}</p>
+        ) : null}
+      </div>
 
       <Card>
         <CardHeader>
@@ -361,6 +405,7 @@ export function VideosClient() {
                       <th className="p-2 text-left">Na pauta</th>
                       <th className="p-2 text-left">Canal</th>
                       <th className="p-2 text-left">Data</th>
+                      <th className="p-2 text-left">Duração</th>
                       <th className="p-2 text-left">Assuntos / Tags</th>
                       <th className="p-2 text-right">Ações</th>
                     </tr>
@@ -400,6 +445,14 @@ export function VideosClient() {
                           </span>
                         </td>
                         <td className="p-2 text-muted-foreground">{formatDate(v.published_at)}</td>
+                        <td className="p-2 text-muted-foreground">
+                          {formatDurationSeconds(v.duration_seconds)}
+                          {v.live_broadcast_content && v.live_broadcast_content !== "none" ? (
+                            <span className="mt-0.5 block text-xs">
+                              {formatLiveBroadcast(v.live_broadcast_content)}
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="p-2">
                           <EntityChips
                             className="mt-0"

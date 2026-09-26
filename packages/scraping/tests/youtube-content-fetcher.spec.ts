@@ -61,12 +61,44 @@ describe("YouTube Content Fetcher", () => {
   });
 
   it("deve buscar vídeos e mapear para FetchedContentItem", async () => {
-    let capturedUrl = "";
+    const capturedUrls: string[] = [];
     const mockFetch = async (url: string) => {
-      capturedUrl = url;
+      capturedUrls.push(url);
+      if (url.includes("/videos?")) {
+        return {
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                id: "abc123",
+                snippet: {
+                  tags: ["ia", "openai"],
+                  categoryId: "28",
+                  defaultAudioLanguage: "pt",
+                  liveBroadcastContent: "none"
+                },
+                contentDetails: { duration: "PT12M5S", caption: "true" },
+                topicDetails: {
+                  topicCategories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"]
+                }
+              }
+            ]
+          })
+        };
+      }
       return {
         ok: true,
-        json: async () => mockPlaylistItemsResponse
+        json: async () => ({
+          ...mockPlaylistItemsResponse,
+          items: mockPlaylistItemsResponse.items.map((item, index) =>
+            index === 0
+              ? {
+                  ...item,
+                  contentDetails: { videoPublishedAt: "2026-03-10T11:00:00Z" }
+                }
+              : item
+          )
+        })
       };
     };
 
@@ -83,15 +115,27 @@ describe("YouTube Content Fetcher", () => {
       title: "Novo trailer do jogo X",
       description: "Confira o trailer mais recente.",
       url: "https://www.youtube.com/watch?v=abc123",
-      publishedAt: "2026-03-10T12:00:00Z",
+      publishedAt: "2026-03-10T11:00:00Z",
       imageUrl: "https://img.youtube.com/vi/abc123/mqdefault.jpg",
-      contentType: "video"
+      contentType: "video",
+      youtube: {
+        durationSeconds: 725,
+        creatorTags: ["ia", "openai"],
+        liveBroadcastContent: "none",
+        defaultAudioLanguage: "pt",
+        hasCaptions: true,
+        topicCategories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"],
+        youtubeCategoryId: "28"
+      }
     });
     expect(items[1].externalId).toBe("def456");
-    expect(items[1].title).toBe("Gameplay completo");
-    expect(items[1].contentType).toBe("video");
-    expect(capturedUrl).toContain("playlistId=UUtest123");
-    expect(capturedUrl).toContain("fake-api-key");
+    expect(items[1].youtube?.durationSeconds).toBeNull();
+    expect(items[1].youtube?.hasCaptions).toBeNull();
+    expect(capturedUrls[0]).toContain("playlistId=UUtest123");
+    expect(capturedUrls[0]).toContain("part=snippet%2CcontentDetails");
+    expect(capturedUrls[1]).toContain("/videos?");
+    expect(capturedUrls[1]).toContain("id=abc123%2Cdef456");
+    expect(capturedUrls.some((url) => url.includes("fake-api-key"))).toBe(true);
   });
 
   it("deve retornar array vazio quando a API retorna sem items", async () => {

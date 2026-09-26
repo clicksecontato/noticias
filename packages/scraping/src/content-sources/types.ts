@@ -23,6 +23,17 @@ export interface ContentSource {
   isActive: boolean;
 }
 
+/** Metadados públicos de um vídeo de terceiro (YouTube Data API videos.list). */
+export interface YoutubePublicMetadata {
+  durationSeconds: number | null;
+  creatorTags: string[];
+  liveBroadcastContent: "none" | "live" | "upcoming" | null;
+  defaultAudioLanguage: string | null;
+  hasCaptions: boolean | null;
+  topicCategories: string[];
+  youtubeCategoryId: string | null;
+}
+
 /** Item de conteúdo agregado (artigo ou vídeo) em formato unificado. */
 export interface FetchedContentItem {
   externalId: string;
@@ -33,6 +44,8 @@ export interface FetchedContentItem {
   imageUrl?: string;
   /** "article" | "video" para relatórios. */
   contentType: "article" | "video";
+  /** Preenchido na ingestão YouTube. */
+  youtube?: YoutubePublicMetadata;
 }
 
 /** Métricas do fetch por fonte (observabilidade da ingestão). */

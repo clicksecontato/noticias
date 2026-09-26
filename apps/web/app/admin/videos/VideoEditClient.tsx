@@ -18,6 +18,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 import type { VideoEditRow } from "@/src/admin/videos-repository";
+import {
+  formatCaptionFlag,
+  formatDurationSeconds,
+  formatLiveBroadcast,
+  formatTopicCategory,
+  formatYoutubeCategory,
+} from "@/src/admin/youtube-video-labels";
 
 interface NameOption {
   id: string;
@@ -176,6 +183,40 @@ export function VideoEditClient({
                 rows={4}
               />
             </div>
+            <dl className="grid gap-3 rounded-md border border-border bg-muted/30 p-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">Duração</dt>
+                <dd>{formatDurationSeconds(video.durationSeconds)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Transmissão</dt>
+                <dd>{formatLiveBroadcast(video.liveBroadcastContent)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Idioma do áudio</dt>
+                <dd>{video.defaultAudioLanguage || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Legenda disponível</dt>
+                <dd>{formatCaptionFlag(video.hasCaptions)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Categoria YouTube</dt>
+                <dd>{formatYoutubeCategory(video.youtubeCategoryId)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Tags do criador</dt>
+                <dd>{video.creatorTags.length > 0 ? video.creatorTags.join(", ") : "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">Tópicos do YouTube</dt>
+                <dd>
+                  {video.topicCategories.length > 0
+                    ? video.topicCategories.map(formatTopicCategory).join(", ")
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Canal (fonte)</Label>

@@ -3,6 +3,7 @@ import {
   createContentRepository,
   getContentSourceFromConfig
 } from "../src/content-repository";
+import { youtubeMetadataToRow } from "../src/content-source-types";
 
 describe("Database Agent - content repository", () => {
   it("deve retornar noticias e assuntos com slug unico", async () => {
@@ -191,5 +192,30 @@ describe("Database Agent - content repository", () => {
       skipped: 0,
       skippedItems: []
     });
+  });
+
+  it("youtubeMetadataToRow mapeia metadados públicos para colunas", () => {
+    expect(
+      youtubeMetadataToRow({
+        durationSeconds: 90,
+        creatorTags: ["ia"],
+        liveBroadcastContent: "live",
+        defaultAudioLanguage: "pt",
+        hasCaptions: true,
+        topicCategories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"],
+        youtubeCategoryId: "28"
+      })
+    ).toEqual({
+      duration_seconds: 90,
+      creator_tags: ["ia"],
+      live_broadcast_content: "live",
+      default_audio_language: "pt",
+      has_captions: true,
+      topic_categories: ["https://en.wikipedia.org/wiki/Artificial_intelligence"],
+      youtube_category_id: "28"
+    });
+
+    expect(youtubeMetadataToRow(undefined).duration_seconds).toBeNull();
+    expect(youtubeMetadataToRow(undefined).creator_tags).toEqual([]);
   });
 });

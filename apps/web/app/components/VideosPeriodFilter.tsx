@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { VideosPeriodPreset } from "@/src/videos-list-query";
+import type { VideosAudioLanguage, VideosDurationBand, VideosPeriodPreset } from "@/src/videos-list-query";
 import { buildVideosQueryPath } from "@/src/videos-list-query";
 
 const PRESETS: { value: VideosPeriodPreset; label: string }[] = [
@@ -33,6 +33,8 @@ interface VideosPeriodFilterProps {
   period: VideosPeriodPreset;
   dateFrom: string;
   dateTo: string;
+  duration: VideosDurationBand;
+  lang: VideosAudioLanguage;
   className?: string;
 }
 
@@ -41,6 +43,8 @@ export function VideosPeriodFilter({
   period,
   dateFrom,
   dateTo,
+  duration,
+  lang,
   className,
 }: VideosPeriodFilterProps) {
   const [open, setOpen] = useState(false);
@@ -62,6 +66,8 @@ export function VideosPeriodFilter({
             period: value,
             dateFrom: "",
             dateTo: "",
+            duration,
+            lang,
           });
           return (
             <Link key={label} href={href} className="no-underline">
@@ -110,6 +116,8 @@ export function VideosPeriodFilter({
               <input type="hidden" name="source" value={sourceIds.join(",")} />
             ) : null}
             <input type="hidden" name="page" value="1" />
+            {duration ? <input type="hidden" name="duration" value={duration} /> : null}
+            {lang ? <input type="hidden" name="lang" value={lang} /> : null}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="videos-from">De</Label>

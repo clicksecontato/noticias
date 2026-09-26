@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { getDatabaseConfig } from "../../../../../packages/database/src/config";
+import {
+  generateYoutubeFormatoReport,
+  type YoutubeFormatoPayload,
+} from "./youtube-formato";
 
 const IN_FILTER_BATCH_SIZE = 100;
 const RETRY_ATTEMPTS = 3;
@@ -10,6 +14,19 @@ interface SourceRow {
   id: string;
   name: string;
   provider: "rss" | "youtube" | null;
+}
+
+interface YoutubeFormatoSourceRow {
+  id: string;
+  published_at: string;
+  source_id: string;
+  duration_seconds?: number | null;
+  default_audio_language?: string | null;
+  live_broadcast_content?: string | null;
+  has_captions?: boolean | null;
+  creator_tags?: string[] | null;
+  topic_categories?: string[] | null;
+  youtube_category_id?: string | null;
 }
 
 interface ContentWithSource {
@@ -84,6 +101,9 @@ export interface MonthPresentationPayload {
    */
   news_relevance?: MonthPresentationNewsRelevance;
   script: Array<{ title: string; text: string }>;
+  youtube_formato?: YoutubeFormatoPayload;
+  video_tags?: Array<{ id: string; name: string; count: number }>;
+  video_subjects?: Array<{ id: string; name: string; count: number }>;
 }
 
 export interface MonthPresentationNewsRelevance {
@@ -241,17 +261,19 @@ async function fetchVideoRows(
   client: ReturnType<typeof createSupabaseClient>,
   periodStart: string,
   periodEnd: string
-): Promise<Array<{ id: string; published_at: string; source_id: string }>> {
+): Promise<YoutubeFormatoSourceRow[]> {
   const start = toStartIso(periodStart);
   const endExclusive = toEndExclusiveIso(periodEnd);
   const { data, error } = await client
     .from("youtube_videos")
-    .select("id,published_at,source_id")
+    .select(
+      "id,published_at,source_id,duration_seconds,default_audio_language,live_broadcast_content,has_captions,creator_tags,topic_categories,youtube_category_id"
+    )
     .eq("is_news", true)
     .gte("published_at", start)
     .lt("published_at", endExclusive);
   if (error) throw new Error(`Falha ao carregar vídeos: ${error.message}`);
-  return (data ?? []) as Array<{ id: string; published_at: string; source_id: string }>;
+  return (data ?? []) as YoutubeFormatoSourceRow[];
 }
 
 /** Artigos no período com flag is_news (inclui genéricos). */
@@ -526,6 +548,48 @@ async function countRowsByIds(
   return total;
 }
 
+async function topNamedVideoLinks(
+  client: ReturnType<typeof createSupabaseClient>,
+  table: "youtube_video_tags" | "youtube_video_subjects",
+  fk: "tag_id" | "subject_id",
+  nameTable: "tags" | "subjects",
+  videoIds: string[],
+  limit = 15
+): Promise<Array<{ id: string; name: string; count: number }>> {
+  if (!videoIds.length) return [];
+  const counts = new Map<string, number>();
+  for (let index = 0; index < videoIds.length; index += IN_FILTER_BATCH_SIZE) {
+    const batch = videoIds.slice(index, index + IN_FILTER_BATCH_SIZE);
+    const { data, error } = await queryWithRetry(async () =>
+      await client.from(table).select(fk).in("youtube_video_id", batch)
+    );
+    if (error) throw new Error(`Falha ao agrupar ${table}: ${error.message}`);
+    for (const row of (data ?? []) as Array<Record<string, string>>) {
+      const id = row[fk];
+      if (!id) continue;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit);
+  if (!top.length) return [];
+  const { data: names, error } = await queryWithRetry(async () =>
+    await client
+      .from(nameTable)
+      .select("id,name")
+      .in(
+        "id",
+        top.map(([id]) => id)
+      )
+  );
+  if (error) throw new Error(`Falha ao nomear ${nameTable}: ${error.message}`);
+  const nameById = new Map(
+    ((names ?? []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name])
+  );
+  return top.map(([id, count]) => ({ id, name: nameById.get(id) ?? id, count }));
+}
+
 async function getTopTagClusters(
   client: ReturnType<typeof createSupabaseClient>,
   articleIds: string[],
@@ -582,7 +646,7 @@ async function buildContentRowsForPeriod(
   periodEnd: string
 ): Promise<{
   articles: Array<{ id: string; published_at: string }>;
-  videos: Array<{ id: string; published_at: string; source_id: string }>;
+  videos: YoutubeFormatoSourceRow[];
   contentRows: ContentWithSource[];
 }> {
   const articles = await fetchArticleRows(client, periodStart, periodEnd);
@@ -650,7 +714,7 @@ export async function generateMonthPresentationReport(
 ): Promise<MonthPresentationPayload> {
   const client = createSupabaseClient();
 
-  const [{ contentRows: fullContentRows }, { rows: fullRelRows, sourcesById: relSourcesById }] =
+  const [{ contentRows: fullContentRows, videos: periodVideos }, { rows: fullRelRows, sourcesById: relSourcesById }] =
     await Promise.all([
       buildContentRowsForPeriod(client, periodStart, periodEnd),
       buildRelevanceRowsForPeriod(client, periodStart, periodEnd),
@@ -660,7 +724,22 @@ export async function generateMonthPresentationReport(
   const news_relevance = buildNewsRelevancePayload(relFiltered, relSourcesById);
 
   const filteredArticleIds = contentRows.filter((c) => c.provider === "rss").map((c) => c.id);
-  const filteredVideoIds = contentRows.filter((c) => c.provider === "youtube").map((c) => c.id);
+  const filteredVideoIds = new Set(
+    contentRows.filter((c) => c.provider === "youtube").map((c) => c.id)
+  );
+  const youtube_formato = generateYoutubeFormatoReport(
+    periodVideos
+      .filter((video) => filteredVideoIds.has(video.id))
+      .map((video) => ({
+        durationSeconds: video.duration_seconds ?? null,
+        defaultAudioLanguage: video.default_audio_language ?? null,
+        liveBroadcastContent: video.live_broadcast_content ?? null,
+        hasCaptions: video.has_captions ?? null,
+        creatorTags: video.creator_tags ?? [],
+        topicCategories: video.topic_categories ?? [],
+        youtubeCategoryId: video.youtube_category_id ?? null,
+      }))
+  );
 
   const sourceIdsInView = new Set(contentRows.map((c) => c.source_id));
   const sourcesById = await getSourcesMap(client, Array.from(sourceIdsInView));
@@ -671,13 +750,16 @@ export async function generateMonthPresentationReport(
   const ytContents = contentRows.filter((c) => c.provider === "youtube").length;
   const contentsTotal = rssContents + ytContents;
 
-  const [ag, at, agen, vg, vt, vgen] = await Promise.all([
+  const videoIds = [...filteredVideoIds];
+  const [ag, at, agen, vg, vt, vgen, video_tags, video_subjects] = await Promise.all([
     countRowsByIds(client, "article_subjects", "article_id", filteredArticleIds),
     countRowsByIds(client, "article_tags", "article_id", filteredArticleIds),
     countRowsByIds(client, "article_types", "article_id", filteredArticleIds),
-    countRowsByIds(client, "youtube_video_subjects", "youtube_video_id", filteredVideoIds),
-    countRowsByIds(client, "youtube_video_tags", "youtube_video_id", filteredVideoIds),
-    countRowsByIds(client, "youtube_video_types", "youtube_video_id", filteredVideoIds),
+    countRowsByIds(client, "youtube_video_subjects", "youtube_video_id", videoIds),
+    countRowsByIds(client, "youtube_video_tags", "youtube_video_id", videoIds),
+    countRowsByIds(client, "youtube_video_types", "youtube_video_id", videoIds),
+    topNamedVideoLinks(client, "youtube_video_tags", "tag_id", "tags", videoIds),
+    topNamedVideoLinks(client, "youtube_video_subjects", "subject_id", "subjects", videoIds),
   ]);
 
   const linksTotal = ag + at + agen + vg + vt + vgen;
@@ -715,7 +797,7 @@ export async function generateMonthPresentationReport(
   }
 
   const artCount = filteredArticleIds.length;
-  const vidCount = filteredVideoIds.length;
+  const vidCount = filteredVideoIds.size;
   const linkQuality = [
     {
       tipo: "Notícia RSS" as const,
@@ -731,7 +813,7 @@ export async function generateMonthPresentationReport(
     },
   ];
 
-  const topClusters = await getTopTagClusters(client, filteredArticleIds, filteredVideoIds);
+  const topClusters = await getTopTagClusters(client, filteredArticleIds, [...filteredVideoIds]);
 
   const cadenceMap = new Map<number, { rss: number; youtube: number }>();
   for (let i = 0; i < 7; i += 1) cadenceMap.set(i, { rss: 0, youtube: 0 });
@@ -781,10 +863,13 @@ export async function generateMonthPresentationReport(
     cadence,
     cadence_by_source: cadenceBySource,
     news_relevance,
+    youtube_formato,
+    video_tags,
+    video_subjects,
     script: [
       {
         title: "Abertura",
-        text: `No período, monitoramos ${sourceIdsInView.size} fontes e classificamos ${contentsTotal} conteúdos com ${linksTotal} vínculos editoriais.`,
+        text: `No período, monitoramos ${sourceIdsInView.size} fontes e classificamos ${contentsTotal} conteúdos com ${linksTotal} classificações.`,
       },
       {
         title: "Leitura para leigos",
@@ -795,8 +880,15 @@ export async function generateMonthPresentationReport(
         text: relevanceScriptText,
       },
       {
+        title: "YouTube neste período",
+        text:
+          youtube_formato.videos_total > 0
+            ? `No YouTube foram ${youtube_formato.hours_total} horas assistíveis, ${youtube_formato.pct_portuguese}% em português e ${youtube_formato.pct_captions}% com legenda.`
+            : "Não há vídeos na pauta neste recorte.",
+      },
+      {
         title: "Leitura para especialistas",
-        text: `A densidade média de ${linksPerContent} vínculos por conteúdo indica maior maturidade taxonômica e melhor conectividade entre entidades.`,
+        text: `A densidade média de ${linksPerContent} classificações por conteúdo indica maior maturidade taxonômica e melhor conectividade entre entidades.`,
       },
       ...(topCadenceSource
         ? [

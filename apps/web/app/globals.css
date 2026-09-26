@@ -304,4 +304,30 @@
     background: var(--grad-brand);
     box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 45%, transparent);
   }
+
+  .theme-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--primary) 65%, transparent) transparent;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 65%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    background-clip: padding-box;
+  }
 }

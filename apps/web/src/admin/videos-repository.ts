@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getDatabaseConfig } from "../../../../packages/database/src/config";
+import { topicCategoryLabel } from "../reports/generators/youtube-formato";
 
 function getClient() {
   const config = getDatabaseConfig();
@@ -20,11 +21,15 @@ export interface VideoListRow {
   title: string;
   description: string | null;
   published_at: string;
+  duration_seconds: number | null;
+  live_broadcast_content: string | null;
   is_news: boolean;
   sourceId: string;
   sourceName: string;
   sourceImageUrl: string | null;
   url: string;
+  thumbnailUrl?: string | null;
+  videoId?: string | null;
   subjectNames: string[];
   tagNames: string[];
   typeNames: string[];
@@ -39,6 +44,13 @@ export interface VideoEditRow {
   sourceId: string;
   sourceName: string;
   is_news: boolean;
+  durationSeconds: number | null;
+  creatorTags: string[];
+  liveBroadcastContent: string | null;
+  defaultAudioLanguage: string | null;
+  hasCaptions: boolean | null;
+  topicCategories: string[];
+  youtubeCategoryId: string | null;
   subjectIds: string[];
   tagIds: string[];
   typeIds: string[];
@@ -54,10 +66,167 @@ export interface ListVideosFilters {
   limit?: number;
   offset?: number;
   sourceId?: string;
+  sourceIds?: string[];
   dateFrom?: string;
   dateTo?: string;
   isNews?: boolean;
   withoutSubject?: boolean;
+  tagId?: string;
+  subjectId?: string;
+  creatorTag?: string;
+  topic?: string;
+  durationBand?: string;
+  language?: string;
+  categoryId?: string;
+  broadcast?: string;
+}
+
+type VideoFilterQuery = {
+  gte: (column: string, value: string | number) => VideoFilterQuery;
+  gt: (column: string, value: number) => VideoFilterQuery;
+  lt: (column: string, value: string) => VideoFilterQuery;
+  lte: (column: string, value: number) => VideoFilterQuery;
+  eq: (column: string, value: string | boolean) => VideoFilterQuery;
+  is: (column: string, value: null) => VideoFilterQuery;
+  ilike: (column: string, value: string) => VideoFilterQuery;
+  not: (column: string, operator: string, value: null | string) => VideoFilterQuery;
+  contains: (column: string, value: string[]) => VideoFilterQuery;
+  or: (filters: string) => VideoFilterQuery;
+  in: (column: string, values: string[]) => VideoFilterQuery;
+  order: (column: string, options: { ascending: boolean }) => VideoFilterQuery;
+  range: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null; count?: number | null }>;
+  select?: never;
+};
+
+function applyColumnFilters<T>(query: T, filters: ListVideosFilters): T {
+  let next = query as VideoFilterQuery;
+  const { sourceId, sourceIds, dateFrom, dateTo, isNews, creatorTag, durationBand, language, categoryId, broadcast } =
+    filters;
+  if (dateFrom) next = next.gte("published_at", dateFrom + "T00:00:00.000Z");
+  if (dateTo) next = next.lt("published_at", dateToEndExclusive(dateTo));
+  if (sourceIds && sourceIds.length > 0) next = next.in("source_id", sourceIds);
+  else if (sourceId) next = next.eq("source_id", sourceId);
+  if (typeof isNews === "boolean") next = next.eq("is_news", isNews);
+  if (creatorTag) next = next.contains("creator_tags", [creatorTag]);
+  if (categoryId) next = next.eq("youtube_category_id", categoryId);
+  if (durationBand === "short") next = next.gte("duration_seconds", 0).lte("duration_seconds", 60);
+  if (durationBand === "medium") next = next.gt("duration_seconds", 60).lte("duration_seconds", 20 * 60);
+  if (durationBand === "long") next = next.gt("duration_seconds", 20 * 60);
+  if (durationBand === "unknown") next = next.is("duration_seconds", null);
+  if (language === "pt") next = next.ilike("default_audio_language", "pt%");
+  if (language === "en") next = next.ilike("default_audio_language", "en%");
+  if (language === "unknown") next = next.is("default_audio_language", null);
+  if (language === "other") {
+    next = next
+      .not("default_audio_language", "is", null)
+      .not("default_audio_language", "ilike", "pt%")
+      .not("default_audio_language", "ilike", "en%");
+  }
+  if (broadcast === "none" || broadcast === "live" || broadcast === "upcoming") {
+    next = next.eq("live_broadcast_content", broadcast);
+  }
+  if (broadcast === "unknown") {
+    next = next.or("live_broadcast_content.is.null,live_broadcast_content.not.in.(none,live,upcoming)");
+  }
+  return next as T;
+}
+
+async function linkVideoIds(
+  client: ReturnType<typeof getClient>,
+  table: "youtube_video_tags" | "youtube_video_subjects",
+  column: "tag_id" | "subject_id",
+  id: string
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+  for (let from = 0; from < 20000; from += 1000) {
+    const { data, error } = await client
+      .from(table)
+      .select("youtube_video_id")
+      .eq(column, id)
+      .range(from, from + 999);
+    if (error) throw new Error(error.message);
+    const batch = (data ?? []) as Array<{ youtube_video_id: string }>;
+    for (const row of batch) ids.add(row.youtube_video_id);
+    if (batch.length < 1000) break;
+  }
+  return ids;
+}
+
+async function resolveConstrainedIds(
+  client: ReturnType<typeof getClient>,
+  filters: ListVideosFilters
+): Promise<string[] | undefined> {
+  if (!filters.tagId && !filters.subjectId && !filters.topic) return undefined;
+  const rows: Array<{ id: string; published_at: string; topic_categories?: string[] | null }> = [];
+  for (let from = 0; from < 20000; from += 1000) {
+    const query = applyColumnFilters(
+      client
+        .from("youtube_videos")
+        .select("id,published_at,topic_categories")
+        .order("published_at", { ascending: false }),
+      filters
+    );
+    const { data, error } = await query.range(from, from + 999);
+    if (error) throw new Error(error.message);
+    const batch = (data ?? []) as unknown as typeof rows;
+    rows.push(...batch);
+    if (batch.length < 1000) break;
+  }
+  let matched = rows;
+  if (filters.topic) {
+    const label = filters.topic;
+    matched = matched.filter((row) =>
+      (row.topic_categories ?? []).some((url) => topicCategoryLabel(url) === label)
+    );
+  }
+  let ids = matched.map((row) => row.id);
+  if (filters.tagId) {
+    const linked = await linkVideoIds(client, "youtube_video_tags", "tag_id", filters.tagId);
+    ids = ids.filter((videoId) => linked.has(videoId));
+  }
+  if (filters.subjectId) {
+    const linked = await linkVideoIds(client, "youtube_video_subjects", "subject_id", filters.subjectId);
+    ids = ids.filter((videoId) => linked.has(videoId));
+  }
+  return ids;
+}
+
+async function topNamedLinks(
+  client: ReturnType<typeof getClient>,
+  table: "youtube_video_tags" | "youtube_video_subjects",
+  fk: "tag_id" | "subject_id",
+  nameTable: "tags" | "subjects",
+  videoIds: string[],
+  limit = 15
+): Promise<Array<{ id: string; name: string; count: number }>> {
+  if (!videoIds.length) return [];
+  const counts = new Map<string, number>();
+  for (let index = 0; index < videoIds.length; index += 100) {
+    const batch = videoIds.slice(index, index + 100);
+    const { data, error } = await client.from(table).select(fk).in("youtube_video_id", batch);
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as Array<Record<string, string>>) {
+      const id = row[fk];
+      if (!id) continue;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit);
+  if (!top.length) return [];
+  const { data: names, error } = await client
+    .from(nameTable)
+    .select("id,name")
+    .in(
+      "id",
+      top.map(([id]) => id)
+    );
+  if (error) throw new Error(error.message);
+  const nameById = new Map(
+    ((names ?? []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name])
+  );
+  return top.map(([id, count]) => ({ id, name: nameById.get(id) ?? id, count }));
 }
 
 export const videosRepository = {
@@ -80,13 +249,19 @@ export const videosRepository = {
 
   async countVideos(filters: ListVideosFilters = {}): Promise<number> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
+    const constrained = await resolveConstrainedIds(client, filters);
+    if (constrained && !filters.withoutSubject) return constrained.length;
 
-    let query = client.from("youtube_videos").select("id", { count: "exact", head: true });
-    if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
-    if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
-    if (sourceId) query = query.eq("source_id", sourceId);
-    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
+    const { withoutSubject } = filters;
+
+    let query = applyColumnFilters(
+      client.from("youtube_videos").select("id", { count: "exact", head: true }),
+      filters
+    );
+    if (constrained) {
+      if (constrained.length === 0) return 0;
+      query = query.in("id", constrained);
+    }
 
     if (withoutSubject) {
       const { data: linked, error: linkErr } = await client
@@ -114,17 +289,23 @@ export const videosRepository = {
     filters: Omit<ListVideosFilters, "limit" | "offset"> = {}
   ): Promise<VideoListRow[]> {
     const client = getClient();
-    const { sourceId, dateFrom, dateTo, isNews, withoutSubject } = filters;
+    const { withoutSubject } = filters;
+    const constrained = await resolveConstrainedIds(client, filters);
 
     let query = client
       .from("youtube_videos")
-      .select("id,title,description,published_at,url,source_id,is_news")
+      .select(
+        "id,video_id,title,thumbnail_url,description,published_at,url,source_id,is_news,duration_seconds,live_broadcast_content"
+      )
       .order("published_at", { ascending: false });
 
-    if (dateFrom) query = query.gte("published_at", dateFrom + "T00:00:00.000Z");
-    if (dateTo) query = query.lt("published_at", dateToEndExclusive(dateTo));
-    if (sourceId) query = query.eq("source_id", sourceId);
-    if (typeof isNews === "boolean") query = query.eq("is_news", isNews);
+    if (constrained) {
+      const pageIds = constrained.slice(offset, offset + limit);
+      if (pageIds.length === 0) return [];
+      query = query.in("id", pageIds);
+    } else {
+      query = applyColumnFilters(query, filters);
+    }
 
     if (withoutSubject) {
       const { data: linked, error: linkErr } = await client
@@ -141,16 +322,22 @@ export const videosRepository = {
       }
     }
 
-    const { data: rows, error } = await query.range(offset, offset + limit - 1);
+    const { data: rows, error } = constrained
+      ? await query
+      : await query.range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);
     const videos = (rows ?? []) as Array<{
       id: string;
+      video_id: string | null;
       title: string;
+      thumbnail_url: string | null;
       description: string | null;
       published_at: string;
       url: string;
       source_id: string;
       is_news: boolean;
+      duration_seconds: number | null;
+      live_broadcast_content: string | null;
     }>;
     if (videos.length === 0) return [];
 
@@ -198,11 +385,15 @@ export const videosRepository = {
         title: v.title,
         description: v.description,
         published_at: v.published_at,
+        duration_seconds: v.duration_seconds ?? null,
+        live_broadcast_content: v.live_broadcast_content ?? null,
         is_news: v.is_news ?? true,
         sourceId: v.source_id,
         sourceName: meta?.name ?? "",
         sourceImageUrl: meta?.imageUrl ?? null,
         url: v.url,
+        thumbnailUrl: v.thumbnail_url ?? null,
+        videoId: v.video_id ?? null,
         subjectNames: subjectNamesByVideo.get(v.id) ?? [],
         tagNames: tagNamesByVideo.get(v.id) ?? [],
         typeNames: typeNamesByVideo.get(v.id) ?? [],
@@ -214,7 +405,9 @@ export const videosRepository = {
     const client = getClient();
     const { data: video, error } = await client
       .from("youtube_videos")
-      .select("id,title,description,published_at,url,source_id,is_news")
+      .select(
+        "id,title,description,published_at,url,source_id,is_news,duration_seconds,creator_tags,live_broadcast_content,default_audio_language,has_captions,topic_categories,youtube_category_id"
+      )
       .eq("id", id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -238,6 +431,13 @@ export const videosRepository = {
       sourceId: video.source_id ?? "",
       sourceName: (sourceRow.data as { name?: string } | null)?.name ?? "",
       is_news: video.is_news ?? true,
+      durationSeconds: video.duration_seconds ?? null,
+      creatorTags: video.creator_tags ?? [],
+      liveBroadcastContent: video.live_broadcast_content ?? null,
+      defaultAudioLanguage: video.default_audio_language ?? null,
+      hasCaptions: video.has_captions ?? null,
+      topicCategories: video.topic_categories ?? [],
+      youtubeCategoryId: video.youtube_category_id ?? null,
       subjectIds: (subjects.data ?? []).map((r: { subject_id: string }) => r.subject_id),
       tagIds: (tags.data ?? []).map((r: { tag_id: string }) => r.tag_id),
       typeIds: (types.data ?? []).map((r: { type_id: string }) => r.type_id),
@@ -263,6 +463,33 @@ export const videosRepository = {
       const { error } = await client.from("youtube_videos").update(body).eq("id", id);
       if (error) throw new Error(error.message);
     }
+  },
+
+  async editorialGroups(
+    dateFrom: string,
+    dateTo: string
+  ): Promise<{
+    tags: Array<{ id: string; name: string; count: number }>;
+    subjects: Array<{ id: string; name: string; count: number }>;
+  }> {
+    const client = getClient();
+    const ids: string[] = [];
+    for (let from = 0; from < 20000; from += 1000) {
+      const query = applyColumnFilters(
+        client.from("youtube_videos").select("id").order("published_at", { ascending: false }),
+        { dateFrom, dateTo, isNews: true }
+      );
+      const { data, error } = await query.range(from, from + 999);
+      if (error) throw new Error(error.message);
+      const batch = (data ?? []) as Array<{ id: string }>;
+      ids.push(...batch.map((row) => row.id));
+      if (batch.length < 1000) break;
+    }
+    const [tags, subjects] = await Promise.all([
+      topNamedLinks(client, "youtube_video_tags", "tag_id", "tags", ids),
+      topNamedLinks(client, "youtube_video_subjects", "subject_id", "subjects", ids),
+    ]);
+    return { tags, subjects };
   },
 
   async deleteVideo(id: string): Promise<void> {

@@ -6,8 +6,19 @@ export interface ArticleRow {
 
 /** Linha de vídeo para geradores. */
 export interface VideoRow {
+  id?: string;
+  video_id?: string | null;
+  title?: string | null;
+  thumbnail_url?: string | null;
   published_at: string;
   source_id: string;
+  duration_seconds?: number | null;
+  default_audio_language?: string | null;
+  live_broadcast_content?: string | null;
+  has_captions?: boolean | null;
+  creator_tags?: string[] | null;
+  topic_categories?: string[] | null;
+  youtube_category_id?: string | null;
 }
 
 export type GroupBy = "day" | "week" | "month";

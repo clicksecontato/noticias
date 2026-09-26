@@ -15,6 +15,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   top_subjects: "Top assuntos por período",
   radar_pauta: "Radar de pauta",
   mapa_tematico: "Mapa temático",
+  youtube_formato: "Formato do YouTube",
   executive_summary: "Resumo executivo",
   month_presentation: "Apresentação mensal",
 };

@@ -1,5 +1,10 @@
 import type { IContentPersister } from "./content-persister.interface";
-import type { ContentSource, FetchedContentItem, PersistContentResult } from "../content-sources/types";
+import type {
+  ContentSource,
+  FetchedContentItem,
+  PersistContentResult,
+  YoutubePublicMetadata,
+} from "../content-sources/types";
 
 /** Port: item de vídeo esperado pelo repositório (alinhado a youtube_videos). */
 export interface YoutubeVideoInput {
@@ -9,6 +14,7 @@ export interface YoutubeVideoInput {
   url: string;
   publishedAt: string;
   thumbnailUrl?: string | null;
+  youtube?: YoutubePublicMetadata;
 }
 
 export interface SaveYoutubeVideosResult {
@@ -40,7 +46,8 @@ export function createYoutubeContentPersister(deps: YoutubePersisterDeps): ICont
         description: item.description,
         url: item.url,
         publishedAt: item.publishedAt,
-        thumbnailUrl: item.imageUrl ?? null
+        thumbnailUrl: item.imageUrl ?? null,
+        ...(item.youtube ? { youtube: item.youtube } : {}),
       }));
 
       const result = await deps.saveYoutubeVideos(source.id, input);

@@ -1,3 +1,4 @@
+import { formatDurationSeconds } from "@/src/admin/youtube-video-labels";
 import {
   Card,
   CardContent,
@@ -17,6 +18,9 @@ export interface VideoCardData {
   sourceName: string;
   sourceImageUrl?: string | null;
   publishedAt: string;
+  durationSeconds?: number | null;
+  defaultAudioLanguage?: string | null;
+  hasCaptions?: boolean | null;
   subjectNames?: string[];
   tagNames?: string[];
   typeNames?: string[];
@@ -92,6 +96,30 @@ export function VideoCard({ video, className }: VideoCardProps) {
             ·
           </span>
           <time dateTime={video.publishedAt}>{dateStr}</time>
+          {video.durationSeconds != null ? (
+            <>
+              <span aria-hidden className="text-border">
+                ·
+              </span>
+              <span>{formatDurationSeconds(video.durationSeconds)}</span>
+            </>
+          ) : null}
+          {video.defaultAudioLanguage ? (
+            <>
+              <span aria-hidden className="text-border">
+                ·
+              </span>
+              <span>{video.defaultAudioLanguage}</span>
+            </>
+          ) : null}
+          {video.hasCaptions ? (
+            <>
+              <span aria-hidden className="text-border">
+                ·
+              </span>
+              <span>Legenda</span>
+            </>
+          ) : null}
         </div>
         <EntityChips
           subjectNames={video.subjectNames}

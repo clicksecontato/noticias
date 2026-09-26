@@ -15,13 +15,14 @@ export async function GET(request: Request): Promise<Response> {
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
     const sourceId = searchParams.get("sourceId")?.trim() || undefined;
+    const tagId = searchParams.get("tagId")?.trim() || undefined;
     const dateFrom = searchParams.get("dateFrom")?.trim() || undefined;
     const dateTo = searchParams.get("dateTo")?.trim() || undefined;
     const isNews = pautaFilterToIsNews(parsePautaFilter(searchParams.get("pauta")));
     const withoutSubject = parseWithoutSubject(searchParams.get("semAssunto"));
 
     const offset = (page - 1) * limit;
-    const filters = { sourceId, dateFrom, dateTo, isNews, withoutSubject };
+    const filters = { sourceId, tagId, dateFrom, dateTo, isNews, withoutSubject };
 
     const [items, total] = await Promise.all([
       newsRepository.listArticles(limit, offset, filters),

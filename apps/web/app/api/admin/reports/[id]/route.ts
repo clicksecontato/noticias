@@ -27,3 +27,19 @@ export async function GET(
   });
 }
 
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Response> {
+  const { id } = await params;
+  if (!id) {
+    return Response.json({ error: "id obrigatório" }, { status: 400 });
+  }
+  const repo = createReportRepository();
+  const deleted = await repo.deleteReport(id);
+  if (!deleted) {
+    return Response.json({ error: "Relatório não encontrado" }, { status: 404 });
+  }
+  return Response.json({ ok: true });
+}
+

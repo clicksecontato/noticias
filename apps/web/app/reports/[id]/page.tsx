@@ -2,12 +2,26 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createReportRepository } from "../../../../../packages/database/src/report-repository";
 import { PageBackLink } from "../../components/PageBackLink";
-import { TagsChart } from "../../components/reports/TagsChart";
+import { TagNewsChart } from "../../components/reports/TagNewsChart";
 import { ActivityWeekdayChart } from "../../components/reports/ActivityWeekdayChart";
 import { TopSourcesChart } from "../../components/reports/TopSourcesChart";
 import { TopSubjectsChart } from "../../components/reports/TopSubjectsChart";
 import { VolumeChart } from "../../components/reports/VolumeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { YoutubeFormatoView } from "../YoutubeFormatoView";
+import { ThumbsReportView } from "../../components/reports/ThumbsReportView";
+import {
+  ByTypesView,
+  EmPortuguesView,
+  PerspectivasView,
+} from "../../components/reports/EditorialPautaViews";
+import type { YoutubeFormatoPayload } from "@/src/reports/generators/youtube-formato";
+import type { ThumbsPayload } from "@/src/reports/generators/thumbs";
+import type {
+  ByTypesPayload,
+  EmPortuguesPayload,
+  PerspectivasPayload,
+} from "@/src/reports/generators/editorial-pautas";
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
   volume: "Volume por período",
@@ -18,6 +32,11 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   top_subjects: "Top assuntos por período",
   radar_pauta: "Radar de pauta",
   mapa_tematico: "Mapa temático",
+  youtube_formato: "Formato do YouTube",
+  thumb_analysis: "Análise de thumbs",
+  perspectivas: "Perspectivas",
+  em_portugues: "Em português",
+  by_types: "Por tipo",
   executive_summary: "Resumo executivo",
   month_presentation: "Apresentação mensal",
 };
@@ -103,6 +122,8 @@ export default async function ReportDetailPage({
         <ReportPayload
           type={safeReport.reportType}
           payload={result as Record<string, unknown>}
+          periodStart={safeReport.periodStart}
+          periodEnd={safeReport.periodEnd}
         />
       ) : null}
     </section>
@@ -121,9 +142,13 @@ function formatYMDAsPTBR(value: string): string {
 function ReportPayload({
   type,
   payload,
+  periodStart,
+  periodEnd,
 }: {
   type: string;
   payload: Record<string, unknown>;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }) {
   if (type === "volume") {
     const rawSeries =
@@ -247,7 +272,7 @@ function ReportPayload({
           <p className="text-sm text-muted-foreground">
             Quantidade de notícias (artigos) associadas a cada tag no período. Fontes não exibidas.
           </p>
-          <TagsChart data={items} />
+          <TagNewsChart data={items} dateFrom={periodStart} dateTo={periodEnd} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -296,7 +321,7 @@ function ReportPayload({
           <p className="text-sm text-muted-foreground">
             Distribuição de notícias (artigos) desta fonte por tag, no período selecionado.
           </p>
-          <TagsChart data={tags} />
+          <TagNewsChart data={tags} dateFrom={periodStart} dateTo={periodEnd} sourceId={sourceId} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -510,6 +535,26 @@ function ReportPayload({
         <WindowCard title="Últimos 90 dias" data={last90 ?? { articles: 0, videos: 0, rss_vs_youtube: { rssPct: 0, youtubePct: 0 }, top_sources: [], top_subjects: [] }} />
       </div>
     );
+  }
+
+  if (type === "youtube_formato") {
+    return <YoutubeFormatoView payload={payload as unknown as YoutubeFormatoPayload} />;
+  }
+
+  if (type === "thumb_analysis") {
+    return <ThumbsReportView payload={payload as unknown as ThumbsPayload} />;
+  }
+
+  if (type === "perspectivas") {
+    return <PerspectivasView payload={payload as unknown as PerspectivasPayload} />;
+  }
+
+  if (type === "em_portugues") {
+    return <EmPortuguesView payload={payload as unknown as EmPortuguesPayload} />;
+  }
+
+  if (type === "by_types") {
+    return <ByTypesView payload={payload as unknown as ByTypesPayload} />;
   }
 
   return (

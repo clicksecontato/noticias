@@ -5,11 +5,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   XAxis,
   YAxis,
 } from "recharts";
@@ -24,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PageBackLink } from "../../components/PageBackLink";
 import {
   ChartConfig,
   ChartContainer,
@@ -33,11 +29,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { PIE_COLORS } from "@/src/ui/chart-gradients";
 import { NeoChartContainer } from "@/src/ui/NeoChartContainer";
-import { Presentation } from "lucide-react";
-import { AdminPageTitle } from "../components/AdminPageTitle";
+import { PresentationStage, Slide } from "../../components/reports/PresentationStage";
+import { VideoSliceChart } from "../../components/reports/VideoSliceChart";
 import { SourceAvatar } from "../../components/SourceAvatar";
+import type { YoutubeFormatoPayload } from "@/src/reports/generators/youtube-formato";
+import { buildMonthVideoChartSlides } from "@/src/reports/month-presentation-video-slides";
 
 interface MonthPresentationPayload {
   summary: {
@@ -84,35 +81,43 @@ interface MonthPresentationPayload {
     }>;
   };
   script: Array<{ title: string; text: string }>;
+  youtube_formato?: YoutubeFormatoPayload;
+  video_tags?: Array<{ id: string; name: string; count: number }>;
+  video_subjects?: Array<{ id: string; name: string; count: number }>;
 }
-
-const pieColors = [...PIE_COLORS];
-
-const sourceMixConfig = {
-  fontes: { label: "Fontes", color: "var(--chart-1)" },
-  conteudos: { label: "Conteúdos", color: "var(--chart-2)" },
-} satisfies ChartConfig;
 
 const monthlyEvolutionConfig = {
   conteudos: { label: "Conteúdos", color: "var(--chart-1)" },
-  vinculos: { label: "Vínculos", color: "var(--chart-2)" },
-} satisfies ChartConfig;
-
-const linkQualityConfig = {
-  assuntos: { label: "Assuntos", color: "var(--chart-1)" },
-  tags: { label: "Tags", color: "var(--chart-2)" },
-  tipos: { label: "Tipos", color: "var(--chart-3)" },
-} satisfies ChartConfig;
-
-const cadenceConfig = {
-  rss: { label: "RSS", color: "var(--chart-1)" },
-  youtube: { label: "YouTube", color: "var(--chart-2)" },
+  vinculos: { label: "Classificações", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
 const newsRelevanceStackConfig = {
   relevantes: { label: "Relevantes (is_news)", color: "var(--chart-1)" },
   genericos: { label: "Genéricos / off-topic", color: "var(--chart-3)" },
 } satisfies ChartConfig;
+
+function YoutubePeriodSlide({ formato }: { formato: YoutubeFormatoPayload }) {
+  const numbers = [
+    { label: "Horas de vídeo", value: String(formato.hours_total) },
+    { label: "Em português", value: `${formato.pct_portuguese}%` },
+    { label: "Com legenda", value: `${formato.pct_captions}%` },
+  ];
+  return (
+    <div className="grid h-full content-center gap-4 sm:grid-cols-3">
+      {numbers.map((item) => (
+        <Card key={item.label}>
+          <CardHeader>
+            <CardTitle className="text-base font-medium text-muted-foreground">{item.label}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-6xl font-semibold tabular-nums tracking-tight">{item.value}</p>
+            <p className="mt-2 text-base text-muted-foreground">{formato.videos_total} vídeos no período</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 function peakDayLabel(dias: Array<{ dia: string; conteudos: number }>): { label: string; valor: number } {
   let valor = 0;
@@ -131,7 +136,7 @@ export function MonthPresentationClient({
   reportPayload,
   periodStart,
   periodEnd,
-  embedded = false,
+  embedded: _embedded = false,
   sourceAvatars: sourceAvatarsProp,
 }: {
   reportId: string | null;
@@ -142,6 +147,7 @@ export function MonthPresentationClient({
   embedded?: boolean;
   sourceAvatars?: Record<string, string | null>;
 }) {
+  void _embedded;
   const basePayload = useMemo(
     () => (reportPayload as MonthPresentationPayload | null) ?? null,
     [reportPayload]
@@ -154,11 +160,46 @@ export function MonthPresentationClient({
   >([]);
   const [filterLoading, setFilterLoading] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [liveGroups, setLiveGroups] = useState<{
+    tags: Array<{ id: string; name: string; count: number }>;
+    subjects: Array<{ id: string; name: string; count: number }>;
+  } | null>(null);
 
   useEffect(() => {
     setFilteredPayload(null);
     setFilterError(null);
+    setLiveGroups(null);
   }, [reportId, reportPayload]);
+
+  useEffect(() => {
+    const start = basePayload?.summary?.period_start;
+    const end = basePayload?.summary?.period_end;
+    if (!start || !end) return;
+    if (basePayload && "video_tags" in basePayload && "video_subjects" in basePayload) return;
+    const params = new URLSearchParams({
+      dateFrom: start.slice(0, 10),
+      dateTo: end.slice(0, 10),
+    });
+    let cancelled = false;
+    fetch(`/api/admin/videos/groups?${params.toString()}`)
+      .then((response) => response.json())
+      .then(
+        (data: {
+          tags?: Array<{ id: string; name: string; count: number }>;
+          subjects?: Array<{ id: string; name: string; count: number }>;
+        }) => {
+          if (cancelled) return;
+          setLiveGroups({
+            tags: Array.isArray(data.tags) ? data.tags : [],
+            subjects: Array.isArray(data.subjects) ? data.subjects : [],
+          });
+        }
+      )
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [basePayload]);
 
   useEffect(() => {
     fetch("/api/admin/sources")
@@ -187,11 +228,18 @@ export function MonthPresentationClient({
   }, [sourceAvatarsProp, adminSources]);
 
   const payload = filteredPayload ?? basePayload;
-  const sourceMix = payload?.source_mix ?? [];
+  const videoSlides = useMemo(() => {
+    if (!payload) return [];
+    const tags = "video_tags" in payload ? payload.video_tags : liveGroups?.tags;
+    const subjects = "video_subjects" in payload ? payload.video_subjects : liveGroups?.subjects;
+    return buildMonthVideoChartSlides({
+      formato: payload.youtube_formato,
+      tags,
+      subjects,
+    });
+  }, [payload, liveGroups]);
   const monthlyEvolution = payload?.monthly_evolution ?? [];
-  const linkQualityByType = payload?.link_quality ?? [];
   const topEntityClusters = payload?.top_clusters ?? [];
-  const cadenceByWeekday = payload?.cadence ?? [];
   const cadenceBySourceRaw = payload?.cadence_by_source ?? [];
   const newsRelevance = payload?.news_relevance ?? null;
   const scripts = payload?.script ?? [];
@@ -325,56 +373,21 @@ export function MonthPresentationClient({
       note: `${summary.articles_total} artigos + ${summary.videos_total} vídeos`,
     },
     {
-      label: "Vínculos gerados",
+      label: "Classificações",
       value: String(summary.links_total),
       note: "assuntos, tags e tipos",
     },
     {
       label: "Densidade de contexto",
       value: String(summary.links_per_content),
-      note: "média de vínculos por conteúdo",
+      note: "média de classificações por conteúdo",
     },
   ];
 
   return (
-    <section className="space-y-6">
-      {!embedded ? <PageBackLink href="/admin">Admin</PageBackLink> : null}
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          {!embedded ? (
-            <>
-              <AdminPageTitle icon={Presentation}>
-                Roteiro Visual do Mês (Fontes e Vínculos)
-              </AdminPageTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Leitura editorial do mês com dados reais: quem publicou, como os conteúdos se conectam
-                e quais histórias explicam o período para público leigo e também para quem é do ramo.
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Dashboard completo deste relatório mensal — KPIs, mix, cadência e roteiro.
-            </p>
-          )}
-          {summary.period_start && summary.period_end ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Período do relatório: {summary.period_start} a {summary.period_end}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={reportId ? "default" : "secondary"}>
-            {reportId ? "Dados reais gerados" : "Sem relatório gerado"}
-          </Badge>
-          {filteredPayload ? (
-            <Badge variant="outline">Visão filtrada (preview)</Badge>
-          ) : null}
-          <Button size="sm">Exportar roteiro</Button>
-        </div>
-      </div>
-
+    <PresentationStage kicker="Apresentação mensal">
       {basePayload ? (
+        <Slide title="Filtros da apresentação">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Filtros da apresentação</CardTitle>
@@ -479,9 +492,11 @@ export function MonthPresentationClient({
             ) : null}
           </CardContent>
         </Card>
+        </Slide>
       ) : null}
 
       {!payload ? (
+        <Slide title="Nenhum relatório gerado">
         <Card>
           <CardHeader>
             <CardTitle>Nenhum relatório gerado</CardTitle>
@@ -491,9 +506,12 @@ export function MonthPresentationClient({
             <strong className="text-foreground"> /admin/reports</strong> para preencher esta página com dados reais.
           </CardContent>
         </Card>
+        </Slide>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {payload ? (
+      <Slide title="O mês em números">
+      <div className="grid h-full content-center gap-4 sm:grid-cols-2">
         {headlineKpis.map((kpi, idx) => (
           <Card
             key={kpi.label}
@@ -504,13 +522,45 @@ export function MonthPresentationClient({
               <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground">{kpi.note}</p>
+              <p className="text-6xl font-semibold tabular-nums tracking-tight">{kpi.value}</p>
+              <p className="mt-2 text-base text-muted-foreground">{kpi.note}</p>
             </CardContent>
           </Card>
         ))}
       </div>
+      </Slide>
+      ) : null}
 
+      {payload?.youtube_formato ? (
+        <Slide title="YouTube neste período">
+          <YoutubePeriodSlide formato={payload.youtube_formato} />
+        </Slide>
+      ) : null}
+
+      {payload
+        ? videoSlides.map((slide) => (
+            <Slide key={`${slide.param}-${slide.title}`} title={slide.title}>
+              <div className="flex min-h-0 flex-1 flex-col">
+                <p className="mb-3 shrink-0 text-sm text-muted-foreground">
+                  Clique numa barra para ver os vídeos.
+                </p>
+                <div className="min-h-0 flex-1">
+                  <VideoSliceChart
+                    rows={slide.rows}
+                    param={slide.param}
+                    fill
+                    dateFrom={summary.period_start}
+                    dateTo={summary.period_end}
+                    sourceIds={filteredPayload ? selectedSourceIds : undefined}
+                  />
+                </div>
+              </div>
+            </Slide>
+          ))
+        : null}
+
+      {payload ? (
+      <Slide title="Resumo em 30 segundos">
       <Card className="animate-in fade-in-0 slide-in-from-bottom-3 duration-500">
         <CardHeader>
           <CardTitle>Resumo em 30 segundos (para abrir o vídeo)</CardTitle>
@@ -520,8 +570,8 @@ export function MonthPresentationClient({
             No período, acompanhamos{" "}
             <strong className="text-foreground">{summary.sources_total} fontes</strong> e classificamos{" "}
             <strong className="text-foreground">{summary.contents_total} conteúdos</strong>. O destaque é a
-            profundidade: <strong className="text-foreground">{summary.links_total} vínculos editoriais</strong>,
-            com média de <strong className="text-foreground">{summary.links_per_content}</strong> vínculos por
+            profundidade: <strong className="text-foreground">{summary.links_total} classificações</strong>,
+            com média de <strong className="text-foreground">{summary.links_per_content}</strong> classificações por
             peça.
           </p>
           <p>
@@ -531,66 +581,17 @@ export function MonthPresentationClient({
           </p>
         </CardContent>
       </Card>
+      </Slide>
+      ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {payload ? (
+      <Slide title="Evolução mês a mês">
         <Card>
-          <CardHeader>
-            <CardTitle>Mix de fontes: RSS x YouTube</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 pb-6">
-            <div className="h-[240px] w-full shrink-0">
-              <NeoChartContainer config={sourceMixConfig} className="aspect-auto h-full w-full min-h-0">
-                {({ defs, fillWarm, fillCool }) => (
-                  <BarChart data={sourceMix}>
-                    {defs}
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
-                    <XAxis dataKey="tipo" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="fontes" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
-                    <Bar dataKey="conteudos" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
-                  </BarChart>
-                )}
-              </NeoChartContainer>
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-            Leitura rápida: RSS domina em volume bruto, YouTube tende a puxar contexto mais denso por conteúdo.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Participação no mês (share de conteúdos)</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 pb-6">
-            <div className="h-[240px] w-full shrink-0">
-              <ChartContainer config={sourceMixConfig} className="aspect-auto h-full w-full min-h-0">
-                <PieChart>
-                  <Pie data={sourceMix} dataKey="share" nameKey="tipo" innerRadius={58} outerRadius={98} paddingAngle={3} strokeWidth={0} isAnimationActive>
-                    {sourceMix.map((_, idx) => (
-                      <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                </PieChart>
-              </ChartContainer>
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Mesmo com menos fontes, YouTube pode concentrar blocos de assunto de maior recorrência no mês.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Evolução mês a mês: volume x profundidade</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 pb-6">
-            <div className="h-[260px] w-full shrink-0">
+            <div className="min-h-0 w-full flex-1">
               <ChartContainer config={monthlyEvolutionConfig} className="aspect-auto h-full w-full min-h-0">
                 <LineChart data={monthlyEvolution}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/25" vertical={false} />
@@ -619,12 +620,16 @@ export function MonthPresentationClient({
                 </LineChart>
               </ChartContainer>
             </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Quando a curva de vínculos cresce mais que a de conteúdos, a cobertura fica mais conectada e contextual.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Quando a curva de classificações cresce mais que a de conteúdos, a cobertura fica mais conectada e contextual.
             </p>
           </CardContent>
         </Card>
+      </Slide>
+      ) : null}
 
+      {payload ? (
+      <Slide title="Clusters temáticos">
         <Card>
           <CardHeader>
             <CardTitle>Top clusters temáticos</CardTitle>
@@ -641,36 +646,11 @@ export function MonthPresentationClient({
             ))}
           </CardContent>
         </Card>
-      </div>
+      </Slide>
+      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Qualidade de vínculos por tipo de conteúdo</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pb-6">
-          <div className="h-[280px] w-full shrink-0">
-            <NeoChartContainer config={linkQualityConfig} className="aspect-auto h-full w-full min-h-0">
-              {({ defs, fillWarm, fillCool, fillAmber }) => (
-                <BarChart data={linkQualityByType}>
-                  {defs}
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
-                  <XAxis dataKey="tipo" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="assuntos" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
-                  <Bar dataKey="tags" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
-                  <Bar dataKey="tipos" fill={fillAmber} radius={[10, 10, 4, 4]} isAnimationActive />
-                </BarChart>
-              )}
-            </NeoChartContainer>
-          </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Explicação para vídeo: compare densidade por tipo para mostrar o equilíbrio entre volume e profundidade.
-          </p>
-        </CardContent>
-      </Card>
-
+      {payload ? (
+      <Slide title="Relevância">
       <Card>
         <CardHeader>
           <CardTitle>Relevância: assuntos vs genérico (is_news)</CardTitle>
@@ -715,7 +695,7 @@ export function MonthPresentationClient({
                   </p>
                 </div>
               </div>
-              <div className="h-[220px] w-full shrink-0">
+              <div className="min-h-0 w-full flex-1">
                 <NeoChartContainer config={newsRelevanceStackConfig} className="aspect-auto h-full w-full min-h-0">
                   {({ defs, fillWarm, fillAmber }) => (
                     <BarChart data={newsRelevanceBarData}>
@@ -782,50 +762,19 @@ export function MonthPresentationClient({
                 </table>
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Até 50 fontes por volume no período; artigos sem vínculo em <code className="text-foreground">article_sources</code>{" "}
-                aparecem na linha agregada “sem fonte vinculada”.
+                Até 50 fontes por volume no período; artigos sem fonte associada em <code className="text-foreground">article_sources</code>{" "}
+                aparecem na linha agregada “sem fonte associada”.
               </p>
             </>
           )}
         </CardContent>
       </Card>
+      </Slide>
+      ) : null}
 
+      {payload ? (
+      <Slide title="Publicações por dia da semana">
       <Card>
-        <CardHeader>
-          <CardTitle>Cadência por dia da semana (RSS x YouTube)</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pb-6">
-          <div className="h-[260px] w-full shrink-0">
-            <NeoChartContainer config={cadenceConfig} className="aspect-auto h-full w-full min-h-0">
-              {({ defs, fillWarm, fillCool }) => (
-                <BarChart data={cadenceByWeekday}>
-                  {defs}
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
-                  <XAxis dataKey="dia" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="rss" fill={fillWarm} radius={[10, 10, 4, 4]} isAnimationActive />
-                  <Bar dataKey="youtube" fill={fillCool} radius={[10, 10, 4, 4]} isAnimationActive />
-                </BarChart>
-              )}
-            </NeoChartContainer>
-          </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Visão agregada do período: útil para ver em quais dias da semana o agregador recebe mais RSS e mais YouTube.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Cadência por dia da semana (por fonte)</CardTitle>
-          <p className="text-sm font-normal text-muted-foreground">
-            Até 15 fontes com mais conteúdos no período. Cada barra soma todas as publicações daquela fonte naquele dia da
-            semana (Dom–Sáb) ao longo do <span className="text-foreground">período do relatório</span>, no fuso UTC —
-            mesmo critério do gráfico “RSS x YouTube” acima.
-          </p>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4 pb-6">
           {!cadenceBySource.length ? (
             <p className="text-sm text-muted-foreground">
@@ -834,25 +783,33 @@ export function MonthPresentationClient({
             </p>
           ) : (
             <>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div className="space-y-2 sm:max-w-md sm:flex-1">
-                  <Label htmlFor="cadence-source">Fonte</Label>
-                  <Select
+              <div className="space-y-3">
+                <Select
                     value={selectedCadenceSource?.source_id ?? ""}
                     onValueChange={(v) => setSelectedSourceId(v ?? null)}
                   >
-                    <SelectTrigger id="cadence-source" className="h-9 w-full sm:w-full">
-                      <SelectValue placeholder="Escolha uma fonte" />
+                    <SelectTrigger id="cadence-source" className="h-16 w-full gap-3 text-lg">
+                      {selectedCadenceSource ? (
+                        <SourceAvatar
+                          name={selectedCadenceSource.source_name}
+                          imageUrl={sourceAvatars[selectedCadenceSource.source_id]}
+                          provider={selectedCadenceSource.provider}
+                          size="md"
+                          className="size-12"
+                        />
+                      ) : null}
+                      <SelectValue placeholder="Escolha um criador" />
                     </SelectTrigger>
                     <SelectContent>
                       {cadenceBySource.map((s) => (
-                        <SelectItem key={s.source_id} value={s.source_id}>
-                          <span className="inline-flex items-center gap-2">
+                        <SelectItem key={s.source_id} value={s.source_id} className="py-2 text-base">
+                          <span className="inline-flex items-center gap-3">
                             <SourceAvatar
                               name={s.source_name}
                               imageUrl={sourceAvatars[s.source_id]}
                               provider={s.provider}
-                              size="xs"
+                              size="md"
+                              className="size-10"
                             />
                             <span>
                               {s.source_name}{" "}
@@ -865,16 +822,19 @@ export function MonthPresentationClient({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
                 {selectedSourcePeak ? (
-                  <Badge variant="outline" className="w-fit shrink-0">
-                    Dia de pico: {selectedSourcePeak.label} ({selectedSourcePeak.valor} publicações)
-                  </Badge>
+                  <p className="text-2xl font-medium tracking-tight">
+                    Pico em {selectedSourcePeak.label}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {selectedSourcePeak.valor} publicações
+                    </span>
+                  </p>
                 ) : null}
               </div>
 
               {selectedCadenceSource ? (
-                <div className="h-[260px] w-full shrink-0">
+                <div className="min-h-0 w-full flex-1">
                   <NeoChartContainer
                     config={sourceWeekdayChartConfig}
                     className="aspect-auto h-full w-full min-h-0"
@@ -901,9 +861,27 @@ export function MonthPresentationClient({
                   </NeoChartContainer>
                 </div>
               ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
+      </Slide>
+      ) : null}
 
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[520px] text-left text-sm">
+      {payload ? (
+      <Slide title="Fontes no período">
+      <Card className="theme-scrollbar overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Fontes no período</CardTitle>
+        </CardHeader>
+        <CardContent className="pb-6">
+          {!cadenceBySource.length ? (
+            <p className="text-sm text-muted-foreground">
+              Gere novamente o relatório para ver o dia de pico de cada fonte.
+            </p>
+          ) : (
+              <div className="theme-scrollbar overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[520px] text-left text-base">
                   <thead>
                     <tr className="border-b border-border bg-muted/40">
                       <th className="px-3 py-2 font-medium">Fonte</th>
@@ -923,13 +901,14 @@ export function MonthPresentationClient({
                             s.source_id === selectedCadenceSource?.source_id ? "bg-muted/30" : ""
                           }`}
                         >
-                          <td className="px-3 py-2 font-medium">
-                            <span className="inline-flex items-center gap-2">
+                          <td className="px-3 py-3 font-medium">
+                            <span className="inline-flex items-center gap-3">
                               <SourceAvatar
                                 name={s.source_name}
                                 imageUrl={sourceAvatars[s.source_id]}
                                 provider={s.provider}
-                                size="xs"
+                                size="md"
+                                className="size-10"
                               />
                               {s.source_name}
                             </span>
@@ -946,17 +925,15 @@ export function MonthPresentationClient({
                   </tbody>
                 </table>
               </div>
-
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Use a tabela para comparar o dia de pico entre fontes; o gráfico repete o formato “por dia da semana”, só
-                que filtrado na fonte escolhida.
-              </p>
-            </>
           )}
         </CardContent>
       </Card>
+      </Slide>
+      ) : null}
 
-      <Card>
+      {payload ? (
+      <Slide title="Roteiro sugerido">
+      <Card className="overflow-y-auto">
         <CardHeader>
           <CardTitle>Roteiro sugerido para vídeo (8 a 12 minutos)</CardTitle>
         </CardHeader>
@@ -974,7 +951,9 @@ export function MonthPresentationClient({
           ))}
         </CardContent>
       </Card>
-    </section>
+      </Slide>
+      ) : null}
+    </PresentationStage>
   );
 }
 

@@ -30,16 +30,20 @@ export default async function VideosPage({
     from?: string;
     to?: string;
     period?: string;
+    duration?: string;
+    lang?: string;
   }>;
 }) {
   const params = parseVideosListParams((await searchParams) ?? {});
-  const { page: currentPage, sourceIds, period, dateFrom, dateTo } = params;
+  const { page: currentPage, sourceIds, period, dateFrom, dateTo, duration, lang } = params;
   const range = resolveVideosDateRange(params);
   const pageSize = 12;
 
   const listFilters = {
     ...(sourceIds.length > 0 && { sourceIds }),
     ...range,
+    ...(duration && { durationBand: duration }),
+    ...(lang && { audioLanguage: lang }),
   };
 
   const provider = createRouteContentProvider();
@@ -60,9 +64,24 @@ export default async function VideosPage({
       period,
       dateFrom,
       dateTo,
+      duration,
+      lang,
     });
 
-  const hasFilters = sourceIds.length > 0 || Boolean(period || dateFrom || dateTo);
+  const hasFilters =
+    sourceIds.length > 0 || Boolean(period || dateFrom || dateTo || duration || lang);
+
+  const durationOptions = [
+    { value: "", label: "Qualquer duração" },
+    { value: "short", label: "Até 1 min" },
+    { value: "medium", label: "Até 20 min" },
+    { value: "long", label: "Acima de 20 min" },
+  ] as const;
+  const langOptions = [
+    { value: "", label: "Qualquer idioma" },
+    { value: "pt", label: "Português" },
+    { value: "en", label: "Inglês" },
+  ] as const;
 
   return (
     <section className="space-y-6">
@@ -95,7 +114,61 @@ export default async function VideosPage({
             period={period}
             dateFrom={dateFrom}
             dateTo={dateTo}
+            duration={duration}
+            lang={lang}
           />
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="mb-2 text-sm font-medium text-muted-foreground">Duração</p>
+              <div className="flex flex-wrap gap-2">
+                {durationOptions.map((option) => (
+                  <Link
+                    key={option.label}
+                    href={buildVideosQueryPath({
+                      page: 1,
+                      sourceIds,
+                      period,
+                      dateFrom,
+                      dateTo,
+                      duration: option.value,
+                      lang,
+                    })}
+                    className={buttonVariants({
+                      variant: duration === option.value ? "default" : "outline",
+                      size: "sm",
+                    })}
+                  >
+                    {option.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium text-muted-foreground">Idioma do áudio</p>
+              <div className="flex flex-wrap gap-2">
+                {langOptions.map((option) => (
+                  <Link
+                    key={option.label}
+                    href={buildVideosQueryPath({
+                      page: 1,
+                      sourceIds,
+                      period,
+                      dateFrom,
+                      dateTo,
+                      duration,
+                      lang: option.value,
+                    })}
+                    className={buttonVariants({
+                      variant: lang === option.value ? "default" : "outline",
+                      size: "sm",
+                    })}
+                  >
+                    {option.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
