@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Gauge,
+  ClipboardCopy,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ const ADMIN_MENU_GROUPS: AdminMenuGroup[] = [
       { path: "/admin", label: "Hub", icon: LayoutDashboard, exact: true },
       { path: "/admin/ingestao", label: "Atualizar Fontes", icon: Download },
       { path: "/admin/fontes", label: "Fontes", icon: Rss },
+      { path: "/admin/canais-youtube", label: "URLs dos canais", icon: ClipboardCopy },
       { path: "/admin/youtube-api", label: "API YouTube", icon: Gauge },
     ],
   },

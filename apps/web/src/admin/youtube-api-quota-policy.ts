@@ -25,7 +25,7 @@ export const YOUTUBE_API_METHOD_CATALOG: readonly YoutubeApiMethodMeta[] = [
   {
     method: "channels.list",
     units: 1,
-    usedIn: "Resolver @handle → canal; avatar do canal",
+    usedIn: "Resolver @handle → canal; avatar do canal; URLs @ dos canais ativos",
     auth: "api_key",
   },
   {
