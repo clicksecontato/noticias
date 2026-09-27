@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Gauge,
   ClipboardCopy,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ const ADMIN_MENU_GROUPS: AdminMenuGroup[] = [
         label: "Apresentação do Mês",
         icon: Presentation,
       },
+      { path: "/admin/codigos-chatgpt", label: "Códigos ChatGPT", icon: Bot },
     ],
   },
 ];
